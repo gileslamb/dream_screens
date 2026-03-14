@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dream Screens — Artistic Proposition</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;1,300;1,400&display=swap');
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --green: #00cc66;
+  --text: #1a1a18;
+  --muted: #666660;
+  --rule: #e0e0d8;
+  --bg: #fafaf7;
+}
+
+html { background: var(--bg); }
+body {
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--text);
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 12vh 2rem 16vh;
+}
+
+/* Header */
+.header {
+  margin-bottom: 8vh;
+  padding-bottom: 3rem;
+  border-bottom: 1px solid var(--rule);
+}
+.badge {
+  display: inline-flex;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+.badge span {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0.5;
+}
+.badge span.highlight {
+  color: var(--green);
+  opacity: 0.7;
+}
+.header h1 {
+  font-family: var(--sans);
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 300;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: var(--text);
+  margin-bottom: 0.6rem;
+}
+.header .sub {
+  font-family: var(--sans);
+  font-size: 16px;
+  font-style: italic;
+  color: var(--muted);
+  font-weight: 300;
+  margin-bottom: 2rem;
+}
+.header .author {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+/* Sections */
+section { margin-bottom: 4.5rem; }
+
+h2 {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 1.4rem;
+}
+
+h3 {
+  font-family: var(--sans);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--text);
+  margin-bottom: 0.9rem;
+  margin-top: 2.2rem;
+}
+h3:first-child { margin-top: 0; }
+
+p { margin-bottom: 1.1rem; font-size: 15px; }
+p.lead {
+  font-size: 18px;
+  line-height: 1.7;
+  font-weight: 300;
+  margin-bottom: 1.8rem;
+}
+
+blockquote {
+  border-left: 2px solid var(--green);
+  padding: 0.5rem 0 0.5rem 1.8rem;
+  margin: 2.2rem 0;
+}
+blockquote p {
+  font-style: italic;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text);
+  margin-bottom: 0;
+}
+
+/* Format grid */
+.formats { margin: 1.5rem 0; }
+.format-row {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: flex-start;
+}
+.format-row:first-child { border-top: 1px solid var(--rule); }
+.format-key {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  min-width: 130px;
+  padding-top: 3px;
+  opacity: 0.6;
+}
+.format-val {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  flex: 1;
+}
+
+/* Track listing */
+.tracklist { margin: 1.8rem 0; border-top: 1px solid var(--rule); }
+.track {
+  display: flex;
+  align-items: baseline;
+  gap: 1.2rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.track .num {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+  opacity: 0.35;
+  min-width: 20px;
+}
+.track .title {
+  font-size: 13px;
+  font-weight: 400;
+  flex: 1;
+}
+.track .status {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--green);
+  opacity: 0.65;
+}
+.track .status.soon {
+  color: var(--muted);
+  opacity: 0.3;
+}
+
+/* Research paper link */
+.research-link {
+  margin-top: 5rem;
+  padding: 2rem;
+  border: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+.research-link:hover { border-color: var(--green); }
+.research-link .rl-left {}
+.research-link .rl-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--green);
+  opacity: 0.6;
+  margin-bottom: 0.4rem;
+}
+.research-link .rl-title {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text);
+  line-height: 1.3;
+}
+.research-link .rl-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  opacity: 0.4;
+  margin-top: 0.3rem;
+  letter-spacing: 0.1em;
+}
+.research-link .rl-arrow {
+  font-family: var(--mono);
+  font-size: 16px;
+  color: var(--muted);
+  opacity: 0.3;
+  flex-shrink: 0;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.research-link:hover .rl-arrow { opacity: 0.7; transform: translateX(4px); }
+
+hr { border: none; border-top: 1px solid var(--rule); margin: 4rem 0; }
+
+/* Footer */
+.doc-footer {
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.doc-footer .left {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  opacity: 0.35;
+  line-height: 2.1;
+}
+.doc-footer a.back {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text);
+  text-decoration: none;
+  opacity: 0.3;
+  transition: opacity 0.2s;
+}
+.doc-footer a.back:hover { opacity: 0.8; }
+
+@media (max-width: 600px) {
+  .format-row { flex-direction: column; gap: 0.5rem; }
+  .research-link { flex-direction: column; }
+  .doc-footer { flex-direction: column; gap: 1.5rem; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="badge">
+      <span class="highlight">Artistic Proposition</span>
+      <span>Prototype v1</span>
+      <span>Beta test</span>
+      <span>2026</span>
+    </div>
+    <h1>Dream Screens</h1>
+    <div class="sub">A new way to experience the album concept</div>
+    <div class="author">Giles Lamb &nbsp;/&nbsp; dreamscreens.io &nbsp;/&nbsp; Confidential</div>
+  </div>
+
+  <section>
+    <h2>The idea</h2>
+    <p class="lead">Dream Screens is a living album. Not a collection of songs to be streamed. A series of immersive experiences to be entered, navigated, and felt.</p>
+    <p>Each track in the album corresponds to a distinct audiovisual journey. A subliminal narrative. A memory state rendered in real time through a generative visual system, playing over and through the music. The visitor does not press play and listen. They click to retrieve the next memory. The archive grows.</p>
+    <p>The entry point is a browser. No installation. No headset. A full-screen experience that runs on any device, designed to be encountered on a large screen with headphones. Four minutes of something that does not yet have a category.</p>
+
+    <blockquote>
+      <p>"Not a playlist. Not a video. An experience that reshapes itself to fit the version of you that is watching it."</p>
+    </blockquote>
+  </section>
+
+  <section>
+    <h2>The framing</h2>
+    <p class="lead">We are living in the liminal space between fiction and reality. The technology we imagined in science fiction is becoming indistinguishable from the world we inhabit.</p>
+    <p>Star Trek communicators became iPhones. HAL became the voice in the room. Self-driving cars, AI glasses, humanoid robots: we are building the Star Trek future, and we barely notice, because we dreamed it first. Dream Screens lives in that space deliberately.</p>
+    <p>The conceit of the project is a company called DreamScreens offering neural memory reconstruction as a service. The science behind it is real: EEG-to-image generation (DreamDiffusion, ECCV 2024) exists. The gap between that research paper and the product you encounter in the experience is thinner than it should be.</p>
+    <p>The question Dream Screens asks is not could this happen but what does it mean that it already is. The ambiguity is not a design choice. It is the subject.</p>
+  </section>
+
+  <section>
+    <h2>The narrative</h2>
+    <p>The experience follows a semi-autobiographical protagonist using the DreamScreens service to recover memories of his mother. A liminal train journey. Footage that has been through the machine and come back different. Sound that moves underneath the image on its own time.</p>
+    <p>The system logs its own activity. Fragments of text surface over the image. An organism pulses at the start and returns at the end, warmer, fuller, as if it has absorbed something. The classified screen appears briefly. The subject will not be notified.</p>
+    <p>The tone is ambiguous throughout. Not dystopian propaganda. Something more uncomfortable: a product that is genuinely useful and genuinely unsettling at the same time. Like most technology we already use.</p>
+
+    <blockquote>
+      <p>"The glitch is not a failure. It is the invitation."</p>
+    </blockquote>
+  </section>
+
+  <section>
+    <h2>The archive</h2>
+    <p>The full Dream Screens archive is ten experiences. Each is an immersive journey through a distinct subliminal narrative. Currently available sessions and those in preparation:</p>
+
+    <div class="tracklist">
+      <div class="track"><span class="num">01</span><span class="title">Signal Dreams</span><span class="status">available</span></div>
+      <div class="track"><span class="num">02</span><span class="title">Feedback Memory</span><span class="status">available</span></div>
+      <div class="track"><span class="num">03</span><span class="title">Nature Module</span><span class="status">available</span></div>
+      <div class="track"><span class="num">04</span><span class="title">Brainwaves</span><span class="status">available</span></div>
+      <div class="track"><span class="num">05</span><span class="title">Module N5</span><span class="status">available</span></div>
+      <div class="track"><span class="num">06</span><span class="title">Co-Dreaming</span><span class="status soon">in preparation</span></div>
+      <div class="track"><span class="num">07</span><span class="title">Free Will</span><span class="status soon">in preparation</span></div>
+      <div class="track"><span class="num">08</span><span class="title">Glitches Are Portals</span><span class="status soon">in preparation</span></div>
+      <div class="track"><span class="num">09</span><span class="title">The Dream Ends</span><span class="status soon">in preparation</span></div>
+      <div class="track"><span class="num">10</span><span class="title">Virta</span><span class="status soon">in preparation</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>How it grows</h2>
+    <p>The browser experience is the seed. Dream Screens is designed from the beginning to expand across formats, each deepening the world rather than simply adapting the content.</p>
+
+    <div class="formats">
+      <div class="format-row">
+        <div class="format-key">Web archive</div>
+        <div class="format-val">Ten complete audiovisual sessions accessible globally. No friction beyond a browser and headphones.</div>
+      </div>
+      <div class="format-row">
+        <div class="format-key">Live performance</div>
+        <div class="format-val">Real-time generative visuals driven by modular synthesiser and Osmose. Projection environments, dark rooms, festival contexts. Contained improvisation within defined parameters.</div>
+      </div>
+      <div class="format-row">
+        <div class="format-key">Gallery installation</div>
+        <div class="format-val">Site-specific. Visitors enter individually. Duration open. Each session generates a unique reconstruction from the shared archive.</div>
+      </div>
+      <div class="format-row">
+        <div class="format-key">Full event</div>
+        <div class="format-val">Multi-room immersive experience structured as the DreamScreens facility. Each room is one archive session. Architecture, sound, light, and interaction as a single composition.</div>
+      </div>
+      <div class="format-row">
+        <div class="format-key">Long-form narrative</div>
+        <div class="format-val">The DreamScreens company as a fully realised fictional world extended into film or serial format.</div>
+      </div>
+      <div class="format-row">
+        <div class="format-key">Album release</div>
+        <div class="format-val">A defined concept album with the browser experience as its primary format. Physical release as a companion artefact.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The technology</h2>
+    <p>The current prototype runs in any modern browser. A WebGL shader pipeline renders the generative visual system in real time. Source footage is processed through fragment shaders: noise fields resolving into image, chromatic drift, luma-threshold reveals. The visual result is not the original footage. It is footage as the system remembered it.</p>
+    <p>Music is delivered via the Web Audio API with 30-second crossfades. The acoustic and visual layers are loosely coupled, each finding its own temporal resolution. The whole system deploys on Vercel with media on Cloudflare R2: global, zero-friction, scales to any audience.</p>
+    <p>The aesthetic premise mirrors the subject matter. The machine does not reproduce memories cleanly. It reconstructs them from partial signal, with displacement and distortion built into the process. What you see is always an approximation, haunted by its own generation.</p>
+  </section>
+
+  <section>
+    <h2>The collaboration</h2>
+    <p class="lead">The music exists. The visual language exists. The narrative exists. The technology works. What Dream Screens needs now is a collaborator who understands how these things converge.</p>
+    <p>This is a project for someone who works at the intersection of music, film, and interactive experience. Who sees the album not as a container for songs but as a format that is still being invented. Who understands that the most interesting cultural objects right now are the ones that refuse to sit still in a single category.</p>
+    <p>The conversation is open. It could lead to a production partnership, a label home, a commission, a co-development arrangement, or simply the next conversation. The project is early enough that its shape is still available to be influenced by the right collaborator.</p>
+  </section>
+
+  <hr>
+
+  <!-- Link to research paper -->
+  <a class="research-link" href="whitepaper.html" target="_blank">
+    <div class="rl-left">
+      <div class="rl-label">Also available</div>
+      <div class="rl-title">DreamScreens Neural Lab — Research Overview</div>
+      <div class="rl-sub">DS-NL-2026-04 &nbsp;/&nbsp; Restricted circulation &nbsp;/&nbsp; Neural embedding and memory retrieval</div>
+    </div>
+    <div class="rl-arrow">→</div>
+  </a>
+
+  <div class="doc-footer">
+    <div class="left">
+      Giles Lamb<br>
+      dreamscreens.io<br>
+      2026
+    </div>
+    <a class="back" href="index.html">return to experience</a>
+  </div>
+
+</div>
+</body>
+</html>

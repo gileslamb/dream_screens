@@ -123,6 +123,32 @@
     color: var(--muted);
     opacity: 0.4;
   }
+  #s0 .stage0-links {
+    position: fixed;
+    bottom: 4vh;
+    left: 4vw;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+  }
+  #s0 .stage0-links.visible {
+    opacity: 1;
+  }
+  #s0 .stage0-links a {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.18);
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+  #s0 .stage0-links a:hover {
+    color: rgba(255,255,255,0.5);
+  }
 
   /* ── STAGE 1: System log / wave ── */
   #s1 {
@@ -251,6 +277,33 @@
   #s6 .archive-header.visible {
     opacity: 0.25;
   }
+  #s6 .archive-framing-1 {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-style: italic;
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+  #s6 .archive-framing-1.visible {
+    opacity: 0.35;
+  }
+  #s6 .archive-framing-2 {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    margin-bottom: 3rem;
+    text-align: center;
+  }
+  #s6 .archive-framing-2.visible {
+    opacity: 0.18;
+  }
   #s6 .archive-list {
     text-align: center;
   }
@@ -317,6 +370,23 @@
   }
   #s6 .archive-byline.visible {
     opacity: 0.12;
+  }
+  #s6 .archive-whitepaper {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: rgba(255,255,255,0.2);
+    text-decoration: none;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    margin-top: 1.5rem;
+    text-align: center;
+  }
+  #s6 .archive-whitepaper.visible {
+    opacity: 0.2;
+  }
+  #s6 .archive-whitepaper:hover {
+    opacity: 0.5;
   }
 
   /* ── Progress indicator (7 dots) ── */
@@ -416,6 +486,10 @@
   <div class="body-copy">Neural memory reconstruction — v4.1</div>
   <button class="enter-btn" onclick="onEnter()" aria-label="Enter">→</button>
   <div class="session-id">Session ID: <span id="sessionId"></span></div>
+  <div class="stage0-links" id="stage0Links">
+    <a href="proposal.html" target="_blank">artistic proposition →</a>
+    <a href="whitepaper.html" target="_blank">research overview →</a>
+  </div>
 </div>
 
 <!-- STAGE 1: System log / wave -->
@@ -456,9 +530,12 @@
 <!-- STAGE 6: Coming Soon / Archive -->
 <div class="screen" id="s6">
   <div class="archive-header" id="archive-header">DREAM SCREENS — ARCHIVE</div>
+  <div class="archive-framing-1" id="archiveFraming1">A new way to experience the album concept.</div>
+  <div class="archive-framing-2" id="archiveFraming2">Each archive is an immersive journey through a subliminal narrative.</div>
   <div class="archive-list" id="archiveList"></div>
   <div class="archive-tagline" id="archiveTagline">Each archive is an immersive journey through a subliminal narrative.</div>
   <div class="archive-byline" id="archiveByline">dreamscreens.io</div>
+  <a href="whitepaper.html" target="_blank" class="archive-whitepaper" id="archiveWhitepaper">read the concept document →</a>
 </div>
 
 <video id="vid1" style="display:none" loop muted playsinline crossorigin="anonymous"></video>
@@ -1031,16 +1108,19 @@ function showArchiveOverlay() {
   const list = document.getElementById('archiveList');
   list.innerHTML = '';
   setTimeout(() => document.getElementById('archive-header').classList.add('visible'), 0);
+  setTimeout(() => document.getElementById('archiveFraming1').classList.add('visible'), 500);
+  setTimeout(() => document.getElementById('archiveFraming2').classList.add('visible'), 1000);
   ARCHIVE_TRACKS.forEach((t, i) => {
     const el = document.createElement('div');
     el.className = 'archive-line' + (t.status === 'available' ? ' available' : ' soon');
     el.innerHTML = '<span class="idx">' + t.idx + '</span> · <span class="title">' + t.title + '</span> · <span class="status">' + t.status + '</span>';
     list.appendChild(el);
-    setTimeout(() => el.classList.add('visible'), 1000 + 500 * i);
+    setTimeout(() => el.classList.add('visible'), 2000 + 500 * i);
   });
-  const lastTrackTime = 1000 + 500 * (ARCHIVE_TRACKS.length - 1);
+  const lastTrackTime = 2000 + 500 * (ARCHIVE_TRACKS.length - 1);
   setTimeout(() => document.getElementById('archiveTagline').classList.add('visible'), lastTrackTime + 3000);
   setTimeout(() => document.getElementById('archiveByline').classList.add('visible'), lastTrackTime + 5000);
+  setTimeout(() => document.getElementById('archiveWhitepaper').classList.add('visible'), lastTrackTime + 6000);
 }
 
 const FRAGS = [
@@ -1082,6 +1162,7 @@ function enterVideoStage(stageNum, onAdvance) {
 
 function onEnter() {
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  document.getElementById('stage0Links').classList.remove('visible');
   document.getElementById('s0').classList.remove('active');
   glStageTarget = 1.0;
   showStage(1);
@@ -1192,12 +1273,19 @@ function resetExperience() {
   document.getElementById('s5').querySelector('.end-msg').classList.remove('show');
   document.getElementById('archiveList').innerHTML = '';
   document.getElementById('archive-header').classList.remove('visible');
+  document.getElementById('archiveFraming1').classList.remove('visible');
+  document.getElementById('archiveFraming2').classList.remove('visible');
   document.getElementById('archiveTagline').classList.remove('visible');
   document.getElementById('archiveByline').classList.remove('visible');
+  document.getElementById('archiveWhitepaper').classList.remove('visible');
+  document.getElementById('stage0Links').classList.remove('visible');
   document.getElementById('sessionId').textContent =
     'DS-' + Math.random().toString(36).substring(2,7).toUpperCase();
   showStage(0);
+  setTimeout(() => document.getElementById('stage0Links').classList.add('visible'), 3000);
 }
+
+setTimeout(() => document.getElementById('stage0Links').classList.add('visible'), 3000);
 </script>
 </body>
 </html>
