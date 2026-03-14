@@ -228,6 +228,91 @@
   }
   #s5 .restart:hover { color: var(--green); }
 
+  /* ── STAGE 6: Coming Soon / Archive ── */
+  #s6 {
+    background: #000;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 0;
+  }
+  #s6 .archive-header {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    color: #fff;
+    opacity: 0.3;
+    margin-top: 15vh;
+    text-align: center;
+  }
+  #s6 .archive-list {
+    margin-top: 8vh;
+    text-align: center;
+  }
+  #s6 .archive-line {
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 2.2;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  #s6 .archive-line.visible {
+    opacity: 1;
+    transform: none;
+  }
+  #s6 .archive-line .idx {
+    opacity: 0.2;
+    color: #fff;
+  }
+  #s6 .archive-line.available .title {
+    opacity: 0.7;
+    color: #fff;
+  }
+  #s6 .archive-line.coming-soon .title {
+    opacity: 0.2;
+    color: #fff;
+  }
+  #s6 .archive-line .status {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    opacity: 0.2;
+  }
+  #s6 .archive-line.available .status {
+    color: #00ff88;
+    opacity: 0.4;
+  }
+  #s6 .archive-line.coming-soon .status {
+    color: #fff;
+    opacity: 0.15;
+  }
+  #s6 .archive-tagline {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-style: italic;
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    margin-top: 6vh;
+    text-align: center;
+  }
+  #s6 .archive-tagline.visible {
+    opacity: 0.25;
+  }
+  #s6 .archive-byline {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    margin-top: 2rem;
+    text-align: center;
+  }
+  #s6 .archive-byline.visible {
+    opacity: 0.15;
+  }
+
   /* ── Progress indicator (7 dots) ── */
   #progress {
     position: fixed;
@@ -362,6 +447,14 @@
   </div>
 </div>
 
+<!-- STAGE 6: Coming Soon / Archive -->
+<div class="screen" id="s6">
+  <div class="archive-header">DREAM SCREENS — ARCHIVE</div>
+  <div class="archive-list" id="archiveList"></div>
+  <div class="archive-tagline" id="archiveTagline">Each archive is an immersive journey.</div>
+  <div class="archive-byline" id="archiveByline">dreamscreens.io — 2026</div>
+</div>
+
 <video id="vid1" style="display:none" loop muted playsinline crossorigin="anonymous"></video>
 <video id="vid2" style="display:none" loop muted playsinline crossorigin="anonymous"></video>
 <video id="vid3" style="display:none" loop muted playsinline crossorigin="anonymous"></video>
@@ -384,8 +477,8 @@ const CONFIG = {
     stage1: 'Media/mp3/Signal Dreams.mp3',
     stage2: 'Media/mp3/Feedback Memory.(Minus 197).mp3',
     stage3: 'Media/mp3/Nature module 1.mp3',
-    stage4: 'Media/mp3/Feedback Memory.(Minus 197).mp3',
-    stage5: 'Media/mp3/Brainwaves (grain Pysche).mp3'
+    stage4: 'Media/mp3/Brainwaves (grain Pysche).mp3',
+    stage5: 'Media/mp3/The Dream Architect.mp3'
   },
   timing: {
     stage1Duration: 18000,
@@ -768,6 +861,12 @@ function stopAudio() {
   }
 }
 
+function fadeAudioOver60s() {
+  if (currentGain) {
+    currentGain.gain.setTargetAtTime(0, audioCtx.currentTime, 20.0);
+  }
+}
+
 function staticBurst(dur) {
   const bufSize = audioCtx.sampleRate * (dur / 1000);
   const b = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
@@ -867,6 +966,38 @@ function runLogLines(callback) {
   });
 }
 
+const ARCHIVE_TRACKS = [
+  { idx: '01', title: 'Signal Dreams', status: 'available now' },
+  { idx: '02', title: 'Feedback Memory', status: 'available now' },
+  { idx: '03', title: 'Nature Module', status: 'available now' },
+  { idx: '04', title: 'Brainwaves', status: 'available now' },
+  { idx: '05', title: 'The Dream Architect', status: 'available now' },
+  { idx: '06', title: 'Co-Dreaming', status: 'coming soon' },
+  { idx: '07', title: 'Free Will', status: 'coming soon' },
+  { idx: '08', title: 'Glitches Are Portals', status: 'coming soon' },
+  { idx: '09', title: 'The Dream Ends', status: 'coming soon' },
+  { idx: '10', title: 'Virta', status: 'coming soon' }
+];
+
+function showComingSoon() {
+  playTrack(CONFIG.media(CONFIG.music.stage4));
+  fadeAudioOver60s();
+  document.getElementById('progress').classList.remove('visible');
+  currentStage = 6;
+  document.getElementById('s6').classList.add('active');
+  const list = document.getElementById('archiveList');
+  list.innerHTML = '';
+  ARCHIVE_TRACKS.forEach((t, i) => {
+    const el = document.createElement('div');
+    el.className = 'archive-line' + (t.status === 'available now' ? ' available' : ' coming-soon');
+    el.innerHTML = '<span class="idx">' + t.idx + '</span> — <span class="title">' + t.title + '</span> — <span class="status">' + t.status + '</span>';
+    list.appendChild(el);
+    setTimeout(() => el.classList.add('visible'), 600 * (i + 1));
+  });
+  setTimeout(() => document.getElementById('archiveTagline').classList.add('visible'), 600 * ARCHIVE_TRACKS.length + 2000);
+  setTimeout(() => document.getElementById('archiveByline').classList.add('visible'), 600 * ARCHIVE_TRACKS.length + 4000);
+}
+
 const FRAGS = [
   { text: 'The train moved and she was watching the cables. The way they rose and fell like breathing. He didn\'t want to look away.', attr: 'Memory fragment · REM cycle 3 · confidence: 61%' },
   { text: 'Not a playlist. Not a video. An experience that reshapes itself to fit the version of you that\'s watching it.', attr: 'Source: archived transmission · DreamScreens internal' },
@@ -958,7 +1089,11 @@ function onEnter() {
                     playTrack(CONFIG.media(CONFIG.music.stage5));
                     stageTimer = setTimeout(() => {
                       document.getElementById('s5').querySelector('.end-msg').classList.add('show');
-                      stageTimer = setTimeout(() => stopAudio(), 5000);
+                      stageTimer = setTimeout(() => {
+                        document.getElementById('s5').classList.remove('active');
+                        document.getElementById('s5').querySelector('.end-msg').classList.remove('show');
+                        showComingSoon();
+                      }, 4000);
                     }, CONFIG.timing.stage5OrgDuration);
                   }, CONFIG.timing.transitionMs);
                 });
@@ -989,10 +1124,13 @@ function resetExperience() {
   glOrgOpacity = 1.0;
   glOrgGhost = 0.0;
   document.getElementById('progress').classList.remove('visible');
-  ['s1','s2','s3','s4','s5'].forEach(id => document.getElementById(id).classList.remove('active'));
+  ['s1','s2','s3','s4','s5','s6'].forEach(id => document.getElementById(id).classList.remove('active'));
   document.getElementById('s0').classList.add('active');
   document.getElementById('logContainer').innerHTML = '';
   document.getElementById('s5').querySelector('.end-msg').classList.remove('show');
+  document.getElementById('archiveList').innerHTML = '';
+  document.getElementById('archiveTagline').classList.remove('visible');
+  document.getElementById('archiveByline').classList.remove('visible');
   document.getElementById('sessionId').textContent =
     'DS-' + Math.random().toString(36).substring(2,7).toUpperCase();
   showStage(0);
