@@ -460,6 +460,7 @@
     to { opacity: 1; transform: none; }
   }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
 
@@ -538,9 +539,9 @@
   <a href="whitepaper.html" target="_blank" class="archive-whitepaper" id="archiveWhitepaper">read the concept document →</a>
 </div>
 
-<video id="vid1" style="display:none" loop muted playsinline preload="auto"></video>
-<video id="vid2" style="display:none" loop muted playsinline preload="auto"></video>
-<video id="vid3" style="display:none" loop muted playsinline preload="auto"></video>
+<video id="vid1" style="display:none" crossorigin="anonymous" loop muted playsinline></video>
+<video id="vid2" style="display:none" crossorigin="anonymous" loop muted playsinline></video>
+<video id="vid3" style="display:none" crossorigin="anonymous" loop muted playsinline></video>
 
 <script>
 // ════════════════════════════════════════
@@ -551,9 +552,9 @@ const CONFIG = {
   mediaBaseUrl: '',
   media(path) { return this.mediaBaseUrl + path; },
   videos: [
-    'Media/Movies/White Matter 2.mp4',
-    'Media/Movies/Shimmering Thirds.mp4',
-    'Media/Movies/Movement TWO.mp4'
+    'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/549eac904e2844e21538beff41f2d1b7/manifest/video.m3u8',
+    'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/57a1a6e1249258c1b2a9f0e64111333d/manifest/video.m3u8',
+    'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/aedc5ba75b991b5b687f45f8db3b1da9/manifest/video.m3u8',
   ],
   videoSeek: 30,
   music: {
@@ -838,6 +839,16 @@ const tex1 = createVideoTexture();
 const tex2 = createVideoTexture();
 const tex3 = createVideoTexture();
 
+function loadHLS(videoEl, url) {
+  if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+    videoEl.src = url;
+  } else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+    const hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 60 });
+    hls.loadSource(url);
+    hls.attachMedia(videoEl);
+  }
+}
+
 function shuffleVideos() {
   const arr = [...CONFIG.videos];
   for (let i = arr.length - 1; i > 0; i--) {
@@ -847,13 +858,13 @@ function shuffleVideos() {
   return arr;
 }
 
-let currentVideoOrder = shuffleVideos();
+let activeVideos = shuffleVideos();
 const vid1 = document.getElementById('vid1');
 const vid2 = document.getElementById('vid2');
 const vid3 = document.getElementById('vid3');
-vid1.src = CONFIG.media(currentVideoOrder[0]);
-vid2.src = CONFIG.media(currentVideoOrder[1]);
-vid3.src = CONFIG.media(currentVideoOrder[2]);
+loadHLS(vid1, activeVideos[0]);
+loadHLS(vid2, activeVideos[1]);
+loadHLS(vid3, activeVideos[2]);
 
 let videosReady = 0;
 function onVideoReady() {
@@ -1250,10 +1261,10 @@ function resetExperience() {
   stopAudio();
   virtaStarted = false;
   videosReady = 0;
-  currentVideoOrder = shuffleVideos();
-  vid1.src = CONFIG.media(currentVideoOrder[0]);
-  vid2.src = CONFIG.media(currentVideoOrder[1]);
-  vid3.src = CONFIG.media(currentVideoOrder[2]);
+  activeVideos = shuffleVideos();
+  loadHLS(vid1, activeVideos[0]);
+  loadHLS(vid2, activeVideos[1]);
+  loadHLS(vid3, activeVideos[2]);
   vid1.pause(); vid1.currentTime = CONFIG.videoSeek;
   vid2.pause(); vid2.currentTime = CONFIG.videoSeek;
   vid3.pause(); vid3.currentTime = CONFIG.videoSeek;
