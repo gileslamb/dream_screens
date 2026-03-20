@@ -572,6 +572,12 @@
 
 <script>
 // ════════════════════════════════════════
+// DETECTION
+// ════════════════════════════════════════
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+// ════════════════════════════════════════
 // CONFIG
 // ════════════════════════════════════════
 const CONFIG = {
@@ -889,9 +895,11 @@ let activeVideos = shuffleVideos();
 const vid1 = document.getElementById('vid1');
 const vid2 = document.getElementById('vid2');
 const vid3 = document.getElementById('vid3');
-loadHLS(vid1, activeVideos[0]);
-loadHLS(vid2, activeVideos[1]);
-loadHLS(vid3, activeVideos[2]);
+if (!isIOS) {
+  loadHLS(vid1, activeVideos[0]);
+  loadHLS(vid2, activeVideos[1]);
+  loadHLS(vid3, activeVideos[2]);
+}
 
 let videosReady = 0;
 function onVideoReady() {
@@ -1087,8 +1095,11 @@ function startVirta() {
   virtaStarted = true;
   playTrack(CONFIG.media(CONFIG.music.intro));
 }
-document.addEventListener('touchstart', startVirta, { once: true });
-document.addEventListener('mousemove', startVirta, { once: true });
+if (isIOS) {
+  document.addEventListener('touchstart', startVirta, { once: true });
+} else {
+  document.addEventListener('mousemove', startVirta, { once: true });
+}
 
 function pulseOrganism() {
   if (currentStage < 2 || currentStage > 4) return;
@@ -1138,6 +1149,7 @@ const LOG_LINES = [
   { ts:'00:00:11', cls:'warn', text:'[WARN] Memory trace degraded — confidence: 61%' },
   { ts:'00:00:13', cls:'', text:'Attempting reconstruction from partial signal...' },
   { ts:'00:00:16', cls:'ok', text:'[OK] Fragment recovered — rendering...' },
+  ...(isIOS ? [{ ts:'00:00:18', cls:'warn', text:'[NOTE] visual rendering limited on this device' }] : []),
 ];
 
 function runLogLines(callback) {
@@ -1260,36 +1272,36 @@ function onEnter() {
         staticBurst(200);
         glStageTarget = 2.0;
         glBlend = 0.0;
-        glBlendTarget = 1.0;
+        glBlendTarget = isIOS ? 0.3 : 1.0;
         showStage(2);
         playTrack(CONFIG.media(CONFIG.music.stage2));
         showFrag(2, 0);
         const dwell = 5000;
         for (let i = 1; i <= 5; i++) setTimeout(() => showFrag(2, i), dwell * i);
         enterVideoStage(2, () => {
-          glBlendTarget = 1.0;
+          glBlendTarget = isIOS ? 0.3 : 1.0;
           stageTimer = setTimeout(() => {
             staticBurst(200);
             glStageTarget = 3.0;
             glBlend = 0.0;
-            glBlendTarget = 1.0;
+            glBlendTarget = isIOS ? 0.3 : 1.0;
             showStage(3);
             playTrack(CONFIG.media(CONFIG.music.stage3));
             showFrag(3, 0);
             for (let i = 1; i <= 5; i++) setTimeout(() => showFrag(3, i), dwell * i);
             enterVideoStage(3, () => {
-              glBlendTarget = 1.0;
+              glBlendTarget = isIOS ? 0.3 : 1.0;
               stageTimer = setTimeout(() => {
                 staticBurst(200);
                 glStageTarget = 4.0;
                 glBlend = 0.0;
-                glBlendTarget = 1.0;
+                glBlendTarget = isIOS ? 0.3 : 1.0;
                 showStage(4);
                 playTrack(CONFIG.media(CONFIG.music.stage4));
                 showFrag(4, 0);
                 for (let i = 1; i <= 5; i++) setTimeout(() => showFrag(4, i), dwell * i);
                 enterVideoStage(4, () => {
-                  glBlendTarget = 1.0;
+                  glBlendTarget = isIOS ? 0.3 : 1.0;
                   stageTimer = setTimeout(() => {
                     staticBurst(200);
                     glStageTarget = 5.0;
@@ -1323,9 +1335,11 @@ function resetExperience() {
   virtaStarted = false;
   videosReady = 0;
   activeVideos = shuffleVideos();
-  loadHLS(vid1, activeVideos[0]);
-  loadHLS(vid2, activeVideos[1]);
-  loadHLS(vid3, activeVideos[2]);
+  if (!isIOS) {
+    loadHLS(vid1, activeVideos[0]);
+    loadHLS(vid2, activeVideos[1]);
+    loadHLS(vid3, activeVideos[2]);
+  }
   vid1.pause(); vid1.currentTime = CONFIG.videoSeek;
   vid2.pause(); vid2.currentTime = CONFIG.videoSeek;
   vid3.pause(); vid3.currentTime = CONFIG.videoSeek;
