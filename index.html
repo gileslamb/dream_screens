@@ -972,24 +972,51 @@ renderGL();
 // ════════════════════════════════════════
 // AUDIO
 // ════════════════════════════════════════
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let audioCtx = null;
+
+function getCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+function unlockAudio() {
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  } else if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx.resume();
+  }
+  document.removeEventListener('touchstart', unlockAudio);
+  document.removeEventListener('touchend', unlockAudio);
+  document.removeEventListener('click', unlockAudio);
+}
+document.addEventListener('touchstart', unlockAudio, { once: true });
+document.addEventListener('touchend', unlockAudio, { once: true });
+document.addEventListener('click', unlockAudio, { once: true });
+
 let currentGain = null;
 let currentBuffer = null;
 
 async function playTrack(path, opts) {
+  const ctx = getCtx();
+  if (ctx.state === 'suspended') await ctx.resume();
   const fadeInTC = (opts && opts.fadeInTimeConstant) || 10.0;
   try {
-    if (audioCtx.state === 'suspended') await audioCtx.resume();
     const res = await fetch(path);
-    const buf = await audioCtx.decodeAudioData(await res.arrayBuffer());
-    const src = audioCtx.createBufferSource();
+    const buf = await ctx.decodeAudioData(await res.arrayBuffer());
+    const src = ctx.createBufferSource();
     src.buffer = buf;
     src.loop = true;
-    const gain = audioCtx.createGain();
-    const now = audioCtx.currentTime;
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
     gain.gain.setValueAtTime(0, now);
     src.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(ctx.destination);
     src.start(0);
     if (currentGain) {
       currentGain.gain.setTargetAtTime(0, now, 10.0);
@@ -1006,7 +1033,8 @@ async function playTrack(path, opts) {
 
 function stopAudio() {
   if (currentGain) {
-    currentGain.gain.setTargetAtTime(0, audioCtx.currentTime, 10.0);
+    const ctx = getCtx();
+    currentGain.gain.setTargetAtTime(0, ctx.currentTime, 10.0);
     const s = currentBuffer;
     setTimeout(() => {
       try { if (s) s.stop(); } catch(e){}
@@ -1018,36 +1046,39 @@ function stopAudio() {
 
 function fadeAudioOver60s() {
   if (currentGain) {
-    currentGain.gain.setTargetAtTime(0, audioCtx.currentTime, 20.0);
+    const ctx = getCtx();
+    currentGain.gain.setTargetAtTime(0, ctx.currentTime, 20.0);
   }
 }
 
 function staticBurst(dur) {
-  const bufSize = audioCtx.sampleRate * (dur / 1000);
-  const b = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+  const ctx = getCtx();
+  const bufSize = ctx.sampleRate * (dur / 1000);
+  const b = ctx.createBuffer(1, bufSize, ctx.sampleRate);
   const d = b.getChannelData(0);
   for (let i = 0; i < bufSize; i++) d[i] = (Math.random() * 2 - 1) * 0.3;
-  const src = audioCtx.createBufferSource();
+  const src = ctx.createBufferSource();
   src.buffer = b;
-  const gain = audioCtx.createGain();
-  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur / 1000);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.3, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur / 1000);
   src.connect(gain);
-  gain.connect(audioCtx.destination);
+  gain.connect(ctx.destination);
   src.start(0);
 }
 
 function beep(freq, dur) {
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
+  const ctx = getCtx();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
   osc.frequency.value = freq;
   osc.type = 'square';
-  gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur / 1000);
+  gain.gain.setValueAtTime(0.1, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur / 1000);
   osc.connect(gain);
-  gain.connect(audioCtx.destination);
+  gain.connect(ctx.destination);
   osc.start(0);
-  osc.stop(audioCtx.currentTime + dur / 1000);
+  osc.stop(ctx.currentTime + dur / 1000);
 }
 
 let virtaStarted = false;
@@ -1056,6 +1087,7 @@ function startVirta() {
   virtaStarted = true;
   playTrack(CONFIG.media(CONFIG.music.intro));
 }
+document.addEventListener('touchstart', startVirta, { once: true });
 document.addEventListener('mousemove', startVirta, { once: true });
 
 function pulseOrganism() {
@@ -1181,7 +1213,8 @@ function showFrag(stageNum, idx) {
 let videoStageFallbackTimer = null;
 
 function enterVideoStage(stageNum, onAdvance) {
-  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  const ctx = getCtx();
+  if (ctx.state === 'suspended') ctx.resume();
   [vid1, vid2, vid3].forEach(v => { if (v.readyState >= 2) v.play().catch(()=>{}); });
   if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
   const nextPrompt = document.getElementById('next-prompt');
@@ -1200,7 +1233,8 @@ function enterVideoStage(stageNum, onAdvance) {
 }
 
 function onEnter() {
-  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  const ctx = getCtx();
+  if (ctx.state === 'suspended') ctx.resume();
   document.getElementById('stage0Links').classList.remove('visible');
   document.getElementById('s0').classList.remove('active');
   glStageTarget = 1.0;
