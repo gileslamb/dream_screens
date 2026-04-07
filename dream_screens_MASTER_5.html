@@ -714,10 +714,10 @@
   /* ── HOME NAV ── */
   #home-nav {
     position: fixed;
-    top: 4vh; left: 0; right: 0;
+    top: 3vh; left: 0; right: 0;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     padding: 0 4vw;
     z-index: 30;
     opacity: 0;
@@ -725,26 +725,98 @@
     transition: opacity 1s ease;
   }
   #home-nav.vis { opacity: 1; pointer-events: all; }
+  .hn-left {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
   .hn-logo { display: flex; align-items: center; gap: 12px; }
-  .hn-logo svg { width: 28px; height: 28px; }
+  .hn-logo svg { width: 30px; height: 30px; }
   .hn-logo-name {
     font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.45em;
+    font-size: 11px;
+    letter-spacing: 0.4em;
     text-transform: uppercase;
-    color: rgba(255,255,255,0.45);
+    color: rgba(255,255,255,0.65);
   }
-  .hn-links { display: flex; gap: 2.5rem; }
+  .hn-links {
+    display: flex;
+    gap: 2.5rem;
+    padding-top: 6px;
+  }
   .hn-links a {
     font-family: var(--mono);
     font-size: 9px;
     letter-spacing: 0.3em;
     text-transform: uppercase;
-    color: rgba(255,255,255,0.22);
+    color: rgba(255,255,255,0.38);
     text-decoration: none;
     transition: color 0.2s;
   }
-  .hn-links a:hover { color: rgba(255,255,255,0.55); }
+  .hn-links a:hover { color: rgba(255,255,255,0.75); }
+  /* ── SKIP ONBOARDING — sits below logo inside .hn-left ── */
+  #skip-btn {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(240,208,128,0.55);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: color 0.2s;
+    text-align: left;
+  }
+  #skip-btn:hover { color: rgba(240,208,128,0.9); }
+
+  /* ── ARCHIVE PANEL (s6 only) ── */
+  #s6 .archive-panel {
+    background: rgba(2,8,9,0.82);
+    border: 1px solid rgba(255,255,255,0.07);
+    padding: 4vh 4vw;
+    max-width: 740px;
+    width: 90vw;
+    pointer-events: all;
+  }
+  #s6 .archive-line.available { cursor: pointer; pointer-events: all; }
+  #s6 .archive-line.available:hover { background: rgba(255,255,255,0.05); }
+  #s6 .archive-line.available:hover .title { color: #fff !important; opacity: 1 !important; }
+  #s6 .archive-hint {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.25em;
+    color: rgba(255,255,255,0.18); text-align: center;
+    margin-top: 1.5rem; opacity: 0; transition: opacity 0.8s ease;
+  }
+  #s6 .archive-hint.visible { opacity: 1; }
+
+  /* ── PROTOCOL PLAYER ── */
+  #protocol-player {
+    position: fixed; inset: 0; z-index: 25;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 0;
+    opacity: 0; pointer-events: none; transition: opacity 1s ease;
+  }
+  #protocol-player.vis { opacity: 1; pointer-events: all; }
+  #protocol-player.gone { opacity: 0; pointer-events: none; }
+  #pp-title {
+    font-family: var(--sans); font-size: clamp(18px, 2.8vw, 34px);
+    font-weight: 300; letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.0);
+    margin-top: 2rem;
+    opacity: 0;
+    transition: opacity 4s ease;
+  }
+  #pp-title.vis { opacity: 1; color: rgba(255,255,255,0.75); }
+  #pp-stop {
+    position: fixed; bottom: 5vh; left: 50%; transform: translateX(-50%);
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.28em;
+    text-transform: uppercase; color: rgba(255,255,255,0.18);
+    background: none; border: 1px solid rgba(255,255,255,0.08);
+    padding: 9px 22px; cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    opacity: 0; animation: fadeUp 1s ease 5s forwards;
+  }
+  #pp-stop:hover { color: rgba(255,255,255,0.55); border-color: rgba(255,255,255,0.3); }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
@@ -802,18 +874,21 @@
 
 <!-- ════ HOME NAV ════ -->
 <div id="home-nav">
-  <div class="hn-logo">
-    <svg viewBox="0 0 44 44" fill="none">
-      <defs>
-        <linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#999" stop-opacity="0.5"/>
-          <stop offset="100%" stop-color="#bbb" stop-opacity="0.3"/>
-        </linearGradient>
-      </defs>
-      <circle cx="20" cy="20" r="13" stroke="url(#lg)" stroke-width="1.5" fill="none"/>
-      <line x1="30" y1="30" x2="37" y2="37" stroke="url(#lg)" stroke-width="1.5" stroke-linecap="round"/>
-    </svg>
-    <span class="hn-logo-name">DreamScreens</span>
+  <div class="hn-left">
+    <div class="hn-logo">
+      <svg viewBox="0 0 44 44" fill="none">
+        <defs>
+          <linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#bbb" stop-opacity="0.7"/>
+            <stop offset="100%" stop-color="#888" stop-opacity="0.5"/>
+          </linearGradient>
+        </defs>
+        <circle cx="20" cy="20" r="13" stroke="url(#lg)" stroke-width="1.5" fill="none"/>
+        <line x1="30" y1="30" x2="37" y2="37" stroke="url(#lg)" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="hn-logo-name">DreamScreens</span>
+    </div>
+    <button id="skip-btn" onclick="skipToProtocols()">Skip to Experience Protocols →</button>
   </div>
   <nav class="hn-links">
     <a href="#">Analyses</a>
@@ -827,6 +902,11 @@
 <div id="scanlines"></div>
 <canvas id="noise"></canvas>
 <canvas id="gl"></canvas>
+
+<div id="protocol-player">
+  <div id="pp-title"></div>
+  <button id="pp-stop" onclick="stopProtocol()">Return to protocols ↩</button>
+</div>
 
 <div id="progress">
   <div class="dot" id="d0"></div>
@@ -844,7 +924,7 @@
 <div class="screen" id="s0">
   <div class="s0-bottom">
     <div class="wordmark">DS-NL · Neural Reconstruction Lab · v4.1</div>
-    <button class="enter-btn" onclick="onEnter()" aria-label="Enter onboarding">
+    <button class="enter-btn" onclick="void onEnter()" aria-label="Enter onboarding">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
         <path d="M5 12h14M13 6l6 6-6 6" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
@@ -895,16 +975,17 @@
 
 <!-- STAGE 6: Archive / Analysis Protocols -->
 <div class="screen" id="s6">
-  <div class="archive-header" id="archive-header">DREAMSCREENS — AVAILABLE ANALYSIS PROTOCOLS</div>
-  <div class="archive-framing-1" id="archiveFraming1">Each protocol is a complete neural reconstruction sequence.</div>
-  <div class="archive-framing-2" id="archiveFraming2">Select an analysis to begin dream reconstruction · DS-NL-2026</div>
-  <div class="archive-list" id="archiveList"></div>
-  <div class="archive-tagline" id="archiveTagline">Return to a moment you thought was lost.</div>
-  <div class="archive-byline" id="archiveByline">dreamscreens.io · Neural Reconstruction Lab</div>
-  <a href="whitepaper.html" target="_blank" class="archive-whitepaper" id="archiveWhitepaper">read the research document →</a>
-  <button class="restart-archive" onclick="resetExperience()">
-    return to system home ↺
-  </button>
+  <div class="archive-panel">
+    <div class="archive-header" id="archive-header">DREAMSCREENS — AVAILABLE ANALYSIS PROTOCOLS</div>
+    <div class="archive-framing-1" id="archiveFraming1">Each protocol is a complete neural reconstruction sequence.</div>
+    <div class="archive-framing-2" id="archiveFraming2">Select an analysis to begin dream reconstruction · DS-NL-2026</div>
+    <div class="archive-list" id="archiveList"></div>
+    <div class="archive-hint" id="archiveHint">· click an available protocol to begin ·</div>
+    <div class="archive-tagline" id="archiveTagline">Return to a moment you thought was lost.</div>
+    <div class="archive-byline" id="archiveByline">dreamscreens.io · Neural Reconstruction Lab</div>
+    <a href="whitepaper.html" target="_blank" class="archive-whitepaper" id="archiveWhitepaper">read the research document →</a>
+    <br><button class="restart-archive" onclick="resetExperience()">return to system home ↺</button>
+  </div>
 </div>
 
 <video id="vid1" style="display:none" crossorigin="anonymous" loop muted playsinline></video>
@@ -1391,13 +1472,14 @@ async function playTrack(path, opts) {
     // Gesture may expire while fetch/decode runs; resume again before start (Chrome/Safari).
     if (ctx.state === 'suspended') await ctx.resume();
     src.start(0);
+    const ramp = Math.min(0.35, Math.max(0.12, fadeInTC * 0.08));
     if (currentGain) {
-      currentGain.gain.setTargetAtTime(0, now, 10.0);
-      gain.gain.setTargetAtTime(0.75, now, fadeInTC);
+      currentGain.gain.setTargetAtTime(0, now, 4.0);
+      gain.gain.linearRampToValueAtTime(0.75, now + ramp);
       const oldSrc = currentBuffer;
       setTimeout(() => { try { if (oldSrc) oldSrc.stop(); } catch(e){} }, 45000);
     } else {
-      gain.gain.setTargetAtTime(0.75, now, fadeInTC);
+      gain.gain.linearRampToValueAtTime(0.75, now + ramp);
     }
     currentGain = gain;
     currentBuffer = src;
@@ -1513,6 +1595,9 @@ function showStage(n) {
   dots.forEach((id, i) => {
     document.getElementById(id).classList.toggle('active', i === n);
   });
+  const hn = document.getElementById('home-nav');
+  if (n >= 2 && n <= 4) hn.classList.add('vis');
+  else if (n === 1 || n === 5 || n === 6) hn.classList.remove('vis');
 }
 
 const LOG_LINES = [
@@ -1571,10 +1656,12 @@ function showArchiveOverlay() {
     const el = document.createElement('div');
     el.className = 'archive-line' + (t.status === 'available' ? ' available' : ' soon');
     el.innerHTML = '<span class="idx">' + t.idx + '</span> · <span class="title">' + t.title + '</span><span class="sub"> · ' + t.sub + '</span> · <span class="status">' + (t.status === 'available' ? 'protocol available' : 'access restricted') + '</span>';
+    if (t.status === 'available') el.addEventListener('click', () => playProtocol(t));
     list.appendChild(el);
     setTimeout(() => el.classList.add('visible'), 2000 + 500 * i);
   });
   const lastTrackTime = 2000 + 500 * (ARCHIVE_TRACKS.length - 1);
+  setTimeout(() => document.getElementById('archiveHint').classList.add('visible'), lastTrackTime + 800);
   setTimeout(() => document.getElementById('archiveTagline').classList.add('visible'), lastTrackTime + 3000);
   setTimeout(() => document.getElementById('archiveByline').classList.add('visible'), lastTrackTime + 5000);
   setTimeout(() => document.getElementById('archiveWhitepaper').classList.add('visible'), lastTrackTime + 6000);
@@ -1623,30 +1710,40 @@ function showFrag(stageNum, idx) {
 }
 
 let videoStageFallbackTimer = null;
+let videoAdvanceClickHandler = null;
 
 function enterVideoStage(stageNum, onAdvance) {
   const ctx = getCtx();
   if (ctx.state === 'suspended') ctx.resume();
   [vid1, vid2, vid3].forEach(v => { if (v.readyState >= 2) v.play().catch(()=>{}); });
   if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
+  if (videoAdvanceClickHandler) {
+    document.removeEventListener('click', videoAdvanceClickHandler);
+    videoAdvanceClickHandler = null;
+  }
   const nextPrompt = document.getElementById('next-prompt');
   nextPrompt.classList.remove('visible');
   const advance = () => {
     if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
     videoStageFallbackTimer = null;
+    if (videoAdvanceClickHandler) {
+      document.removeEventListener('click', videoAdvanceClickHandler);
+      videoAdvanceClickHandler = null;
+    }
     nextPrompt.classList.remove('visible');
-    document.removeEventListener('click', advanceOnClick);
     onAdvance();
   };
   const advanceOnClick = () => advance();
+  videoAdvanceClickHandler = advanceOnClick;
   document.addEventListener('click', advanceOnClick, { once: true });
   setTimeout(() => nextPrompt.classList.add('visible'), 15000);
   videoStageFallbackTimer = setTimeout(advance, 45000);
 }
 
-function onEnter() {
+async function onEnter() {
   const ctx = getCtx();
-  if (ctx.state === 'suspended') ctx.resume();
+  if (ctx.state === 'suspended') await ctx.resume();
+  if (!virtaStarted) startVirta();
   document.getElementById('stage0Links').classList.remove('visible');
   document.getElementById('home-nav').classList.remove('vis');
 
@@ -1664,7 +1761,11 @@ function onEnter() {
     glStageTarget = 1.0;
     showStage(1);
     document.getElementById('progress').classList.add('visible');
-    playTrack(CONFIG.media(CONFIG.music.stage1));
+    void (async () => {
+      const c = getCtx();
+      if (c.state === 'suspended') await c.resume();
+      playTrack(CONFIG.media(CONFIG.music.stage1));
+    })();
     manualOrgFade = true;
     const fadeStart = Date.now();
     const fadeDuration = 8000;
@@ -1753,6 +1854,10 @@ function resetExperience() {
   clearTimeout(stageTimer);
   if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
   videoStageFallbackTimer = null;
+  if (videoAdvanceClickHandler) {
+    document.removeEventListener('click', videoAdvanceClickHandler);
+    videoAdvanceClickHandler = null;
+  }
   document.getElementById('next-prompt').classList.remove('visible');
   stopAudio();
   virtaStarted = false;
@@ -1790,6 +1895,7 @@ function resetExperience() {
   document.getElementById('archiveTagline').classList.remove('visible');
   document.getElementById('archiveByline').classList.remove('visible');
   document.getElementById('archiveWhitepaper').classList.remove('visible');
+  document.getElementById('archiveHint').classList.remove('visible');
   document.getElementById('stage0Links').classList.remove('visible');
   document.getElementById('sessionId').textContent =
     'DS-' + Math.random().toString(36).substring(2,7).toUpperCase();
@@ -1806,12 +1912,16 @@ document.getElementById('s0').classList.remove('active');
 // ════════════════════════════════════════
 (function() {
   const ec = document.getElementById('entry-gl');
-  function resizeEC() { ec.width = window.innerWidth; ec.height = window.innerHeight; }
+  if (!ec) return;
+  function resizeEC() {
+    if (!ec) return;
+    ec.width = window.innerWidth; ec.height = window.innerHeight;
+  }
   window.addEventListener('resize', resizeEC); resizeEC();
   const eg = ec.getContext('webgl') || ec.getContext('experimental-webgl');
   if (!eg) {
     // No WebGL — just make button work
-    document.getElementById('entry-btn-wrap').addEventListener('click', doEnterTransition);
+    document.getElementById('entry-btn-wrap').addEventListener('click', () => void doEnterTransition());
     return;
   }
   const EVS = `attribute vec2 a;void main(){gl_Position=vec4(a,0,1);}`;
@@ -1857,13 +1967,16 @@ void main(){
   })();
 
   document.getElementById('entry-btn-wrap').addEventListener('click', function() {
-    doEnterTransition();
+    void doEnterTransition();
     setTimeout(() => { alive = false; }, 1500);
   });
 })();
 
-function doEnterTransition() {
-  try { const ac=getCtx(); if(ac.state==='suspended') ac.resume(); } catch(e){}
+async function doEnterTransition() {
+  try {
+    const ac = getCtx();
+    if (ac.state === 'suspended') await ac.resume();
+  } catch (e) {}
   if (typeof startVirta === 'function') startVirta();
 
   const ringCanvas = document.getElementById('entry-ring-canvas');
@@ -1897,7 +2010,7 @@ function doEnterTransition() {
   document.getElementById('entry-pct'),
   document.getElementById('entry-msg'),
   document.getElementById('entry-hex'),
-  document.getElementById('entry-metrics').querySelectorAll('span')
+  (document.getElementById('entry-metrics') || {querySelectorAll: () => []}).querySelectorAll('span')
   );
 }
 
@@ -1910,6 +2023,7 @@ function doEnterTransition() {
 // pctEl, msgEl, hexEl, metricEls: display elements
 // ═══════════════════════════════════════════
 function runNeuralLoader(canvas, duration, steps, onDone, pctEl, msgEl, hexEl, metricEls) {
+  if (!canvas) { onDone && onDone(); return; }
   const size = canvas.width;
   const ctx2 = canvas.getContext('2d');
   const cx = size / 2, cy = size / 2, r = size / 2 - 8;
@@ -2027,6 +2141,129 @@ function runNeuralLoader(canvas, duration, steps, onDone, pctEl, msgEl, hexEl, m
     }
   }
   requestAnimationFrame(tick);
+}
+
+// ── SKIP TO PROTOCOLS ──────────────────
+function skipToProtocols() {
+  try { const ac = getCtx(); if (ac.state === 'suspended') void ac.resume(); } catch(e) {}
+  clearTimeout(stageTimer);
+  stageTimer = null;
+  if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
+  videoStageFallbackTimer = null;
+  if (videoAdvanceClickHandler) {
+    document.removeEventListener('click', videoAdvanceClickHandler);
+    videoAdvanceClickHandler = null;
+  }
+  document.getElementById('next-prompt').classList.remove('visible');
+  document.getElementById('s-entry').classList.add('gone');
+  document.getElementById('s0').classList.remove('active');
+  ['s1', 's2', 's3', 's4', 's5'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('home-nav').classList.remove('vis');
+  glOrgOpacity = 1.0; glOrgOpacityTarget = 1.0;
+  glOrgSettle  = 1.0; glOrgSettleTarget  = 1.0;
+  glArchiveModeTarget = 1.0;
+  showArchiveOverlay();
+}
+
+// ── PROTOCOL PLAYER ───────────────────
+const PROTOCOL_MUSIC = {
+  'DS-01': 'Media/mp3/Signal Dreams.mp3',
+  'DS-02': 'Media/mp3/Feedback Memory.(Minus 197).mp3',
+  'DS-03': 'Media/mp3/Nature module 1.mp3',
+  'DS-04': 'Media/mp3/Brainwaves (grain Pysche).mp3',
+  'DS-05': 'Media/mp3/Module n5 v2.mp3',
+};
+let ppSrc = null, ppGain = null;
+
+function playProtocol(track) {
+  const path = PROTOCOL_MUSIC[track.idx];
+  if (!path) return;
+
+  // Hide archive
+  document.getElementById('s6').classList.remove('active');
+
+  // Set organism visible, stable, no archive mode
+  glStageTarget = 0.0;
+  glOrgOpacity = 1.0; glOrgOpacityTarget = 1.0;
+  glOrgSettle = 1.0; glOrgSettleTarget = 1.0;
+  glArchiveModeTarget = 0.0;
+
+  // Show protocol player overlay (just the organism + stop button for now)
+  const pp = document.getElementById('protocol-player');
+  const titleEl = document.getElementById('pp-title');
+  titleEl.textContent = track.title;
+  titleEl.classList.remove('vis');
+  pp.classList.remove('gone'); pp.classList.add('vis');
+
+  // Unlock audio
+  const ctx = getCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  if (ppGain) { ppGain.gain.setTargetAtTime(0, ctx.currentTime, 1.5); ppGain = null; }
+
+  // Run the neural loader progress sequence first (3.5s), then fade in title and start audio
+  runNeuralLoader(document.getElementById('nl-ring-canvas'), 3500, [
+    { pct: 0,   msg: 'Initialising neural bridge...' },
+    { pct: 20,  msg: 'EEG sync — 64 channels active' },
+    { pct: 45,  msg: 'Loading analysis protocol...' },
+    { pct: 70,  msg: 'Signal locked — ' + track.title },
+    { pct: 90,  msg: 'Rendering...' },
+    { pct: 100, msg: 'Signal acquired.' },
+  ], function() {
+    // Loader done — fade in track title slowly
+    setTimeout(() => titleEl.classList.add('vis'), 200);
+
+    // Start audio
+    fetch(mediaFetchUrl(path)).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); }).then(ab => ctx.decodeAudioData(ab)).then(async buf => {
+      if (ctx.state === 'suspended') await ctx.resume();
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.setTargetAtTime(0.8, ctx.currentTime, 4.0);
+      gain.connect(ctx.destination);
+      const src = ctx.createBufferSource();
+      src.buffer = buf; src.loop = false; src.connect(gain); src.start(0);
+      ppSrc = src; ppGain = gain;
+
+      // Track end — fade title out then return
+      src.onended = () => {
+        titleEl.classList.remove('vis'); // 4s fade out via CSS transition
+        setTimeout(returnToProtocols, 4500);
+      };
+    }).catch(() => {
+      // Audio unavailable — just show title and let user stop manually
+    });
+  });
+}
+
+function stopProtocol() {
+  if (ppGain) {
+    const ctx = getCtx();
+    ppGain.gain.setTargetAtTime(0, ctx.currentTime, 1.5);
+    const s = ppSrc;
+    setTimeout(() => { try { s.stop(); } catch(e){} }, 5000);
+    ppGain = null; ppSrc = null;
+  }
+  returnToProtocols();
+}
+
+function returnToProtocols() {
+  const pp = document.getElementById('protocol-player');
+  const titleEl = document.getElementById('pp-title');
+  titleEl.classList.remove('vis');
+  // Also stop audio if still playing
+  if (ppGain) {
+    const ctx = getCtx();
+    ppGain.gain.setTargetAtTime(0, ctx.currentTime, 1.5);
+    ppGain = null; ppSrc = null;
+  }
+  pp.classList.remove('vis'); pp.classList.add('gone');
+  // Reset neural loader in case it's visible
+  const nlEl = document.getElementById('neural-loader');
+  if (nlEl) { nlEl.classList.remove('vis', 'gone'); }
+  setTimeout(() => {
+    pp.classList.remove('gone');
+    glArchiveModeTarget = 1.0;
+    showArchiveOverlay();
+  }, 1000);
 }
 </script>
 </body>
