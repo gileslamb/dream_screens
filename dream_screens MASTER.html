@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DreamScreens — Memory Reconstruction Service</title>
+
+<!--
+╔══════════════════════════════════════════════════════╗
+║  DREAM SCREENS  v2  —  CONFIG                        ║
+║  Edit paths below. Open index.html in Chrome.        ║
+║  File structure expected:                            ║
+║    /index.html                                       ║
+║    /Media/Movies/White Matter.mp4                    ║
+║    /Media/mp3/*.mp3                                  ║
+╚══════════════════════════════════════════════════════╝
+-->
+<script>
+const CONFIG = {
+  video: 'Media/Movies/White Matter.mp4',
+
+  // One track per stage — swap filenames to taste
+  music: {
+    stage1: 'Media/mp3/Signal Dreams.mp3',
+    stage2: 'Media/mp3/Feedback Memory.(Minus 197).mp3',
+    stage3: 'Media/mp3/Glitches are Portals.mp3',
+  },
+
+  timing: {
+    logLinePause:   550,
+    fragmentDwell: 5500,
+    stage3Dwell:   7000,
+    crossfadeMs:   2500,
+    introAnimSec:  2.8,
+  }
+};
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;1,300&display=swap');
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+  --green:#00ff88;
+  --muted:#333;
+  --text:#b8b8b0;
+  --accent:#ff3a2d;
+  --amber:#f5a623;
+}
+
+html,body {
+  width:100%;height:100%;
+  background:#020d0e;color:var(--text);
+  font-family:var(--mono);
+  overflow:hidden;cursor:none;
+}
+
+#cursor {
+  position:fixed;width:6px;height:6px;
+  background:var(--green);border-radius:50%;
+  pointer-events:none;z-index:9999;
+  mix-blend-mode:difference;
+  transform:translate(-50%,-50%);
+}
+
+#gl {
+  position:fixed;inset:0;width:100%;height:100%;
+  z-index:1;opacity:0;
+  background:#020d0e;
+  transition:opacity 2.5s ease;
+}
+
+#scanlines {
+  position:fixed;inset:0;z-index:3;pointer-events:none;
+  background:repeating-linear-gradient(
+    to bottom,transparent,transparent 2px,
+    rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px
+  );
+  opacity:0.4;
+  transition:opacity 0.8s ease;
+}
+body.intro #scanlines { opacity:0; }
+
+.screen {
+  position:fixed;inset:0;
+  display:flex;flex-direction:column;
+  padding:8vh 8vw;
+  opacity:0;pointer-events:none;
+  transition:opacity 0.8s ease;
+  z-index:10;
+}
+.screen.active { opacity:1;pointer-events:all; }
+
+/* ── S0 intro (Quantum-style): hero word + ENTER only ── */
+#s0 {
+  position:relative;
+  background:transparent;
+  padding:0;
+}
+#s0.intro-exit {
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.55s ease;
+}
+.hero-word-wrap {
+  position:fixed;
+  left:0;right:0;bottom:0;
+  z-index:12;
+  pointer-events:none;
+  display:flex;
+  justify-content:center;
+  align-items:flex-end;
+  padding-bottom:clamp(0.5rem,2vh,2rem);
+}
+.hero-word {
+  font-family:var(--sans);
+  font-weight:600;
+  font-size:clamp(3.5rem, 22vw, 14rem);
+  line-height:0.82;
+  letter-spacing:-0.03em;
+  text-transform:lowercase;
+  margin:0;
+  width:100%;
+  text-align:center;
+  background:linear-gradient(165deg,#8a6a12 0%,#c9a227 35%,#f0d080 55%,#b8960c 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  filter:drop-shadow(0 4px 28px rgba(0,0,0,0.35));
+}
+.cta-wrap {
+  position:fixed;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  z-index:14;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+}
+.cta {
+  width:72px;height:72px;
+  border-radius:50%;
+  border:1px solid transparent;
+  background:
+    linear-gradient(#020d0e,#020d0e) padding-box,
+    linear-gradient(145deg,#b8960c,#f0d080,#b8960c) border-box;
+  color:rgba(240,208,128,0.95);
+  cursor:pointer;
+  z-index:14;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:transform 0.2s ease, filter 0.2s ease;
+  padding:0;
+}
+.cta:hover {
+  transform:scale(1.05);
+  filter:brightness(1.08);
+}
+.cta .cta-arrow {
+  width:22px;height:22px;
+  stroke:url(#goldGrad);
+}
+.cta-label {
+  font-family:var(--sans);
+  font-size:10px;
+  letter-spacing:0.35em;
+  text-transform:uppercase;
+  color:rgba(240,208,128,0.85);
+}
+.session-id {
+  position:fixed;
+  bottom:3vh;right:4vw;
+  z-index:50;
+  font-family:var(--mono);
+  font-size:8px;
+  letter-spacing:0.25em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,0.15);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.6s ease;
+}
+body.entered .session-id { opacity:1; }
+
+/* ── S1 log ── */
+#s1 { justify-content:flex-end;padding-bottom:10vh; }
+.log { font-size:clamp(10px,1vw,12px);line-height:1.9;max-width:60ch; }
+.log-line {
+  opacity:0;transform:translateX(-8px);white-space:pre;
+  transition:opacity 0.3s ease,transform 0.3s ease;
+}
+.log-line.vis { opacity:1;transform:none; }
+.ts  { color:#2a2a2a;margin-right:1em; }
+.ok  { color:var(--green); }
+.wrn { color:var(--amber); }
+.err { color:var(--accent); }
+.log-cursor {
+  display:inline-block;width:7px;height:0.85em;
+  background:var(--green);margin-left:3px;vertical-align:middle;
+  animation:blink 1s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* ── S2 fragments ── */
+#s2 { justify-content:center;align-items:center;text-align:center; }
+.fragment {
+  max-width:38ch;
+  opacity:0;transform:translateY(12px);
+  transition:opacity 1.5s ease,transform 1.5s ease;
+}
+.fragment.vis { opacity:1;transform:none; }
+.fragment p {
+  font-family:var(--sans);font-style:italic;
+  font-size:clamp(15px,2vw,24px);font-weight:300;
+  color:#fff;line-height:1.55;
+}
+.fragment .attr {
+  font-size:10px;letter-spacing:0.28em;text-transform:uppercase;
+  color:#2a2a2a;margin-top:2.2rem;transition:color 1s ease;
+}
+.fragment.vis .attr { color:#3a3a3a; }
+
+/* ── S3 classified ── */
+#s3 { justify-content:flex-start;align-items:flex-end; }
+.classified { text-align:right; }
+.classified .label {
+  font-size:9px;letter-spacing:0.45em;text-transform:uppercase;
+  color:var(--accent);opacity:0.55;margin-bottom:1rem;
+}
+.classified p {
+  font-size:clamp(10px,1.05vw,13px);
+  opacity:0.4;line-height:1.95;max-width:36ch;
+}
+.redacted { background:var(--text);color:transparent;border-radius:1px;padding:0 2px; }
+.signal {
+  font-size:9px;letter-spacing:0.35em;text-transform:uppercase;
+  color:var(--accent);opacity:0;margin-top:2rem;
+  animation:pulseIn 2s ease 2s forwards;
+}
+@keyframes pulseIn { 0%{opacity:0} 60%{opacity:0.7} 100%{opacity:0.25} }
+
+/* ── S4 end ── */
+#s4 { justify-content:center;align-items:center;text-align:center;background:#030303; }
+.end-msg .status {
+  font-size:10px;letter-spacing:0.4em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:2rem;
+  opacity:0;animation:fadeUp 1s ease 0.5s forwards;
+}
+.end-msg h2 {
+  font-family:var(--sans);font-size:clamp(18px,2.8vw,34px);
+  font-weight:300;color:#fff;line-height:1.3;
+  opacity:0;animation:fadeUp 1s ease 1.3s forwards;
+}
+.end-msg .byline {
+  font-size:11px;color:#252525;letter-spacing:0.18em;margin-top:2.8rem;
+  opacity:0;animation:fadeUp 1s ease 2.6s forwards;
+}
+.restart {
+  font-size:10px;letter-spacing:0.28em;text-transform:uppercase;
+  color:#333;background:none;border:none;
+  border-bottom:1px solid #1e1e1e;padding-bottom:2px;
+  margin-top:2.2rem;cursor:pointer;font-family:var(--mono);
+  display:inline-block;
+  opacity:0;animation:fadeUp 1s ease 3.4s forwards;
+  transition:color 0.2s;
+}
+.restart:hover { color:var(--green); }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+/* ── Progress + track label ── */
+#progress {
+  position:fixed;bottom:4vh;left:50%;transform:translateX(-50%);
+  display:flex;gap:7px;z-index:20;
+  opacity:0;transition:opacity 0.5s;
+}
+#progress.vis { opacity:1; }
+.dot { width:4px;height:4px;border-radius:50%;background:var(--muted);transition:background 0.4s,transform 0.4s; }
+.dot.on { background:var(--green);transform:scale(1.5); }
+#trackLabel {
+  position:fixed;top:4vh;right:4vw;
+  font-size:9px;letter-spacing:0.25em;text-transform:uppercase;
+  color:#222;z-index:20;opacity:0;transition:opacity 0.5s;
+}
+#trackLabel.vis { opacity:1; }
+</style>
+</head>
+<body class="intro">
+
+<div id="cursor"></div>
+<div id="scanlines"></div>
+<canvas id="gl"></canvas>
+<video id="vid" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none" loop muted playsinline crossorigin="anonymous"></video>
+
+<div id="progress">
+  <div class="dot on" id="d0"></div>
+  <div class="dot" id="d1"></div>
+  <div class="dot" id="d2"></div>
+  <div class="dot" id="d3"></div>
+  <div class="dot" id="d4"></div>
+</div>
+<div id="trackLabel">♪ <span id="trackName">—</span></div>
+
+<div class="session-id">SESSION <span id="sid"></span></div>
+
+<!-- S0 intro: gold hero word + ENTER only -->
+<div class="screen active" id="s0">
+  <div class="hero-word-wrap">
+    <h1 class="hero-word">dreamscreens</h1>
+  </div>
+  <div class="cta-wrap">
+    <button type="button" class="cta" onclick="startExperience()" aria-label="Enter experience">
+      <svg class="cta-arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="ctaGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#b8960c"></stop>
+            <stop offset="100%" stop-color="#f0d080"></stop>
+          </linearGradient>
+        </defs>
+        <path d="M8 16L16 8M16 8H9M16 8V15" stroke="url(#ctaGoldGrad)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+    </button>
+    <span class="cta-label">ENTER</span>
+  </div>
+</div>
+
+<!-- S1 -->
+<div class="screen" id="s1">
+  <div class="log" id="logEl"></div>
+</div>
+
+<!-- S2 -->
+<div class="screen" id="s2">
+  <div class="fragment" id="frag">
+    <p id="fragText"></p>
+    <div class="attr" id="fragAttr"></div>
+  </div>
+</div>
+
+<!-- S3 -->
+<div class="screen" id="s3">
+  <div class="classified">
+    <div class="label">— Restricted layer —</div>
+    <p>
+      Subject trace <span class="redacted">GHL-7704</span> · recurring pattern.<br>
+      Emotional valence: 0.84 (grief).<br>
+      Memory cluster tagged for <span class="redacted">archival retention</span>.<br>
+      Consent path <span class="redacted">under review</span>.<br><br>
+      This reconstruction may be held.<br>
+      DreamScreens does not guarantee notification.
+    </p>
+    <div class="signal">Signal archived &nbsp;·&nbsp; Processing complete</div>
+  </div>
+</div>
+
+<!-- S4 -->
+<div class="screen" id="s4">
+  <div class="end-msg">
+    <div class="status">Reconstruction pauses here</div>
+    <h2>Neural memory reconstruction ends<br>this pass.</h2>
+    <div class="byline">DreamScreens · return when you are ready</div>
+    <button class="restart" onclick="reset()">Run again ↺</button>
+  </div>
+</div>
+
+<script>
+// Cursor
+const cur = document.getElementById('cursor');
+document.addEventListener('mousemove', e => {
+  cur.style.left = e.clientX + 'px';
+  cur.style.top  = e.clientY + 'px';
+});
+
+document.getElementById('sid').textContent =
+  'DS-' + Math.random().toString(36).substring(2,7).toUpperCase();
+
+// ════════════════════════
+// WEBGL
+// ════════════════════════
+const glc = document.getElementById('gl');
+const gl  = glc.getContext('webgl') || glc.getContext('experimental-webgl');
+
+function resize() {
+  glc.width = window.innerWidth; glc.height = window.innerHeight;
+  gl && gl.viewport(0,0,glc.width,glc.height);
+}
+window.addEventListener('resize', resize); resize();
+
+const VS = `attribute vec2 a; void main(){gl_Position=vec4(a,0,1);}`;
+
+const FS = `
+precision highp float;
+uniform float u_t, u_phase, u_vr, u_intro;
+uniform vec2  u_res;
+uniform sampler2D u_vid;
+
+float h(vec2 p){p=fract(p*vec2(234.34,435.345));p+=dot(p,p+34.23);return fract(p.x*p.y);}
+float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);
+  return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
+float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=n(p)*a;p*=2.01;a*=.5;}return v;}
+
+float cable(vec2 uv,float t){
+  float w=sin(uv.x*6.28+t*.7)*.025+sin(uv.x*3.1+t*.35)*.012;
+  return smoothstep(.005,.001,abs(uv.y-.5-w));
+}
+
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res;
+  float rev=clamp(u_phase,0.,1.);
+  float cor=clamp(u_phase-1.,0.,1.);
+
+  float introEase=1.0-pow(1.0-clamp(u_intro,0.,1.),3.0);
+  float rotAng=mix(6.28318*2.0,0.0,introEase);
+  float spreadScale=mix(2.8,1.0,introEase);
+  vec2 uvC=uv-0.5;
+  float cosR=cos(rotAng);
+  float sinR=sin(rotAng);
+  vec2 uvR=vec2(uvC.x*cosR-uvC.y*sinR,uvC.x*sinR+uvC.y*cosR)+0.5;
+
+  // noise base
+  float nv=fbm(uvR*2.8+u_t*.12);
+  vec3 noiseCol=vec3(nv*.28,nv*.32,nv*.26);
+
+  // video with organic displacement
+  vec2 disp=vec2(fbm(uvR*3.+u_t*.07)-.5,fbm(uvR*3.+u_t*.07+7.3)-.5)
+            *(0.04*(1.-rev)+0.008*rev)*spreadScale;
+  vec2 vuv=vec2(uvR.x,1.-uvR.y)+disp;
+  vec3 vid=texture2D(u_vid,vuv).rgb;
+  float lum=dot(vid,vec3(.299,.587,.114));
+  vid=mix(vec3(lum),vid,.6)*.85;
+
+  // luma threshold reveal — footage burns through noise like developing film
+  float thr=mix(1.5,-.2,rev);
+  float mask=smoothstep(thr-.3,thr+.3,nv+lum*.4);
+  vec3 col=u_vr>.5?mix(noiseCol,vid,mask):noiseCol;
+
+  // cable waveform
+  float cbl=cable(uvR,u_t)*(1.-rev*.8);
+  col+=vec3(0.,cbl*.55,cbl*.3);
+
+  // corruption — chroma drift + glitch lines
+  if(cor>0.){
+    float dr=cor*.018;
+    float gs=h(vec2(floor(uvR.y*100.),floor(u_t*4.)));
+    float gl2=step(.96,gs)*cor;
+    vec2 gu=vec2(uvR.x+(h(vec2(uvR.y,u_t))-.5)*gl2*.05,1.-uvR.y);
+    vec3 r=texture2D(u_vid,gu+vec2(dr,0.)).rgb;
+    vec3 g2=texture2D(u_vid,gu).rgb;
+    vec3 b=texture2D(u_vid,gu-vec2(dr,0.)).rgb;
+    vec3 ch=vec3(r.r,g2.g,b.b);
+    float cl=dot(ch,vec3(.299,.587,.114));
+    ch=mix(vec3(cl),ch,.5);
+    col=mix(col,ch,cor*.7);
+    col.r+=cor*.04*n(uvR*5.+u_t);
+  }
+
+  // scan noise, vignette, green cast
+  col+=h(vec2(floor(uvR.y*200.)/200.,floor(u_t*8.)*.1))*.06;
+  col*=1.-length(uvR-.5)*1.1;
+  col.g+=.015*(1.-rev);
+
+  gl_FragColor=vec4(clamp(col,0.,1.),1.);
+}`;
+
+function mkShader(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src); gl.compileShader(s);
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, mkShader(gl.VERTEX_SHADER, VS));
+gl.attachShader(prog, mkShader(gl.FRAGMENT_SHADER, FS));
+gl.linkProgram(prog); gl.useProgram(prog);
+
+const vb = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, vb);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+const aPos = gl.getAttribLocation(prog, 'a');
+gl.enableVertexAttribArray(aPos);
+gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+const uT     = gl.getUniformLocation(prog,'u_t');
+const uRes   = gl.getUniformLocation(prog,'u_res');
+const uPhase = gl.getUniformLocation(prog,'u_phase');
+const uVR    = gl.getUniformLocation(prog,'u_vr');
+const uIntro = gl.getUniformLocation(prog,'u_intro');
+
+// Video texture
+const tex = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D, tex);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,1,1,0,gl.RGB,gl.UNSIGNED_BYTE,new Uint8Array([10,10,8]));
+
+const vid = document.getElementById('vid');
+let videoReady = false;
+vid.src = CONFIG.video;
+
+let phase = 0, phaseTarget = 0, t0 = Date.now();
+let introAnim = 0;
+let introRunning = false;
+let afterIntroStarted = false;
+let lastFrame = performance.now();
+
+function renderLoop() {
+  const now = performance.now();
+  const dt = Math.min(0.05, (now - lastFrame) / 1000);
+  lastFrame = now;
+  const t = (Date.now()-t0)/1000;
+  phase += (phaseTarget-phase)*0.005;
+  if (introRunning) {
+    introAnim += dt / CONFIG.timing.introAnimSec;
+    if (introAnim >= 1) {
+      introAnim = 1;
+      introRunning = false;
+      beginAfterIntro();
+    }
+  }
+  if (videoReady && phaseTarget > 0.05) {
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,vid);
+  }
+  gl.uniform1f(uT, t);
+  gl.uniform2f(uRes, glc.width, glc.height);
+  gl.uniform1f(uPhase, phase);
+  gl.uniform1f(uVR, videoReady ? 1 : 0);
+  gl.uniform1f(uIntro, introAnim);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  requestAnimationFrame(renderLoop);
+}
+renderLoop();
+
+// ════════════════════════
+// AUDIO
+// ════════════════════════
+let audioCtx, curSrc, curGain;
+
+function getCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+
+async function playTrack(path, label) {
+  if (!path) return;
+  const ctx = getCtx();
+  const ms  = CONFIG.timing.crossfadeMs;
+
+  // Fade out previous
+  if (curGain) {
+    const g = curGain;
+    g.gain.setTargetAtTime(0, ctx.currentTime, ms/3000);
+    const s = curSrc;
+    setTimeout(() => { try { s.stop(); } catch(e){} }, ms);
+  }
+
+  try {
+    const ab  = await (await fetch(path)).arrayBuffer();
+    const buf = await ctx.decodeAudioData(ab);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.setTargetAtTime(0.75, ctx.currentTime, ms/3000);
+    gain.connect(ctx.destination);
+    const src = ctx.createBufferSource();
+    src.buffer = buf; src.loop = true;
+    src.connect(gain); src.start();
+    curSrc = src; curGain = gain;
+    document.getElementById('trackName').textContent = label;
+    document.getElementById('trackLabel').classList.add('vis');
+  } catch(e) { console.warn('Audio:', path, e); }
+}
+
+function stopAudio() {
+  if (curGain && audioCtx) {
+    curGain.gain.setTargetAtTime(0, audioCtx.currentTime, 1.0);
+    const s = curSrc;
+    setTimeout(() => { try { s.stop(); } catch(e){} }, 3000);
+  }
+  document.getElementById('trackLabel').classList.remove('vis');
+}
+
+// Synthesised UI sounds (no files needed)
+function beep(freq=880, dur=0.035, type='square') {
+  try {
+    const ctx=getCtx(), o=ctx.createOscillator(), g=ctx.createGain();
+    o.type=type; o.frequency.value=freq;
+    g.gain.setValueAtTime(0.07,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime+dur);
+  } catch(e){}
+}
+
+function staticBurst(dur=0.07) {
+  try {
+    const ctx=getCtx(), sz=ctx.sampleRate*dur;
+    const buf=ctx.createBuffer(1,sz,ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<sz;i++) d[i]=(Math.random()*2-1)*0.2;
+    const g=ctx.createGain(), f=ctx.createBiquadFilter();
+    f.type='bandpass'; f.frequency.value=3000; f.Q.value=0.5;
+    const s=ctx.createBufferSource();
+    s.buffer=buf; s.connect(f); f.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(1,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+    s.start();
+  } catch(e){}
+}
+
+function hoverTone() {
+  try {
+    const ctx = getCtx();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.value = 520;
+    g.gain.setValueAtTime(0.06, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+    o.connect(g); g.connect(ctx.destination);
+    o.start();
+    o.stop(ctx.currentTime + 0.03);
+  } catch(e){}
+}
+
+// ════════════════════════
+// STAGE FLOW
+// ════════════════════════
+const SCREENS=['s0','s1','s2','s3','s4'];
+const DOTS   =['d0','d1','d2','d3','d4'];
+let timer;
+
+function showStage(n) {
+  SCREENS.forEach((id,i)=>document.getElementById(id).classList.toggle('active',i===n));
+  DOTS.forEach((id,i)=>document.getElementById(id).classList.toggle('on',i===n));
+}
+
+const LOGS = [
+  {ts:'00:00:01',cls:'',  t:'DreamScreens · waking the reconstruction layer...'},
+  {ts:'00:00:02',cls:'ok',t:'[OK]   Neural memory map — online'},
+  {ts:'00:00:04',cls:'',  t:'Binding REM traces to render pipeline...'},
+  {ts:'00:00:06',cls:'ok',t:'[OK]   Diffusion core ready'},
+  {ts:'00:00:08',cls:'',  t:'Where the mind falters, we interpolate signal...'},
+  {ts:'00:00:11',cls:'wrn',t:'[WARN] Trace incomplete — confidence drifting'},
+  {ts:'00:00:13',cls:'',  t:'Synthesising fragments from noise...'},
+  {ts:'00:00:16',cls:'ok',t:'[OK]   Rendering — hold the line'},
+];
+
+function runLog(done) {
+  const el=document.getElementById('logEl');
+  el.innerHTML='';
+  LOGS.forEach((line,i)=>{
+    const d=document.createElement('div');
+    d.className='log-line';
+    d.innerHTML=`<span class="ts">[${line.ts}]</span><span class="${line.cls}">${line.t}</span>`;
+    el.appendChild(d);
+    setTimeout(()=>{
+      d.classList.add('vis');
+      beep(i%2===0?660:880, 0.03);
+      if(i===LOGS.length-1){
+        const c=document.createElement('span');
+        c.className='log-cursor';
+        d.appendChild(c);
+        setTimeout(done,800);
+      }
+    }, i*CONFIG.timing.logLinePause);
+  });
+}
+
+const FRAGS = [
+  {t:'Neural memory reconstruction.\nWhere the mind falters, DreamScreens renders.',
+   a:'DreamScreens · manifest'},
+  {t:'The train moved and she was watching the cables rise and fall like breathing.',
+   a:'Fragment · REM · recovered'},
+  {t:'We wouldn\'t be movies we are watching.\nWe would be movies we are.',
+   a:'Archive · internal'},
+  {t:'The glitch isn\'t a failure.\nIt\'s the invitation.',
+   a:'Fragment · origin unknown'},
+];
+
+function showFrags(done) {
+  let i=0;
+  const el=document.getElementById('frag');
+  function next(){
+    document.getElementById('fragText').textContent=FRAGS[i].t;
+    document.getElementById('fragAttr').textContent=FRAGS[i].a;
+    el.classList.remove('vis');
+    void el.offsetHeight;
+    setTimeout(()=>el.classList.add('vis'),60);
+    i++;
+    if(i<FRAGS.length) timer=setTimeout(next,CONFIG.timing.fragmentDwell);
+    else timer=setTimeout(done,CONFIG.timing.fragmentDwell);
+  }
+  next();
+}
+
+function beginAfterIntro() {
+  if (afterIntroStarted) return;
+  afterIntroStarted = true;
+  document.body.classList.add('entered');
+  staticBurst(0.09);
+  document.getElementById('progress').classList.add('vis');
+  showStage(1);
+  phaseTarget = 0.0;
+
+  playTrack(CONFIG.music.stage1,'Signal Dreams');
+
+  runLog(()=>{
+    staticBurst(0.12);
+    phaseTarget=1.0;
+    showStage(2);
+    playTrack(CONFIG.music.stage2,'Feedback Memory');
+
+    showFrags(()=>{
+      staticBurst(0.18);
+      phaseTarget=2.0;
+      showStage(3);
+      playTrack(CONFIG.music.stage3,'Glitches are Portals');
+
+      timer=setTimeout(()=>{
+        stopAudio();
+        showStage(4);
+        glc.style.opacity='0';
+        phaseTarget=0.0;
+      }, CONFIG.timing.stage3Dwell);
+    });
+  });
+}
+
+function startExperience() {
+  if (introRunning) return;
+  introRunning = true;
+  document.body.classList.remove('intro');
+  document.getElementById('s0').classList.add('intro-exit');
+  glc.style.opacity = '1';
+  introAnim = 0;
+  phase = 0;
+  phaseTarget = 0;
+  videoReady = false;
+  try {
+    const c = getCtx();
+    if (c.state === 'suspended') c.resume();
+  } catch(e){}
+  vid.load();
+  const tryPlay = () => {
+    const p = vid.play();
+    if (p && typeof p.catch === 'function') p.catch(() => {});
+  };
+  vid.addEventListener('canplay', () => {
+    videoReady = true;
+    tryPlay();
+  }, { once: true });
+  tryPlay();
+}
+
+function reset() {
+  clearTimeout(timer);
+  stopAudio();
+  afterIntroStarted = false;
+  introAnim = 0;
+  introRunning = false;
+  document.body.classList.remove('entered');
+  document.body.classList.add('intro');
+  document.getElementById('s0').classList.remove('intro-exit');
+  glc.style.opacity='0';
+  document.getElementById('progress').classList.remove('vis');
+  document.getElementById('frag').classList.remove('vis');
+  document.getElementById('logEl').innerHTML='';
+  phase = 0;
+  phaseTarget = 0;
+  videoReady = false;
+  vid.pause();
+  showStage(0);
+  document.getElementById('sid').textContent=
+    'DS-'+Math.random().toString(36).substring(2,7).toUpperCase();
+}
+</script>
+</body>
+</html>
