@@ -1,0 +1,2033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DreamScreens — Memory Reconstruction</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --green: #00ff88;
+    --dim: #1a1a1a;
+    --muted: #444;
+    --text: #c8c8c0;
+    --accent: #ff3a2d;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: #000;
+    color: var(--text);
+    font-family: var(--mono);
+    overflow: hidden;
+    cursor: none;
+  }
+
+  #cursor {
+    position: fixed;
+    left: 0; top: 0;
+    width: 8px; height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    will-change: transform;
+    mix-blend-mode: difference;
+  }
+
+  #gl {
+    position: fixed;
+    inset: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+    background: #020809;
+    image-rendering: pixelated;
+  }
+
+  .screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 10vh 10vw;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.8s ease;
+    z-index: 10;
+  }
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* ── STAGE 0: Home screen ── */
+  #s0 {
+    background: transparent;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0 8vw 10vh;
+    z-index: 15;
+    text-align: center;
+  }
+  #s0 .s0-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+  }
+  #s0 .wordmark {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+    margin-bottom: 1.2rem;
+  }
+  #s0 .body-copy {
+    font-family: var(--sans);
+    font-size: clamp(15px, 1.6vw, 21px);
+    font-weight: 300;
+    color: rgba(255,255,255,0.72);
+    letter-spacing: 0.02em;
+    line-height: 1.7;
+    max-width: 48ch;
+    margin-bottom: 3rem;
+  }
+  #s0 .enter-btn {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.35);
+    background: rgba(0,0,0,0.2);
+    color: rgba(255,255,255,0.7);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s, transform 0.2s, background 0.2s;
+    margin-bottom: 0.7rem;
+  }
+  #s0 .enter-btn:hover {
+    border-color: rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.08);
+    transform: scale(1.05);
+  }
+  #s0 .enter-btn-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.2);
+  }
+  #s0 .session-id {
+    position: absolute;
+    bottom: 2vh; right: 4vw;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    opacity: 0.4;
+  }
+  #s0 .stage0-links {
+    position: fixed;
+    bottom: 4vh; left: 4vw;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+  }
+  #s0 .stage0-links.visible { opacity: 1; }
+  #s0 .stage0-links a {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.18);
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+  #s0 .stage0-links a:hover { color: rgba(255,255,255,0.5); }
+
+  /* ── STAGE 1: System log / wave ── */
+  #s1 {
+    background: transparent;
+    justify-content: flex-end;
+    padding: 8vh 8vw;
+  }
+  #s1 .log {
+    font-size: clamp(10px, 1.1vw, 13px);
+    color: var(--green);
+    opacity: 0.8;
+    line-height: 1.8;
+    max-width: 55ch;
+  }
+  #s1 .log-line {
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  #s1 .log-line.visible {
+    opacity: 1;
+    transform: none;
+  }
+  #s1 .log-line .ts { color: var(--muted); margin-right: 1em; }
+  #s1 .log-line .ok { color: var(--green); }
+  #s1 .log-line .warn { color: #ffcc44; }
+
+  /* ── STAGES 2,3,4: Memory fragments over video ── */
+  #s2, #s3, #s4 {
+    background: transparent;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  #s2 .fragment, #s3 .fragment, #s4 .fragment {
+    max-width: 42ch;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 3.5s ease, transform 3.5s ease;
+  }
+  #s2 .fragment.visible, #s3 .fragment.visible, #s4 .fragment.visible {
+    opacity: 1;
+    transform: none;
+  }
+  #s2 .fragment.fading, #s3 .fragment.fading, #s4 .fragment.fading {
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity 2.5s ease, transform 2.5s ease;
+  }
+  #s2 .fragment p, #s3 .fragment p, #s4 .fragment p {
+    font-family: var(--sans);
+    font-size: clamp(15px, 2vw, 24px);
+    font-weight: 300;
+    line-height: 1.75;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 0.03em;
+    white-space: pre-wrap;
+    text-shadow:
+      0 0 14px rgba(255,255,255,0.09),
+      0 0 3px rgba(160,220,200,0.15),
+      0 1px 0 rgba(0,0,0,0.5);
+  }
+  #s2 .fragment .attr, #s3 .fragment .attr, #s4 .fragment .attr {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.18);
+    margin-top: 2.5rem;
+  }
+
+  /* ── STAGE 5: Resolution organism + end card ── */
+  #s5 {
+    background: transparent;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  #s5 .end-msg {
+    max-width: 40ch;
+  }
+  #s5 .end-msg .status,
+  #s5 .end-msg h2,
+  #s5 .end-msg .byline,
+  #s5 .end-msg .restart {
+    opacity: 0;
+  }
+  #s5 .end-msg.show .status {
+    animation: fadeIn 1s ease 0.5s forwards;
+  }
+  #s5 .end-msg.show h2 {
+    animation: fadeIn 1s ease 1.2s forwards;
+  }
+  #s5 .end-msg.show .byline {
+    animation: fadeIn 1s ease 2.5s forwards;
+  }
+  #s5 .end-msg.show .restart {
+    animation: fadeIn 1s ease 3.5s forwards;
+  }
+  #s5 .restart {
+    display: inline-block;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text);
+    border-bottom: 1px solid var(--muted);
+    padding-bottom: 2px;
+    margin-top: 2rem;
+    cursor: pointer;
+    transition: color 0.2s;
+    background: none;
+    border: none;
+    font-family: var(--mono);
+  }
+  #s5 .restart:hover { color: var(--green); }
+
+  /* ── STAGE 6: Archive overlay (on top of organism) ── */
+  #s6 {
+    background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.7) 100%);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    z-index: 20;
+    pointer-events: none;
+  }
+  #s6 .archive-header {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.5em;
+    color: #fff;
+    opacity: 0;
+    transition: opacity 1s ease;
+    margin-bottom: 4vh;
+    text-align: center;
+  }
+  #s6 .archive-header.visible {
+    opacity: 0.25;
+  }
+  #s6 .archive-framing-1 {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-style: italic;
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+  #s6 .archive-framing-1.visible {
+    opacity: 0.35;
+  }
+  #s6 .archive-framing-2 {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    margin-bottom: 3rem;
+    text-align: center;
+  }
+  #s6 .archive-framing-2.visible {
+    opacity: 0.18;
+  }
+  #s6 .archive-list {
+    text-align: center;
+  }
+  #s6 .archive-line {
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 2.4;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(5px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  #s6 .archive-line.visible {
+    opacity: 1;
+    transform: none;
+  }
+  #s6 .archive-line .idx {
+    opacity: 0.2;
+    color: rgba(240,208,128,0.6);
+    font-size: 9px;
+  }
+  #s6 .archive-line.available .title {
+    opacity: 0.8;
+    color: #fff;
+  }
+  #s6 .archive-line.soon .title {
+    opacity: 0.2;
+    color: #fff;
+  }
+  #s6 .archive-line .sub {
+    font-size: 9px;
+    opacity: 0.25;
+    color: #fff;
+  }
+  #s6 .archive-line.soon .sub {
+    opacity: 0.1;
+  }
+  #s6 .archive-line .status {
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+  #s6 .archive-line.available .status {
+    color: #00ff88;
+    opacity: 0.5;
+  }
+  #s6 .archive-line.soon .status {
+    color: #fff;
+    opacity: 0.1;
+  }
+  #s6 .archive-tagline {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-style: italic;
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    margin-top: 4vh;
+    text-align: center;
+  }
+  #s6 .archive-tagline.visible {
+    opacity: 0.2;
+  }
+  #s6 .archive-byline {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.4em;
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    margin-top: 1rem;
+    text-align: center;
+  }
+  #s6 .archive-byline.visible {
+    opacity: 0.12;
+  }
+  #s6 .archive-whitepaper {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: rgba(255,255,255,0.2);
+    text-decoration: none;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    margin-top: 1.5rem;
+    text-align: center;
+  }
+  #s6 .archive-whitepaper.visible {
+    opacity: 0.2;
+  }
+  #s6 .archive-whitepaper:hover {
+    opacity: 0.5;
+  }
+
+  /* ── Progress indicator (7 dots) ── */
+  #progress {
+    position: fixed;
+    bottom: 4vh;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+  #progress.visible { opacity: 1; }
+  .dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.4s ease, transform 0.4s ease;
+  }
+  .dot.active {
+    background: var(--green);
+    transform: scale(1.4);
+  }
+
+  #next-prompt {
+    position: fixed;
+    bottom: 3vh;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: rgba(255,255,255,0.25);
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    pointer-events: none;
+    z-index: 25;
+  }
+  #next-prompt.visible {
+    opacity: 1;
+  }
+
+  #scanlines {
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0.4;
+  }
+
+  #noise {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 49;
+    opacity: 0.04;
+    mix-blend-mode: screen;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+  .restart-archive {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+    background: none;
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 10px 20px;
+    cursor: pointer;
+    margin-top: 2.5rem;
+    display: inline-block;
+    transition: color 0.3s, border-color 0.3s;
+    opacity: 0;
+    animation: fadeUp 1s ease 4s forwards;
+  }
+  .restart-archive:hover {
+    color: rgba(255,255,255,0.6);
+    border-color: rgba(255,255,255,0.3);
+  }
+
+  /* ── ENTRY SCREEN ── */
+  #s-entry {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: #020d0e;
+    transition: opacity 1.2s ease;
+  }
+  #s-entry.gone { opacity: 0; pointer-events: none; }
+  #entry-gl {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+    pointer-events: none;
+  }
+  #entry-wordmark {
+    position: absolute;
+    top: 4vh; left: 4vw;
+    pointer-events: none;
+  }
+  #entry-wordmark .ew-name {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.55em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    display: block;
+    margin-bottom: 6px;
+  }
+  #entry-wordmark .ew-strap {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 300;
+    font-style: italic;
+    color: rgba(255,255,255,0.22);
+    display: block;
+  }
+  #entry-centre {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    text-align: center;
+  }
+  #entry-tagline {
+    font-family: var(--sans);
+    font-size: clamp(11px, 1.1vw, 14px);
+    font-weight: 300;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.18);
+    margin-bottom: 2.8rem;
+    pointer-events: none;
+  }
+  /* The button + ring container */
+  #entry-btn-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    position: relative;
+  }
+  /* Canvas ring sits behind/around button, perfectly centred */
+  #entry-ring-canvas {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  #entry-ring-canvas.vis { opacity: 1; }
+  #entry-btn {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    background:
+      linear-gradient(#020d0e, #020d0e) padding-box,
+      linear-gradient(145deg, #b8960c, #f0d080, #b8960c) border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, filter 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+  }
+  #entry-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
+  #entry-btn-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.45em;
+    text-transform: uppercase;
+    color: rgba(240,208,128,0.5);
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  /* Tech data panel — shown during load */
+  #entry-data-panel {
+    position: absolute;
+    bottom: 5vh;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  #entry-data-panel.vis { opacity: 1; }
+  #entry-pct {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 300;
+    color: rgba(240,208,128,0.7);
+    letter-spacing: 0.05em;
+    line-height: 1;
+  }
+  #entry-msg {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase;
+  }
+  #entry-hex {
+    font-family: var(--mono);
+    font-size: 8px;
+    color: rgba(255,255,255,0.1);
+    letter-spacing: 0.15em;
+    margin-top: 2px;
+  }
+  #entry-metrics {
+    font-family: var(--mono);
+    font-size: 8px;
+    color: rgba(255,255,255,0.12);
+    letter-spacing: 0.1em;
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  /* ── NEURAL LOADER — also used on onboarding entry ── */
+  #neural-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 190;
+    background: #020d0e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+  #neural-loader.vis { opacity: 1; pointer-events: all; }
+  #neural-loader.gone { opacity: 0; pointer-events: none; }
+  #nl-ring-canvas { display: block; }
+  #nl-pct {
+    font-family: var(--mono);
+    font-size: 42px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 0.05em;
+    margin-top: 2rem;
+    line-height: 1;
+  }
+  #nl-msg {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.35em;
+    color: rgba(255,255,255,0.2);
+    text-transform: uppercase;
+    margin-top: 0.8rem;
+  }
+  #nl-hex {
+    font-family: var(--mono);
+    font-size: 8px;
+    color: rgba(255,255,255,0.08);
+    letter-spacing: 0.12em;
+    margin-top: 6px;
+  }
+  #nl-metrics {
+    font-family: var(--mono);
+    font-size: 8px;
+    color: rgba(255,255,255,0.1);
+    letter-spacing: 0.1em;
+    display: flex;
+    gap: 2rem;
+    margin-top: 8px;
+  }
+
+  /* ── HOME NAV ── */
+  #home-nav {
+    position: fixed;
+    top: 4vh; left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4vw;
+    z-index: 30;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 1s ease;
+  }
+  #home-nav.vis { opacity: 1; pointer-events: all; }
+  .hn-logo { display: flex; align-items: center; gap: 12px; }
+  .hn-logo svg { width: 28px; height: 28px; }
+  .hn-logo-name {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.45em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+  }
+  .hn-links { display: flex; gap: 2.5rem; }
+  .hn-links a {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.22);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .hn-links a:hover { color: rgba(255,255,255,0.55); }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+</head>
+<body>
+
+<!-- ════ ENTRY SCREEN ════ -->
+<div id="s-entry">
+  <canvas id="entry-gl"></canvas>
+  <div id="entry-wordmark">
+    <span class="ew-name">DreamScreens</span>
+    <span class="ew-strap">Reconstructing what the mind almost remembers.</span>
+  </div>
+  <div id="entry-centre">
+    <div id="entry-tagline">Neural analysis system — primed</div>
+    <div id="entry-btn-wrap">
+      <canvas id="entry-ring-canvas" width="110" height="110"></canvas>
+      <div id="entry-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <defs>
+            <linearGradient id="egrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#b8960c"/>
+              <stop offset="100%" stop-color="#f0d080"/>
+            </linearGradient>
+          </defs>
+          <path d="M8 16L16 8M16 8H9M16 8V15" stroke="url(#egrad)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span id="entry-btn-label">ENTER</span>
+    </div>
+  </div>
+  <div id="entry-data-panel">
+    <div id="entry-pct">0%</div>
+    <div id="entry-msg">initialising</div>
+    <div id="entry-hex">0x00000000</div>
+    <div id="entry-metrics">
+      <span id="em-eeg">EEG — —</span>
+      <span id="em-diff">DIFF — —</span>
+      <span id="em-rem">REM — —</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════ NEURAL LOADER (onboarding entry) ════ -->
+<div id="neural-loader">
+  <canvas id="nl-ring-canvas" width="160" height="160"></canvas>
+  <div id="nl-pct">0%</div>
+  <div id="nl-msg">connecting</div>
+  <div id="nl-hex">0x00000000</div>
+  <div id="nl-metrics">
+    <span id="nl-eeg">EEG — —</span>
+    <span id="nl-diff">DIFF — —</span>
+    <span id="nl-rem">REM — —</span>
+  </div>
+</div>
+
+<!-- ════ HOME NAV ════ -->
+<div id="home-nav">
+  <div class="hn-logo">
+    <svg viewBox="0 0 44 44" fill="none">
+      <defs>
+        <linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#999" stop-opacity="0.5"/>
+          <stop offset="100%" stop-color="#bbb" stop-opacity="0.3"/>
+        </linearGradient>
+      </defs>
+      <circle cx="20" cy="20" r="13" stroke="url(#lg)" stroke-width="1.5" fill="none"/>
+      <line x1="30" y1="30" x2="37" y2="37" stroke="url(#lg)" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <span class="hn-logo-name">DreamScreens</span>
+  </div>
+  <nav class="hn-links">
+    <a href="#">Analyses</a>
+    <a href="#">Research</a>
+    <a href="#">Archive</a>
+    <a href="#">Contact</a>
+  </nav>
+</div>
+
+<div id="cursor"></div>
+<div id="scanlines"></div>
+<canvas id="noise"></canvas>
+<canvas id="gl"></canvas>
+
+<div id="progress">
+  <div class="dot" id="d0"></div>
+  <div class="dot" id="d1"></div>
+  <div class="dot" id="d2"></div>
+  <div class="dot" id="d3"></div>
+  <div class="dot" id="d4"></div>
+  <div class="dot" id="d5"></div>
+  <div class="dot" id="d6"></div>
+</div>
+
+<div id="next-prompt">· next memory ·</div>
+
+<!-- STAGE 0: Home screen -->
+<div class="screen" id="s0">
+  <div class="s0-bottom">
+    <div class="wordmark">DS-NL · Neural Reconstruction Lab · v4.1</div>
+    <button class="enter-btn" onclick="onEnter()" aria-label="Enter onboarding">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <path d="M5 12h14M13 6l6 6-6 6" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="enter-btn-label">ENTER ONBOARDING</div>
+  </div>
+  <div class="session-id">Session <span id="sessionId"></span></div>
+  <div class="stage0-links" id="stage0Links">
+    <a href="proposal.html" target="_blank">artistic proposition →</a>
+    <a href="whitepaper.html" target="_blank">research overview →</a>
+  </div>
+</div>
+
+<!-- STAGE 1: System log / wave -->
+<div class="screen" id="s1">
+  <div class="log" id="logContainer"></div>
+</div>
+
+<!-- STAGES 2,3,4: Memory fragments over video -->
+<div class="screen" id="s2">
+  <div class="fragment" id="fragment2">
+    <p id="fragmentText2"></p>
+    <div class="attr"></div>
+  </div>
+</div>
+<div class="screen" id="s3">
+  <div class="fragment" id="fragment3">
+    <p id="fragmentText3"></p>
+    <div class="attr"></div>
+  </div>
+</div>
+<div class="screen" id="s4">
+  <div class="fragment" id="fragment4">
+    <p id="fragmentText4"></p>
+    <div class="attr"></div>
+  </div>
+</div>
+
+<!-- STAGE 5: Resolution organism + end card -->
+<div class="screen" id="s5">
+  <div class="end-msg">
+    <div class="status">Analysis begins.</div>
+    <h2>This is your mind, reconstructed.</h2>
+    <div class="byline">Welcome to DreamScreens.</div>
+    <button class="restart" onclick="resetExperience()">Re-enter analysis ↺</button>
+  </div>
+</div>
+
+<!-- STAGE 6: Archive / Analysis Protocols -->
+<div class="screen" id="s6">
+  <div class="archive-header" id="archive-header">DREAMSCREENS — AVAILABLE ANALYSIS PROTOCOLS</div>
+  <div class="archive-framing-1" id="archiveFraming1">Each protocol is a complete neural reconstruction sequence.</div>
+  <div class="archive-framing-2" id="archiveFraming2">Select an analysis to begin dream reconstruction · DS-NL-2026</div>
+  <div class="archive-list" id="archiveList"></div>
+  <div class="archive-tagline" id="archiveTagline">Return to a moment you thought was lost.</div>
+  <div class="archive-byline" id="archiveByline">dreamscreens.io · Neural Reconstruction Lab</div>
+  <a href="whitepaper.html" target="_blank" class="archive-whitepaper" id="archiveWhitepaper">read the research document →</a>
+  <button class="restart-archive" onclick="resetExperience()">
+    return to system home ↺
+  </button>
+</div>
+
+<video id="vid1" style="display:none" crossorigin="anonymous" loop muted playsinline></video>
+<video id="vid2" style="display:none" crossorigin="anonymous" loop muted playsinline></video>
+<video id="vid3" style="display:none" crossorigin="anonymous" loop muted playsinline></video>
+
+<script>
+// ════════════════════════════════════════
+// DETECTION
+// ════════════════════════════════════════
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+// ════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════
+const CONFIG = {
+  // Set to your CDN URL when hosting media separately (e.g. 'https://your-bucket.r2.dev/')
+  mediaBaseUrl: '',
+  media(path) { return this.mediaBaseUrl + path; },
+  videos: [
+    'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/549eac904e2844e21538beff41f2d1b7/manifest/video.m3u8',
+    'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/57a1a6e1249258c1b2a9f0e64111333d/manifest/video.m3u8',
+    'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/aedc5ba75b991b5b687f45f8db3b1da9/manifest/video.m3u8',
+  ],
+  videoSeek: 30,
+  music: {
+    intro: 'Media/mp3/Virta.mp3',
+    stage1: 'Media/mp3/Signal Dreams.mp3',
+    stage2: 'Media/mp3/Feedback Memory.(Minus 197).mp3',
+    stage3: 'Media/mp3/Nature module 1.mp3',
+    stage4: 'Media/mp3/Brainwaves (grain Pysche).mp3',
+    stage5: 'Media/mp3/Module n5 v2.mp3'
+  },
+  timing: {
+    stage1Duration: 18000,
+    stage2Duration: 25000,
+    stage3Duration: 25000,
+    stage4Duration: 25000,
+    stage5OrgDuration: 8000,
+    transitionMs: 2500,
+    crossfadeMs: 30000
+  },
+  logLinePause: 550
+};
+
+// ════════════════════════════════════════
+// CURSOR
+// ════════════════════════════════════════
+const cursor = document.getElementById('cursor');
+document.addEventListener('mousemove', e => {
+  cursor.style.transform = 'translate(' + (e.clientX - 4) + 'px, ' + (e.clientY - 4) + 'px)';
+});
+
+// ════════════════════════════════════════
+// NOISE CANVAS
+// ════════════════════════════════════════
+(function noiseLoop() {
+  const c = document.getElementById('noise');
+  c.width = 256; c.height = 256;
+  const ctx = c.getContext('2d');
+  c.style.width = '100%'; c.style.height = '100%';
+  c.style.imageRendering = 'pixelated';
+  function drawNoise() {
+    const img = ctx.createImageData(256, 256);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = Math.random() * 255 | 0;
+      img.data[i] = img.data[i+1] = img.data[i+2] = v;
+      img.data[i+3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    requestAnimationFrame(drawNoise);
+  }
+  drawNoise();
+})();
+
+// ════════════════════════════════════════
+// WEBGL
+// ════════════════════════════════════════
+const glCanvas = document.getElementById('gl');
+const gl = glCanvas.getContext('webgl') || glCanvas.getContext('webgl2');
+
+function resize() {
+  glCanvas.width = Math.floor(window.innerWidth * 0.75);
+  glCanvas.height = Math.floor(window.innerHeight * 0.75);
+  glCanvas.style.width = '100%';
+  glCanvas.style.height = '100%';
+  if (gl) gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+}
+window.addEventListener('resize', resize);
+resize();
+
+const VS = `attribute vec2 a_pos; void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }`;
+
+const FS = `
+precision highp float;
+uniform float u_t;
+uniform vec2 u_res;
+uniform float u_stage;
+uniform float u_blend;
+uniform float u_orgOpacity;
+uniform float u_orgGhost;
+uniform float u_archiveMode;
+uniform float u_orgSettle;
+uniform sampler2D u_vid1;
+uniform sampler2D u_vid2;
+uniform sampler2D u_vid3;
+
+#define N 150.0
+#define GOLDEN 2.399963
+
+float hash(vec2 p) {
+  p = fract(p * vec2(234.34, 435.345));
+  p += dot(p, p + 34.23);
+  return fract(p.x * p.y);
+}
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i), hash(i + vec2(1,0)), f.x),
+    mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x), f.y);
+}
+float fbm(vec2 p) {
+  float v = 0.0, amp = 0.5, freq = 1.0;
+  for (int i = 0; i < 5; i++) {
+    v += noise(p * freq) * amp;
+    freq *= 2.0; amp *= 0.5;
+  }
+  return v;
+}
+
+vec3 organismColor(bool warm) {
+  return warm ? vec3(1.0, 0.75, 0.4) : vec3(0.9, 0.85, 0.7);
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_res;
+  vec2 ndc = uv * 2.0 - 1.0;
+  ndc.x *= u_res.x / u_res.y;
+  vec3 col = vec3(0.01, 0.04, 0.05);
+
+  bool isOrg0 = u_stage < 0.5;
+  bool isOrg5 = u_stage > 4.5;
+  bool showOrg = (isOrg0 || isOrg5) && u_orgOpacity > 0.001;
+
+  float archiveGlitch = u_archiveMode;
+  vec2 orgUV = uv;
+  float gs = hash(vec2(floor(uv.y * 60.0), floor(u_t * 6.0)));
+  float glitchBand = step(0.92, gs) * archiveGlitch;
+  orgUV.x += (hash(vec2(uv.y, u_t)) - 0.5) * glitchBand * 0.04;
+  float splitAmt = archiveGlitch * 0.008;
+
+  if (showOrg || u_archiveMode > 0.001) {
+    float rotY = u_t * 0.314;
+    float stableAmp = isOrg5 ? 0.38 + 0.08 * sin(u_t * 0.4) : 0.35 + 0.08 * sin(u_t * 0.4);
+    float dispersedAmp = 2.2 + 0.3 * sin(u_t * 0.15);
+    float settle = clamp(u_orgSettle, 0.0, 1.0);
+    float settleEase = settle * settle * (3.0 - 2.0 * settle);
+    float amp = mix(dispersedAmp, stableAmp, settleEase);
+    float scale = mix(1.4, 0.6 + 0.03 * sin(u_t * 0.25), settleEase);
+    if (isOrg5 || u_archiveMode > 0.001) rotY *= 0.5;
+    vec3 coolPalette = vec3(0.4, 0.7, 1.0);
+    vec3 baseColor = mix(organismColor(isOrg5), coolPalette, u_archiveMode);
+    float orgVis = max(u_orgOpacity, u_archiveMode);
+
+    for (float i = 0.0; i < N; i += 1.0) {
+      float theta = i * GOLDEN;
+      float phi = acos(1.0 - 2.0 * (i + 0.5) / N);
+      vec3 pos = vec3(sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi));
+      pos += fbm(pos.xy * 3.0 + u_t * 0.2) * amp * vec3(1,1,1);
+      float c = cos(rotY), s = sin(rotY);
+      pos.xz = vec2(pos.x * c - pos.z * s, pos.x * s + pos.z * c);
+      pos *= scale;
+      vec2 proj = pos.xy / (1.0 - pos.z * 0.3);
+      proj.x /= u_res.x / u_res.y;
+      vec2 projR = proj + vec2(splitAmt, 0.0);
+      vec2 projB = proj - vec2(splitAmt, 0.0);
+      float dR = length(ndc - projR);
+      float dG = length(ndc - proj);
+      float dB = length(ndc - projB);
+      float contrib = 0.0006 * orgVis;
+      col += vec3(baseColor.r * contrib / (dR * dR + 0.0005), baseColor.g * contrib / (dG * dG + 0.0005), baseColor.b * contrib / (dB * dB + 0.0005));
+    }
+    float bokeh = hash(orgUV * 100.0 + u_t) * hash(orgUV * 77.0);
+    col += baseColor * 0.001 * step(0.98, bokeh) * orgVis;
+  }
+
+  if (u_stage >= 1.0 && u_stage < 2.0) {
+    float n = fbm(uv * 3.0 + u_t * 0.15);
+    vec3 rawNoise = vec3(n * 0.3, n * 0.35, n * 0.28);
+    float wave = sin(uv.x * 6.28 + u_t * 0.8) * 0.03 + sin(uv.x * 3.14 + u_t * 0.4) * 0.015;
+    float d = abs(uv.y - 0.5 - wave);
+    float c = smoothstep(0.004, 0.001, d);
+    vec3 cableCol = vec3(0.6, 0.9, 0.65) * c * 0.7;
+    col = mix(col, rawNoise + cableCol, 1.0 - u_orgOpacity);
+  }
+
+  if (u_stage >= 2.0) {
+    float glitchAmount = u_blend * (1.0 - u_blend) * 4.0;
+    float glitchSeed = hash(vec2(floor(uv.y * 80.0), floor(u_t * 8.0)));
+    float glitchLine = step(1.0 - glitchAmount * 0.3, glitchSeed);
+    vec2 glitchUV = uv + vec2(glitchLine * (hash(vec2(uv.y, u_t)) - 0.5) * 0.06, 0.0);
+    float drift = glitchAmount * 0.012;
+    vec3 v1 = texture2D(u_vid1, glitchUV).rgb;
+    vec3 v2 = texture2D(u_vid2, glitchUV).rgb;
+    vec3 v3 = texture2D(u_vid3, glitchUV).rgb;
+    float r1 = texture2D(u_vid1, glitchUV + vec2(drift, 0.0)).r;
+    float g1 = texture2D(u_vid1, glitchUV).g;
+    float b1 = texture2D(u_vid1, glitchUV - vec2(drift, 0.0)).b;
+    vec3 v1Chroma = vec3(r1, g1, b1);
+    float r2 = texture2D(u_vid2, glitchUV + vec2(drift, 0.0)).r;
+    float g2 = texture2D(u_vid2, glitchUV).g;
+    float b2 = texture2D(u_vid2, glitchUV - vec2(drift, 0.0)).b;
+    vec3 v2Chroma = vec3(r2, g2, b2);
+    float r3 = texture2D(u_vid3, glitchUV + vec2(drift, 0.0)).r;
+    float g3 = texture2D(u_vid3, glitchUV).g;
+    float b3 = texture2D(u_vid3, glitchUV - vec2(drift, 0.0)).b;
+    vec3 v3Chroma = vec3(r3, g3, b3);
+    v1 = mix(v1, v1Chroma, glitchAmount * 0.7);
+    v2 = mix(v2, v2Chroma, glitchAmount * 0.7);
+    v3 = mix(v3, v3Chroma, glitchAmount * 0.7);
+    float lum1 = dot(v1, vec3(0.299, 0.587, 0.114));
+    float lum2 = dot(v2, vec3(0.299, 0.587, 0.114));
+    float lum3 = dot(v3, vec3(0.299, 0.587, 0.114));
+    v1 = mix(v1, vec3(lum1), 0.4);
+    v2 = mix(v2, vec3(lum2), 0.4);
+    v3 = mix(v3, vec3(lum3), 0.4);
+    vec3 vidCol = v1;
+    if (u_stage >= 3.0 && u_stage < 4.0) vidCol = mix(v1, v2, u_blend);
+    else if (u_stage >= 4.0) vidCol = mix(v2, v3, u_blend);
+    float n = fbm(uv * 3.0 + u_t * 0.15);
+    vec3 rawNoise = vec3(n * 0.3, n * 0.35, n * 0.28);
+    float rev = u_blend;
+    float thr = mix(1.5, -0.2, rev);
+    float lum = dot(vidCol, vec3(0.299, 0.587, 0.114));
+    float mask = smoothstep(thr - 0.3, thr + 0.3, n + lum * 0.4);
+    vidCol = mix(rawNoise, vidCol + rawNoise * 0.3, mask);
+    col = mix(col, vidCol, 1.0 - u_orgOpacity);
+  }
+
+  if (u_orgGhost > 0.001) {
+    float rotY = u_t * 0.314;
+    float amp = 0.35 + 0.08 * sin(u_t * 0.4);
+    float scale = 0.6 + 0.03 * sin(u_t * 0.25);
+    vec3 orgCol = vec3(0.0);
+    for (float i = 0.0; i < N; i += 1.0) {
+      float theta = i * GOLDEN;
+      float phi = acos(1.0 - 2.0 * (i + 0.5) / N);
+      vec3 pos = vec3(sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi));
+      pos += fbm(pos.xy * 3.0 + u_t * 0.2) * amp * vec3(1,1,1);
+      float c = cos(rotY), s = sin(rotY);
+      pos.xz = vec2(pos.x * c - pos.z * s, pos.x * s + pos.z * c);
+      pos *= scale;
+      vec2 proj = pos.xy / (1.0 - pos.z * 0.3);
+      proj.x /= u_res.x / u_res.y;
+      float d = length(ndc - proj);
+      orgCol += organismColor(false) * 0.0006 / (d * d + 0.0005);
+    }
+    col += orgCol * u_orgGhost;
+  }
+
+  float dist = length(uv - vec2(0.5));
+  col *= clamp(1.0 - dist * 1.2, 0.0, 1.0);
+  if (u_archiveMode > 0.99) col = min(col, vec3(0.35));
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+
+function compileShader(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, compileShader(gl.VERTEX_SHADER, VS));
+gl.attachShader(prog, compileShader(gl.FRAGMENT_SHADER, FS));
+gl.linkProgram(prog);
+gl.useProgram(prog);
+
+const buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+const aPos = gl.getAttribLocation(prog, 'a_pos');
+gl.enableVertexAttribArray(aPos);
+gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+const uT = gl.getUniformLocation(prog, 'u_t');
+const uRes = gl.getUniformLocation(prog, 'u_res');
+const uStage = gl.getUniformLocation(prog, 'u_stage');
+const uBlend = gl.getUniformLocation(prog, 'u_blend');
+const uOrgOpacity = gl.getUniformLocation(prog, 'u_orgOpacity');
+const uOrgGhost = gl.getUniformLocation(prog, 'u_orgGhost');
+const uArchiveMode = gl.getUniformLocation(prog, 'u_archiveMode');
+const uOrgSettle = gl.getUniformLocation(prog, 'u_orgSettle');
+const uVid1 = gl.getUniformLocation(prog, 'u_vid1');
+const uVid2 = gl.getUniformLocation(prog, 'u_vid2');
+const uVid3 = gl.getUniformLocation(prog, 'u_vid3');
+
+function createVideoTexture() {
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  return tex;
+}
+const tex1 = createVideoTexture();
+const tex2 = createVideoTexture();
+const tex3 = createVideoTexture();
+
+function loadHLS(videoEl, url) {
+  if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+    videoEl.src = url;
+  } else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+    const hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 60 });
+    hls.loadSource(url);
+    hls.attachMedia(videoEl);
+  }
+}
+
+function shuffleVideos() {
+  const arr = [...CONFIG.videos];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+let activeVideos = shuffleVideos();
+const vid1 = document.getElementById('vid1');
+const vid2 = document.getElementById('vid2');
+const vid3 = document.getElementById('vid3');
+if (!isIOS) {
+  loadHLS(vid1, activeVideos[0]);
+  loadHLS(vid2, activeVideos[1]);
+  loadHLS(vid3, activeVideos[2]);
+}
+
+let videosReady = 0;
+function onVideoReady() {
+  videosReady++;
+  if (videosReady === 3) {
+    vid1.currentTime = CONFIG.videoSeek;
+    vid2.currentTime = CONFIG.videoSeek;
+    vid3.currentTime = CONFIG.videoSeek;
+    vid1.play().catch(()=>{});
+    vid2.play().catch(()=>{});
+    vid3.play().catch(()=>{});
+  }
+}
+vid1.addEventListener('canplaythrough', onVideoReady);
+vid2.addEventListener('canplaythrough', onVideoReady);
+vid3.addEventListener('canplaythrough', onVideoReady);
+
+let startTime = Date.now();
+let lastLog = -1;
+let glStage = 0.0, glStageTarget = 0.0;
+let glBlend = 0.0, glBlendTarget = 0.0;
+let glOrgOpacity = 1.0, glOrgOpacityTarget = 1.0;
+let glOrgGhost = 0.0;
+let glArchiveMode = 0.0, glArchiveModeTarget = 0.0;
+let glOrgSettle = 1.0, glOrgSettleTarget = 1.0;
+let manualOrgFade = false;
+
+function renderGL() {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  const t = (Date.now() - startTime) / 1000;
+  const ti = Math.floor(t);
+  if (ti % 5 === 0 && ti !== lastLog) {
+    console.log('stage:', glStage.toFixed(2), 'blend:', glBlend.toFixed(2), 'orgOpacity:', glOrgOpacity.toFixed(2), 't:', t.toFixed(1));
+    lastLog = ti;
+  }
+  glStage += (glStageTarget - glStage) * 0.002;
+  glBlend += (glBlendTarget - glBlend) * 0.003;
+  if (!manualOrgFade) glOrgOpacity += (glOrgOpacityTarget - glOrgOpacity) * 0.002;
+  glArchiveMode += (glArchiveModeTarget - glArchiveMode) * 0.002;
+  glOrgSettle += (glOrgSettleTarget - glOrgSettle) * 0.008;
+
+  gl.uniform1f(uT, t);
+  gl.uniform2f(uRes, glCanvas.width, glCanvas.height);
+  gl.uniform1f(uStage, glStage);
+  gl.uniform1f(uBlend, glBlend);
+  gl.uniform1f(uOrgOpacity, glOrgOpacity);
+  gl.uniform1f(uOrgGhost, glOrgGhost);
+  gl.uniform1f(uArchiveMode, glArchiveMode);
+  gl.uniform1f(uOrgSettle, glOrgSettle);
+
+  if (glStage >= 2.0) {
+    if (glStage < 3.0 && vid1.readyState >= 2) {
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, tex1);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, vid1);
+    } else if (glStage < 4.0 && vid1.readyState >= 2 && vid2.readyState >= 2) {
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, tex1);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, vid1);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, tex2);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, vid2);
+    } else if (glStage >= 4.0 && vid2.readyState >= 2 && vid3.readyState >= 2) {
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, tex2);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, vid2);
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_2D, tex3);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, vid3);
+    }
+  }
+  gl.uniform1i(uVid1, 0);
+  gl.uniform1i(uVid2, 1);
+  gl.uniform1i(uVid3, 2);
+
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  requestAnimationFrame(renderGL);
+}
+renderGL();
+
+// ════════════════════════════════════════
+// AUDIO
+// ════════════════════════════════════════
+let audioCtx = null;
+
+function mediaFetchUrl(relPath) {
+  if (!relPath || /^https?:\/\//i.test(relPath)) return relPath;
+  const enc = relPath.split('/').filter(Boolean).map(encodeURIComponent).join('/');
+  return new URL(enc, window.location.href).href;
+}
+
+function getCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+function unlockAudio() {
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  } else if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx.resume();
+  }
+  document.removeEventListener('touchstart', unlockAudio);
+  document.removeEventListener('touchend', unlockAudio);
+  document.removeEventListener('click', unlockAudio);
+}
+document.addEventListener('touchstart', unlockAudio, { once: true });
+document.addEventListener('touchend', unlockAudio, { once: true });
+document.addEventListener('click', unlockAudio, { once: true });
+
+document.addEventListener('visibilitychange', function () {
+  if (document.hidden || !audioCtx) return;
+  if (audioCtx.state === 'suspended') void audioCtx.resume();
+});
+
+let currentGain = null;
+let currentBuffer = null;
+
+async function playTrack(path, opts) {
+  const ctx = getCtx();
+  if (ctx.state === 'suspended') await ctx.resume();
+  const fadeInTC = (opts && opts.fadeInTimeConstant) || 10.0;
+  const url = mediaFetchUrl(path);
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const buf = await ctx.decodeAudioData(await res.arrayBuffer());
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+    gain.gain.setValueAtTime(0, now);
+    src.connect(gain);
+    gain.connect(ctx.destination);
+    // Gesture may expire while fetch/decode runs; resume again before start (Chrome/Safari).
+    if (ctx.state === 'suspended') await ctx.resume();
+    src.start(0);
+    if (currentGain) {
+      currentGain.gain.setTargetAtTime(0, now, 10.0);
+      gain.gain.setTargetAtTime(0.75, now, fadeInTC);
+      const oldSrc = currentBuffer;
+      setTimeout(() => { try { if (oldSrc) oldSrc.stop(); } catch(e){} }, 45000);
+    } else {
+      gain.gain.setTargetAtTime(0.75, now, fadeInTC);
+    }
+    currentGain = gain;
+    currentBuffer = src;
+  } catch (e) {
+    console.warn('Audio load failed:', path, url, e);
+    if (window.location.protocol === 'file:') {
+      console.warn('Open via a local server (e.g. python -m http.server) so fetch() can load Media/mp3.');
+    }
+  }
+}
+
+function stopAudio() {
+  if (currentGain) {
+    const ctx = getCtx();
+    currentGain.gain.setTargetAtTime(0, ctx.currentTime, 10.0);
+    const s = currentBuffer;
+    setTimeout(() => {
+      try { if (s) s.stop(); } catch(e){}
+      currentGain = null;
+      currentBuffer = null;
+    }, 45000);
+  }
+}
+
+function fadeAudioOver60s() {
+  if (currentGain) {
+    const ctx = getCtx();
+    currentGain.gain.setTargetAtTime(0, ctx.currentTime, 20.0);
+  }
+}
+
+function staticBurst(dur) {
+  const ctx = getCtx();
+  const bufSize = ctx.sampleRate * (dur / 1000);
+  const b = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const d = b.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) d[i] = (Math.random() * 2 - 1) * 0.3;
+  const src = ctx.createBufferSource();
+  src.buffer = b;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.3, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur / 1000);
+  src.connect(gain);
+  gain.connect(ctx.destination);
+  src.start(0);
+}
+
+function beep(freq, dur) {
+  const ctx = getCtx();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.frequency.value = freq;
+  osc.type = 'square';
+  gain.gain.setValueAtTime(0.1, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur / 1000);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(0);
+  osc.stop(ctx.currentTime + dur / 1000);
+}
+
+let virtaStarted = false;
+function startVirta() {
+  if (virtaStarted) return;
+  virtaStarted = true;
+  const c = getCtx();
+  if (c.state === 'suspended') void c.resume();
+  playTrack(CONFIG.media(CONFIG.music.intro));
+}
+// Web Audio requires a real user gesture (click/touch/pointer). Mousemove is NOT
+// treated as activation in Chrome/Safari/Firefox — only Cursor's browser may allow it.
+if (isIOS) {
+  document.addEventListener('touchstart', startVirta, { once: true, passive: true });
+} else {
+  document.addEventListener('pointerdown', startVirta, { once: true, capture: true });
+  document.addEventListener('click', startVirta, { once: true, capture: true });
+}
+
+function pulseOrganism() {
+  if (currentStage < 2 || currentStage > 4) return;
+  const startTime = Date.now();
+  const pulseDuration = 12000;
+  function updatePulse() {
+    const elapsed = Date.now() - startTime;
+    const progress = elapsed / pulseDuration;
+    if (progress >= 1.0) {
+      glOrgGhost = 0;
+      return;
+    }
+    glOrgGhost = Math.sin(progress * Math.PI) * 0.12;
+    requestAnimationFrame(updatePulse);
+  }
+  updatePulse();
+}
+setInterval(pulseOrganism, 25000);
+
+document.getElementById('sessionId').textContent =
+  'DS-' + Math.random().toString(36).substring(2,7).toUpperCase();
+
+// ════════════════════════════════════════
+// STAGE MANAGEMENT
+// ════════════════════════════════════════
+const screens = ['s0','s1','s2','s3','s4','s5'];
+const dots = ['d0','d1','d2','d3','d4','d5','d6'];
+let stageTimer = null;
+
+let currentStage = 0;
+function showStage(n) {
+  currentStage = n;
+  screens.forEach((id, i) => {
+    document.getElementById(id).classList.toggle('active', i === n);
+  });
+  dots.forEach((id, i) => {
+    document.getElementById(id).classList.toggle('active', i === n);
+  });
+}
+
+const LOG_LINES = [
+  { ts:'00:00:01', cls:'', text:'WELCOME TO DREAMSCREENS.' },
+  { ts:'00:00:02', cls:'', text:'WELCOME TO THE FUTURE OF MEMORY.' },
+  { ts:'00:00:04', cls:'', text:'Using differential retina scanning and remote EEG signal analysis —' },
+  { ts:'00:00:06', cls:'', text:'we isolate your neuro-cortical brain patterns in real time.' },
+  { ts:'00:00:08', cls:'', text:'We render your dreams.' },
+  { ts:'00:00:11', cls:'', text:'Our reverse-reconstruction technology re-engineers those dreams within your own experience.' },
+  { ts:'00:00:13', cls:'', text:'Return to a moment you thought was lost.' },
+  { ts:'00:00:16', cls:'', text:'Meet someone you\'ve been missing.' },
+  ...(isIOS ? [{ ts:'00:00:18', cls:'', text:'Become the person you always believed you could be.' }] : []),
+];
+
+function runLogLines(callback) {
+  const container = document.getElementById('logContainer');
+  container.innerHTML = '';
+  const pause = CONFIG.logLinePause;
+  LOG_LINES.forEach((line, i) => {
+    const el = document.createElement('div');
+    el.className = 'log-line';
+    el.innerHTML = `<span class="ts">[${line.ts}]</span><span class="${line.cls}">${line.text}</span>`;
+    container.appendChild(el);
+    setTimeout(() => {
+      el.classList.add('visible');
+      if (line.cls === 'ok' || line.cls === 'warn') beep(880, 30);
+      if (i === LOG_LINES.length - 1 && callback) setTimeout(callback, 800);
+    }, i * pause);
+  });
+}
+
+const ARCHIVE_TRACKS = [
+  { idx: 'DS-01', title: 'Signal Dreams',       sub: 'REM cycle 1 · cortical signal',      status: 'available' },
+  { idx: 'DS-02', title: 'Feedback Memory',      sub: 'REM cycle 2 · echo pattern',         status: 'available' },
+  { idx: 'DS-03', title: 'Nature Module',        sub: 'REM cycle 3 · environmental trace',  status: 'available' },
+  { idx: 'DS-04', title: 'Brainwaves',           sub: 'REM cycle 4 · frequency analysis',   status: 'available' },
+  { idx: 'DS-05', title: 'Module N5',            sub: 'REM cycle 5 · deep signal',          status: 'available' },
+  { idx: 'DS-06', title: 'Co-Dreaming',          sub: 'REM cycle 6 · dual-subject trace',   status: 'locked' },
+  { idx: 'DS-07', title: 'Free Will',            sub: 'REM cycle 7 · agency pattern',       status: 'locked' },
+  { idx: 'DS-08', title: 'Glitches Are Portals', sub: 'REM cycle 8 · corrupted signal',     status: 'locked' },
+  { idx: 'DS-09', title: 'The Dream Ends',       sub: 'REM cycle 9 · termination sequence', status: 'locked' },
+  { idx: 'DS-10', title: 'Virta',                sub: 'REM cycle 10 · origin unknown',      status: 'locked' }
+];
+
+function showArchiveOverlay() {
+  fadeAudioOver60s();
+  document.getElementById('progress').classList.remove('visible');
+  currentStage = 6;
+  document.getElementById('s6').classList.add('active');
+  const list = document.getElementById('archiveList');
+  list.innerHTML = '';
+  setTimeout(() => document.getElementById('archive-header').classList.add('visible'), 0);
+  setTimeout(() => document.getElementById('archiveFraming1').classList.add('visible'), 500);
+  setTimeout(() => document.getElementById('archiveFraming2').classList.add('visible'), 1000);
+  ARCHIVE_TRACKS.forEach((t, i) => {
+    const el = document.createElement('div');
+    el.className = 'archive-line' + (t.status === 'available' ? ' available' : ' soon');
+    el.innerHTML = '<span class="idx">' + t.idx + '</span> · <span class="title">' + t.title + '</span><span class="sub"> · ' + t.sub + '</span> · <span class="status">' + (t.status === 'available' ? 'protocol available' : 'access restricted') + '</span>';
+    list.appendChild(el);
+    setTimeout(() => el.classList.add('visible'), 2000 + 500 * i);
+  });
+  const lastTrackTime = 2000 + 500 * (ARCHIVE_TRACKS.length - 1);
+  setTimeout(() => document.getElementById('archiveTagline').classList.add('visible'), lastTrackTime + 3000);
+  setTimeout(() => document.getElementById('archiveByline').classList.add('visible'), lastTrackTime + 5000);
+  setTimeout(() => document.getElementById('archiveWhitepaper').classList.add('visible'), lastTrackTime + 6000);
+}
+
+const FRAGS = [
+  { text: 'Welcome to DreamScreens.',                                           attr: 'DreamScreens · Neural Reconstruction Lab' },
+  { text: 'You are about to undergo\nneural memory reconstruction.',             attr: '' },
+  { text: 'Our system maps your cortical signature\nacross 64 active channels.', attr: 'EEG analysis · diffusion model v4.1' },
+  { text: 'It isolates the REM-state pattern\nunique to your consciousness.',    attr: '' },
+  { text: 'And renders it at 61% visual confidence.',                           attr: 'DS-NL · subject GHL-7704' },
+  { text: 'Not retrieval.\n\nRemembering.',                                      attr: '' },
+  { text: 'The train moved\nand she was watching the cables.',                   attr: 'Memory fragment · REM cycle 3 · confidence 61%' },
+  { text: 'The way they rose and fell\nlike breathing.',                         attr: '' },
+  { text: 'He didn\'t want to look away.',                                       attr: '' },
+  { text: 'This is not a playlist.\nNot a video.',                              attr: 'Source · archived transmission · DreamScreens internal' },
+  { text: 'An experience that reshapes itself\nto fit the version of you\nthat\'s watching it.', attr: '' },
+  { text: 'The glitch isn\'t a failure.\nIt\'s the invitation.',                attr: 'Fragment 7 · partially recovered · origin unknown' },
+  { text: 'What follows has been classified\nas a remote conscious event.',      attr: 'DS-NL-2026 · classification: restricted' },
+  { text: 'It can be stored.\nReplicated.\nReturned to.',                        attr: '' },
+  { text: 'This is your mind.',                                                  attr: '' },
+  { text: 'Reconstructed.',                                                      attr: 'Analysis complete · session archived' },
+];
+
+function showFrag(stageNum, idx) {
+  const f = FRAGS[idx];
+  if (!f) return;
+  const fragId = stageNum === 2 ? 'fragment2' : stageNum === 3 ? 'fragment3' : 'fragment4';
+  const el = document.getElementById(fragId);
+
+  const applyNew = () => {
+    el.querySelector('p').textContent = f.text;
+    el.querySelector('.attr').textContent = f.attr;
+    el.classList.remove('fading');
+    void el.offsetHeight;
+    el.classList.add('visible');
+  };
+
+  if (el.classList.contains('visible')) {
+    el.classList.remove('visible');
+    el.classList.add('fading');
+    setTimeout(applyNew, 2600);
+  } else {
+    applyNew();
+  }
+}
+
+let videoStageFallbackTimer = null;
+
+function enterVideoStage(stageNum, onAdvance) {
+  const ctx = getCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  [vid1, vid2, vid3].forEach(v => { if (v.readyState >= 2) v.play().catch(()=>{}); });
+  if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
+  const nextPrompt = document.getElementById('next-prompt');
+  nextPrompt.classList.remove('visible');
+  const advance = () => {
+    if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
+    videoStageFallbackTimer = null;
+    nextPrompt.classList.remove('visible');
+    document.removeEventListener('click', advanceOnClick);
+    onAdvance();
+  };
+  const advanceOnClick = () => advance();
+  document.addEventListener('click', advanceOnClick, { once: true });
+  setTimeout(() => nextPrompt.classList.add('visible'), 15000);
+  videoStageFallbackTimer = setTimeout(advance, 45000);
+}
+
+function onEnter() {
+  const ctx = getCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  document.getElementById('stage0Links').classList.remove('visible');
+  document.getElementById('home-nav').classList.remove('vis');
+
+  runNeuralLoader(document.getElementById('nl-ring-canvas'), 4500, [
+    { pct: 0,  msg: 'WELCOME TO DREAMSCREENS.' },
+    { pct: 18, msg: 'WELCOME TO THE FUTURE OF MEMORY.' },
+    { pct: 35, msg: 'Using differential retina scanning and remote EEG signal analysis —' },
+    { pct: 52, msg: 'we isolate your neuro-cortical brain patterns in real time.' },
+    { pct: 68, msg: 'We render your dreams.' },
+    { pct: 82, msg: 'Our reverse-reconstruction technology re-engineers those dreams within your own experience.' },
+    { pct: 95, msg: 'Return to a moment you thought was lost.' },
+    { pct: 100, msg: 'Meet someone you\'ve been missing.' },
+  ], function() {
+    document.getElementById('s0').classList.remove('active');
+    glStageTarget = 1.0;
+    showStage(1);
+    document.getElementById('progress').classList.add('visible');
+    playTrack(CONFIG.media(CONFIG.music.stage1));
+    manualOrgFade = true;
+    const fadeStart = Date.now();
+    const fadeDuration = 8000;
+    function fadeOrganism() {
+      const elapsed = Date.now() - fadeStart;
+      const progress = Math.min(elapsed / fadeDuration, 1.0);
+      glOrgOpacity = 1.0 - progress;
+      glOrgOpacityTarget = 0.0;
+      if (progress >= 1.0) manualOrgFade = false;
+      else requestAnimationFrame(fadeOrganism);
+    }
+    fadeOrganism();
+    stageTimer = setTimeout(() => {
+      runLogLines(() => {
+        const holdAfterLogs = CONFIG.timing.stage1Duration - LOG_LINES.length * CONFIG.logLinePause - 800;
+        stageTimer = setTimeout(() => {
+        staticBurst(200);
+        glStageTarget = 2.0;
+        glBlend = 0.0;
+        glBlendTarget = isIOS ? 0.3 : 1.0;
+        showStage(2);
+        playTrack(CONFIG.media(CONFIG.music.stage2));
+        showFrag(2, 0);
+        const dwell = 14000;
+        setTimeout(() => showFrag(2, 1), dwell * 1);
+        setTimeout(() => showFrag(2, 2), dwell * 2);
+        setTimeout(() => showFrag(2, 3), dwell * 3);
+        setTimeout(() => showFrag(2, 4), dwell * 4);
+        setTimeout(() => showFrag(2, 5), dwell * 5);
+        enterVideoStage(2, () => {
+          glBlendTarget = isIOS ? 0.3 : 1.0;
+          stageTimer = setTimeout(() => {
+            staticBurst(200);
+            glStageTarget = 3.0;
+            glBlend = 0.0;
+            glBlendTarget = isIOS ? 0.3 : 1.0;
+            showStage(3);
+            playTrack(CONFIG.media(CONFIG.music.stage3));
+            showFrag(3, 6);
+            setTimeout(() => showFrag(3, 7),  dwell * 1);
+            setTimeout(() => showFrag(3, 8),  dwell * 2);
+            setTimeout(() => showFrag(3, 9),  dwell * 3);
+            setTimeout(() => showFrag(3, 10), dwell * 4);
+            enterVideoStage(3, () => {
+              glBlendTarget = isIOS ? 0.3 : 1.0;
+              stageTimer = setTimeout(() => {
+                staticBurst(200);
+                glStageTarget = 4.0;
+                glBlend = 0.0;
+                glBlendTarget = isIOS ? 0.3 : 1.0;
+                showStage(4);
+                playTrack(CONFIG.media(CONFIG.music.stage4));
+                showFrag(4, 11);
+                setTimeout(() => showFrag(4, 12), dwell * 1);
+                setTimeout(() => showFrag(4, 13), dwell * 2);
+                setTimeout(() => showFrag(4, 14), dwell * 3);
+                setTimeout(() => showFrag(4, 15), dwell * 4);
+                enterVideoStage(4, () => {
+                  glBlendTarget = isIOS ? 0.3 : 1.0;
+                  stageTimer = setTimeout(() => {
+                    staticBurst(200);
+                    glStageTarget = 5.0;
+                    glOrgOpacityTarget = 1.0;
+                    showStage(5);
+                    playTrack(CONFIG.media(CONFIG.music.stage4));
+                    setTimeout(() => {
+                      playTrack(CONFIG.media(CONFIG.music.stage5), { fadeInTimeConstant: 15.0 });
+                    }, 20000);
+                    stageTimer = setTimeout(() => {
+                      glArchiveModeTarget = 1.0;
+                      showArchiveOverlay();
+                    }, 30000);
+                  }, CONFIG.timing.transitionMs);
+                });
+              }, CONFIG.timing.transitionMs);
+            });
+          }, CONFIG.timing.transitionMs);
+        });
+      }, holdAfterLogs);
+    });
+  }, 4000);
+  }); // end runNeuralLoader callback
+}
+
+function resetExperience() {
+  clearTimeout(stageTimer);
+  if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
+  videoStageFallbackTimer = null;
+  document.getElementById('next-prompt').classList.remove('visible');
+  stopAudio();
+  virtaStarted = false;
+  videosReady = 0;
+  activeVideos = shuffleVideos();
+  if (!isIOS) {
+    loadHLS(vid1, activeVideos[0]);
+    loadHLS(vid2, activeVideos[1]);
+    loadHLS(vid3, activeVideos[2]);
+  }
+  vid1.pause(); vid1.currentTime = CONFIG.videoSeek;
+  vid2.pause(); vid2.currentTime = CONFIG.videoSeek;
+  vid3.pause(); vid3.currentTime = CONFIG.videoSeek;
+  glStageTarget = 0.0;
+  glStage = 0.0;
+  glBlendTarget = 0.0;
+  glBlend = 0.0;
+  glOrgOpacityTarget = 1.0;
+  glOrgOpacity = 1.0;
+  glOrgGhost = 0.0;
+  glArchiveMode = 0.0;
+  glArchiveModeTarget = 0.0;
+  glOrgSettle = 1.0;
+  glOrgSettleTarget = 1.0;
+  manualOrgFade = false;
+  document.getElementById('progress').classList.remove('visible');
+  ['s1','s2','s3','s4','s5','s6'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('s0').classList.add('active');
+  document.getElementById('logContainer').innerHTML = '';
+  document.getElementById('s5').querySelector('.end-msg').classList.remove('show');
+  document.getElementById('archiveList').innerHTML = '';
+  document.getElementById('archive-header').classList.remove('visible');
+  document.getElementById('archiveFraming1').classList.remove('visible');
+  document.getElementById('archiveFraming2').classList.remove('visible');
+  document.getElementById('archiveTagline').classList.remove('visible');
+  document.getElementById('archiveByline').classList.remove('visible');
+  document.getElementById('archiveWhitepaper').classList.remove('visible');
+  document.getElementById('stage0Links').classList.remove('visible');
+  document.getElementById('sessionId').textContent =
+    'DS-' + Math.random().toString(36).substring(2,7).toUpperCase();
+  showStage(0);
+  document.getElementById('home-nav').classList.add('vis');
+  document.getElementById('neural-loader').classList.remove('vis');
+  document.getElementById('neural-loader').classList.remove('gone');
+  setTimeout(() => document.getElementById('stage0Links').classList.add('visible'), 3000);
+}
+document.getElementById('s0').classList.remove('active');
+
+// ════════════════════════════════════════
+// ENTRY SCREEN
+// ════════════════════════════════════════
+(function() {
+  const ec = document.getElementById('entry-gl');
+  function resizeEC() { ec.width = window.innerWidth; ec.height = window.innerHeight; }
+  window.addEventListener('resize', resizeEC); resizeEC();
+  const eg = ec.getContext('webgl') || ec.getContext('experimental-webgl');
+  if (!eg) {
+    // No WebGL — just make button work
+    document.getElementById('entry-btn-wrap').addEventListener('click', doEnterTransition);
+    return;
+  }
+  const EVS = `attribute vec2 a;void main(){gl_Position=vec4(a,0,1);}`;
+  const EFS = `precision highp float;
+uniform float u_t;uniform vec2 u_res;
+float h(vec2 p){p=fract(p*vec2(234.34,435.345));p+=dot(p,p+34.23);return fract(p.x*p.y);}
+float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
+float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=n(p)*a;p*=2.01;a*=.5;}return v;}
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res;vec2 c=uv-0.5;
+  float dist=length(c);float angle=atan(c.y,c.x);
+  float breath=sin(u_t*0.4)*0.06+sin(u_t*0.17)*0.03;
+  float f1=fbm(vec2(cos(angle)*3.2,sin(angle)*3.2)+u_t*0.08);
+  float f2=fbm(vec2(cos(angle*2.0+u_t*0.05)*2.1,sin(angle*1.5)*2.1)+u_t*0.06+7.3);
+  float d=dist+(f1-0.5)*0.22+(f2-0.5)*0.12+breath;
+  float core=exp(-d*6.5)*1.4;float ring=exp(-abs(d-0.18)*18.0)*0.7;float halo=exp(-d*2.2)*0.18;
+  float sp=pow(max(0.0,sin(angle*7.0+u_t*0.3)*0.5+0.5),12.0)*exp(-abs(d-0.28)*30.0)*0.9;
+  float sp2=pow(max(0.0,sin(angle*13.0-u_t*0.18)*0.5+0.5),16.0)*exp(-abs(d-0.22)*40.0)*0.6;
+  vec3 teal=vec3(0.04,0.55,0.48);vec3 gold=vec3(0.72,0.50,0.08);vec3 wht=vec3(0.9,0.95,1.0);
+  vec3 col=teal*(core+halo)+mix(teal,gold,0.55)*ring+wht*sp+gold*sp2+teal*fbm(uv*4.5+u_t*0.09)*0.08;
+  col+=h(vec2(floor(uv.y*200.)/200.,floor(u_t*8.)*.1))*.03;
+  col*=1.-length(uv-.5)*0.9;
+  gl_FragColor=vec4(clamp(col,0.,1.),1.);
+}`;
+  function mkS(t,src){const s=eg.createShader(t);eg.shaderSource(s,src);eg.compileShader(s);return s;}
+  const ep=eg.createProgram();
+  eg.attachShader(ep,mkS(eg.VERTEX_SHADER,EVS));
+  eg.attachShader(ep,mkS(eg.FRAGMENT_SHADER,EFS));
+  eg.linkProgram(ep);eg.useProgram(ep);
+  const vb=eg.createBuffer();eg.bindBuffer(eg.ARRAY_BUFFER,vb);
+  eg.bufferData(eg.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),eg.STATIC_DRAW);
+  const ap=eg.getAttribLocation(ep,'a');eg.enableVertexAttribArray(ap);
+  eg.vertexAttribPointer(ap,2,eg.FLOAT,false,0,0);
+  const uT=eg.getUniformLocation(ep,'u_t'),uR=eg.getUniformLocation(ep,'u_res');
+  const t0e=Date.now(); let alive=true;
+  (function loop(){
+    if(!alive)return;
+    eg.viewport(0,0,ec.width,ec.height);
+    eg.uniform1f(uT,(Date.now()-t0e)/1000);
+    eg.uniform2f(uR,ec.width,ec.height);
+    eg.drawArrays(eg.TRIANGLE_STRIP,0,4);
+    requestAnimationFrame(loop);
+  })();
+
+  document.getElementById('entry-btn-wrap').addEventListener('click', function() {
+    doEnterTransition();
+    setTimeout(() => { alive = false; }, 1500);
+  });
+})();
+
+function doEnterTransition() {
+  try { const ac=getCtx(); if(ac.state==='suspended') ac.resume(); } catch(e){}
+  if (typeof startVirta === 'function') startVirta();
+
+  const ringCanvas = document.getElementById('entry-ring-canvas');
+  const dataPanel = document.getElementById('entry-data-panel');
+  const btnWrap = document.getElementById('entry-btn-wrap');
+  const btnLabel = document.getElementById('entry-btn-label');
+  if (btnLabel) btnLabel.style.opacity = '0';
+  if (btnWrap) btnWrap.style.pointerEvents = 'none';
+  if (ringCanvas) ringCanvas.classList.add('vis');
+  if (dataPanel) dataPanel.classList.add('vis');
+
+  const steps = [
+    { pct: 0,   msg: 'Using differential retina scanning and remote EEG signal analysis —' },
+    { pct: 15,  msg: 'we isolate your neuro-cortical brain patterns in real time.' },
+    { pct: 32,  msg: 'We render your dreams.' },
+    { pct: 55,  msg: 'Our reverse-reconstruction technology re-engineers those dreams within your own experience.' },
+    { pct: 74,  msg: 'Return to a moment you thought was lost.' },
+    { pct: 91,  msg: 'Meet someone you\'ve been missing.' },
+    { pct: 100, msg: 'Become the person you always believed you could be.' },
+  ];
+
+  runNeuralLoader(ringCanvas, 3500, steps, function() {
+    document.getElementById('s-entry').classList.add('gone');
+    setTimeout(() => document.getElementById('home-nav').classList.add('vis'), 600);
+    glOrgOpacity = 0.0; glOrgOpacityTarget = 1.0;
+    glOrgSettle = 0.0; glOrgSettleTarget = 1.0;
+    glStage = 0.0; glStageTarget = 0.0;
+    document.getElementById('s0').classList.add('active');
+    setTimeout(() => document.getElementById('stage0Links').classList.add('visible'), 3000);
+  },
+  document.getElementById('entry-pct'),
+  document.getElementById('entry-msg'),
+  document.getElementById('entry-hex'),
+  document.getElementById('entry-metrics').querySelectorAll('span')
+  );
+}
+
+// ═══════════════════════════════════════════
+// SHARED NEURAL LOADER
+// canvas: canvas element for ring drawing
+// duration: total ms
+// steps: [{pct, msg}]
+// onDone: callback when complete
+// pctEl, msgEl, hexEl, metricEls: display elements
+// ═══════════════════════════════════════════
+function runNeuralLoader(canvas, duration, steps, onDone, pctEl, msgEl, hexEl, metricEls) {
+  const size = canvas.width;
+  const ctx2 = canvas.getContext('2d');
+  const cx = size / 2, cy = size / 2, r = size / 2 - 8;
+  const startTime = Date.now();
+  let done = false;
+
+  // Show the neural loader overlay if this is the onboarding loader
+  const nlEl = document.getElementById('neural-loader');
+  if (canvas.id === 'nl-ring-canvas') {
+    pctEl = document.getElementById('nl-pct');
+    msgEl = document.getElementById('nl-msg');
+    hexEl = document.getElementById('nl-hex');
+    metricEls = document.getElementById('nl-metrics').querySelectorAll('span');
+    nlEl.classList.add('vis');
+  }
+
+  const hexChars = '0123456789ABCDEF';
+  function randHex(n) {
+    let s = '0x';
+    for (let i = 0; i < n; i++) s += hexChars[Math.random()*16|0];
+    return s;
+  }
+  function randMetric(label, min, max, unit) {
+    return label + ' ' + (min + Math.random()*(max-min)).toFixed(1) + unit;
+  }
+
+  function draw(progress) {
+    ctx2.clearRect(0, 0, size, size);
+
+    // Track ring (dim)
+    ctx2.beginPath();
+    ctx2.arc(cx, cy, r, 0, Math.PI*2);
+    ctx2.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx2.lineWidth = 1.5;
+    ctx2.stroke();
+
+    // Progress arc
+    const angle = -Math.PI/2 + Math.PI*2*progress;
+    const grad = ctx2.createLinearGradient(cx-r, cy, cx+r, cy);
+    grad.addColorStop(0, 'rgba(184,150,12,0.5)');
+    grad.addColorStop(0.5, 'rgba(240,208,128,0.9)');
+    grad.addColorStop(1, 'rgba(184,150,12,0.5)');
+    ctx2.beginPath();
+    ctx2.arc(cx, cy, r, -Math.PI/2, angle);
+    ctx2.strokeStyle = grad;
+    ctx2.lineWidth = 1.5;
+    ctx2.lineCap = 'round';
+    ctx2.stroke();
+
+    // Tick marks every 10%
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI/2 + Math.PI*2*(i/10);
+      const filled = (i/10) <= progress;
+      const x1 = cx + (r-5)*Math.cos(a), y1 = cy + (r-5)*Math.sin(a);
+      const x2 = cx + (r+5)*Math.cos(a), y2 = cy + (r+5)*Math.sin(a);
+      ctx2.beginPath();
+      ctx2.moveTo(x1, y1); ctx2.lineTo(x2, y2);
+      ctx2.strokeStyle = filled ? 'rgba(240,208,128,0.4)' : 'rgba(255,255,255,0.08)';
+      ctx2.lineWidth = 1;
+      ctx2.stroke();
+    }
+
+    // Leading dot
+    const dotA = angle;
+    ctx2.beginPath();
+    ctx2.arc(cx + r*Math.cos(dotA), cy + r*Math.sin(dotA), 2.5, 0, Math.PI*2);
+    ctx2.fillStyle = 'rgba(240,208,128,0.9)';
+    ctx2.fill();
+  }
+
+  function tick() {
+    if (done) return;
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(elapsed / duration, 1.0);
+    const pct = Math.round(progress * 100);
+
+    draw(progress);
+
+    // Update % display — code/tech style
+    if (pctEl) {
+      const hexPct = pct.toString(16).toUpperCase().padStart(2,'0');
+      pctEl.textContent = pct.toString().padStart(3,'0') + '% · 0x' + hexPct;
+    }
+
+    // Update message based on steps
+    if (msgEl) {
+      for (let i = steps.length - 1; i >= 0; i--) {
+        if (pct >= steps[i].pct) { msgEl.textContent = steps[i].msg; break; }
+      }
+    }
+
+    // Ticking hex and metrics
+    if (hexEl && Math.random() < 0.3) hexEl.textContent = randHex(8);
+    if (metricEls && metricEls.length >= 3) {
+      if (Math.random() < 0.2) metricEls[0].textContent = randMetric('EEG ', 0.1, 9.9, 'μV');
+      if (Math.random() < 0.15) metricEls[1].textContent = randMetric('DIFF ', 40, 99, '%');
+      if (Math.random() < 0.1) metricEls[2].textContent = randMetric('REM ', 0.1, 4.9, 'Hz');
+    }
+
+    if (progress < 1.0) {
+      requestAnimationFrame(tick);
+    } else {
+      done = true;
+      if (pctEl) pctEl.textContent = '100% · 0x64';
+      if (msgEl) msgEl.textContent = steps[steps.length-1].msg;
+      // Fade out loader then call done
+      setTimeout(() => {
+        if (canvas.id === 'nl-ring-canvas') {
+          nlEl.classList.add('gone');
+          setTimeout(() => { nlEl.classList.remove('vis','gone'); onDone && onDone(); }, 600);
+        } else {
+          onDone && onDone();
+        }
+      }, 400);
+    }
+  }
+  requestAnimationFrame(tick);
+}
+</script>
+</body>
+</html>
