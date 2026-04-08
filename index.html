@@ -67,66 +67,77 @@
     pointer-events: all;
   }
 
-  /* ── STAGE 0: Particle organism intro ── */
+  /* ── STAGE 0: Home screen ── */
   #s0 {
     background: transparent;
-    justify-content: space-between;
-    padding: 6vh 8vw;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0 8vw 10vh;
     z-index: 15;
+    text-align: center;
+  }
+  #s0 .s0-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    width: 100%;
   }
   #s0 .wordmark {
     font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.4em;
-    color: #fff;
-    opacity: 0.7;
+    font-size: 9px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+    margin-bottom: 1.2rem;
   }
   #s0 .body-copy {
-    position: absolute;
-    left: 50%;
-    bottom: 35%;
-    transform: translateX(-50%);
     font-family: var(--sans);
-    font-size: 13px;
-    color: #fff;
-    opacity: 0.6;
+    font-size: clamp(15px, 1.6vw, 21px);
+    font-weight: 300;
+    color: rgba(255,255,255,0.72);
+    letter-spacing: 0.02em;
+    line-height: 1.7;
+    max-width: 48ch;
+    margin-bottom: 3rem;
   }
   #s0 .enter-btn {
-    position: absolute;
-    left: 50%;
-    bottom: 15%;
-    transform: translateX(-50%);
-    width: 48px;
-    height: 48px;
+    width: 52px; height: 52px;
     border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.6);
-    background: rgba(0,0,0,0.3);
-    color: #fff;
-    font-size: 14px;
+    border: 1px solid rgba(255,255,255,0.35);
+    background: rgba(0,0,0,0.2);
+    color: rgba(255,255,255,0.7);
+    font-size: 16px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: border-color 0.2s, transform 0.2s, background 0.2s;
+    margin-bottom: 0.7rem;
   }
   #s0 .enter-btn:hover {
-    border-color: rgba(255,255,255,0.9);
-    background: rgba(255,255,255,0.15);
-    transform: translateX(-50%) scale(1.05);
+    border-color: rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.08);
+    transform: scale(1.05);
+  }
+  #s0 .enter-btn-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.2);
   }
   #s0 .session-id {
     position: absolute;
-    bottom: 2vh;
-    right: 4vw;
-    font-size: 10px;
+    bottom: 2vh; right: 4vw;
+    font-size: 9px;
     letter-spacing: 0.2em;
     color: var(--muted);
     opacity: 0.4;
   }
   #s0 .stage0-links {
     position: fixed;
-    bottom: 4vh;
-    left: 4vw;
+    bottom: 4vh; left: 4vw;
     z-index: 20;
     display: flex;
     flex-direction: column;
@@ -134,9 +145,7 @@
     opacity: 0;
     transition: opacity 0.8s ease;
   }
-  #s0 .stage0-links.visible {
-    opacity: 1;
-  }
+  #s0 .stage0-links.visible { opacity: 1; }
   #s0 .stage0-links a {
     font-family: var(--mono);
     font-size: 9px;
@@ -146,9 +155,7 @@
     text-decoration: none;
     transition: color 0.3s ease;
   }
-  #s0 .stage0-links a:hover {
-    color: rgba(255,255,255,0.5);
-  }
+  #s0 .stage0-links a:hover { color: rgba(255,255,255,0.5); }
 
   /* ── STAGE 1: System log / wave ── */
   #s1 {
@@ -184,29 +191,40 @@
     text-align: center;
   }
   #s2 .fragment, #s3 .fragment, #s4 .fragment {
-    max-width: 38ch;
+    max-width: 42ch;
     opacity: 0;
-    transform: translateY(12px);
-    transition: opacity 1.2s ease, transform 1.2s ease;
+    transform: translateY(10px);
+    transition: opacity 3.5s ease, transform 3.5s ease;
   }
   #s2 .fragment.visible, #s3 .fragment.visible, #s4 .fragment.visible {
     opacity: 1;
     transform: none;
   }
+  #s2 .fragment.fading, #s3 .fragment.fading, #s4 .fragment.fading {
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity 2.5s ease, transform 2.5s ease;
+  }
   #s2 .fragment p, #s3 .fragment p, #s4 .fragment p {
     font-family: var(--sans);
-    font-size: clamp(16px, 2.2vw, 26px);
+    font-size: clamp(15px, 2vw, 24px);
     font-weight: 300;
-    line-height: 1.5;
-    color: #fff;
-    letter-spacing: 0.01em;
+    line-height: 1.75;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 0.03em;
+    white-space: pre-wrap;
+    text-shadow:
+      0 0 14px rgba(255,255,255,0.09),
+      0 0 3px rgba(160,220,200,0.15),
+      0 1px 0 rgba(0,0,0,0.5);
   }
   #s2 .fragment .attr, #s3 .fragment .attr, #s4 .fragment .attr {
-    font-size: 11px;
-    letter-spacing: 0.25em;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.35em;
     text-transform: uppercase;
-    color: var(--muted);
-    margin-top: 2rem;
+    color: rgba(255,255,255,0.18);
+    margin-top: 2.5rem;
   }
 
   /* ── STAGE 5: Resolution organism + end card ── */
@@ -321,16 +339,25 @@
     transform: none;
   }
   #s6 .archive-line .idx {
-    opacity: 0.15;
-    color: #fff;
+    opacity: 0.2;
+    color: rgba(240,208,128,0.6);
+    font-size: 9px;
   }
   #s6 .archive-line.available .title {
-    opacity: 0.75;
+    opacity: 0.8;
     color: #fff;
   }
   #s6 .archive-line.soon .title {
     opacity: 0.2;
     color: #fff;
+  }
+  #s6 .archive-line .sub {
+    font-size: 9px;
+    opacity: 0.25;
+    color: #fff;
+  }
+  #s6 .archive-line.soon .sub {
+    opacity: 0.1;
   }
   #s6 .archive-line .status {
     font-size: 9px;
@@ -343,7 +370,7 @@
   }
   #s6 .archive-line.soon .status {
     color: #fff;
-    opacity: 0.12;
+    opacity: 0.1;
   }
   #s6 .archive-tagline {
     font-family: var(--sans);
@@ -483,15 +510,521 @@
     color: rgba(255,255,255,0.6);
     border-color: rgba(255,255,255,0.3);
   }
+
+  /* ── ENTRY SCREEN ── */
+  #s-entry {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: #020d0e;
+    transition: opacity 1.2s ease;
+  }
+  #s-entry.gone { opacity: 0; pointer-events: none; }
+  #entry-gl {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+    pointer-events: none;
+  }
+  #entry-wordmark {
+    position: absolute;
+    top: 4vh; left: 4vw;
+    pointer-events: none;
+  }
+  #entry-wordmark .ew-name {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.55em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    display: block;
+    margin-bottom: 6px;
+  }
+  #entry-wordmark .ew-strap {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 300;
+    font-style: italic;
+    color: rgba(255,255,255,0.22);
+    display: block;
+  }
+  #entry-centre {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    text-align: center;
+  }
+  #entry-tagline {
+    font-family: var(--sans);
+    font-size: clamp(11px, 1.1vw, 14px);
+    font-weight: 300;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.18);
+    margin-bottom: 2.8rem;
+    pointer-events: none;
+  }
+  /* The button + ring container */
+  #entry-btn-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    position: relative;
+  }
+  /* Canvas ring sits behind/around button, perfectly centred */
+  #entry-ring-canvas {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  #entry-ring-canvas.vis { opacity: 1; }
+  #entry-btn {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    background:
+      linear-gradient(#020d0e, #020d0e) padding-box,
+      linear-gradient(145deg, #b8960c, #f0d080, #b8960c) border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, filter 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+  }
+  #entry-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
+  #entry-btn-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.45em;
+    text-transform: uppercase;
+    color: rgba(240,208,128,0.5);
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  /* Tech data panel — shown during load */
+  #entry-data-panel {
+    position: absolute;
+    bottom: 5vh;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  #entry-data-panel.vis { opacity: 1; }
+  #entry-pct {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 300;
+    color: rgba(240,208,128,0.7);
+    letter-spacing: 0.05em;
+    line-height: 1;
+  }
+  #entry-msg {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase;
+  }
+  #entry-hex {
+    font-family: var(--mono);
+    font-size: 8px;
+    color: rgba(255,255,255,0.1);
+    letter-spacing: 0.15em;
+    margin-top: 2px;
+  }
+  #entry-metrics {
+    font-family: var(--mono);
+    font-size: 8px;
+    color: rgba(255,255,255,0.12);
+    letter-spacing: 0.1em;
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  /* ── NEURAL LOADER — also used on onboarding entry ── */
+  #neural-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 190;
+    background: #020d0e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+  #neural-loader.vis { opacity: 1; pointer-events: all; }
+  #neural-loader.gone { opacity: 0; pointer-events: none; }
+  #nl-ring-canvas { display: block; }
+  #nl-pct {
+    font-family: var(--mono);
+    font-size: 42px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 0.05em;
+    margin-top: 2rem;
+    line-height: 1;
+  }
+  #nl-msg {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.35em;
+    color: rgba(255,255,255,0.2);
+    text-transform: uppercase;
+    margin-top: 0.8rem;
+  }
+  #nl-hex {
+    font-family: var(--mono);
+    font-size: 8px;
+    color: rgba(255,255,255,0.08);
+    letter-spacing: 0.12em;
+    margin-top: 6px;
+  }
+  #nl-metrics {
+    font-family: var(--mono);
+    font-size: 8px;
+    color: rgba(255,255,255,0.1);
+    letter-spacing: 0.1em;
+    display: flex;
+    gap: 2rem;
+    margin-top: 8px;
+  }
+
+  /* ── HOME NAV ── */
+  #home-nav {
+    position: fixed;
+    top: 3vh; left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0 4vw;
+    z-index: 30;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 1s ease;
+  }
+  #home-nav.vis { opacity: 1; pointer-events: all; }
+  .hn-left {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .hn-logo { display: flex; align-items: center; gap: 12px; }
+  .hn-logo svg { width: 30px; height: 30px; }
+  .hn-logo-name {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.65);
+  }
+  .hn-links {
+    display: flex;
+    gap: 2.5rem;
+    padding-top: 6px;
+  }
+  .hn-links a {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.38);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .hn-links a:hover { color: rgba(255,255,255,0.75); }
+  /* ── SKIP ONBOARDING — sits below logo inside .hn-left ── */
+  #skip-btn {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(240,208,128,0.55);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: color 0.2s;
+    text-align: left;
+  }
+  #skip-btn:hover { color: rgba(240,208,128,0.9); }
+
+  /* ── ARCHIVE PANEL (s6 only) ── */
+  #s6 .archive-panel {
+    background: rgba(2,8,9,0.82);
+    border: 1px solid rgba(255,255,255,0.07);
+    padding: 4vh 4vw;
+    max-width: 740px;
+    width: 90vw;
+    pointer-events: all;
+  }
+  #s6 .archive-line.available { cursor: pointer; pointer-events: all; }
+  #s6 .archive-line.available:hover { background: rgba(255,255,255,0.05); }
+  #s6 .archive-line.available:hover .title { color: #fff !important; opacity: 1 !important; }
+  #s6 .archive-hint {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.25em;
+    color: rgba(255,255,255,0.18); text-align: center;
+    margin-top: 1.5rem; opacity: 0; transition: opacity 0.8s ease;
+  }
+  #s6 .archive-hint.visible { opacity: 1; }
+
+  /* ── PROTOCOL PLAYER ── */
+  #protocol-player {
+    position: fixed; inset: 0; z-index: 25;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 0;
+    opacity: 0; pointer-events: none; transition: opacity 1s ease;
+  }
+  #protocol-player.vis { opacity: 1; pointer-events: all; }
+  #protocol-player.gone { opacity: 0; pointer-events: none; }
+  #pp-title {
+    font-family: var(--sans); font-size: clamp(18px, 2.8vw, 34px);
+    font-weight: 300; letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.0);
+    margin-top: 2rem;
+    opacity: 0;
+    transition: opacity 4s ease;
+  }
+  #pp-title.vis { opacity: 1; color: rgba(255,255,255,0.75); }
+  #pp-stop {
+    position: fixed; bottom: 5vh; left: 50%; transform: translateX(-50%);
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.28em;
+    text-transform: uppercase; color: rgba(255,255,255,0.18);
+    background: none; border: 1px solid rgba(255,255,255,0.08);
+    padding: 9px 22px; cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    opacity: 0; animation: fadeUp 1s ease 5s forwards;
+  }
+  #pp-stop:hover { color: rgba(255,255,255,0.55); border-color: rgba(255,255,255,0.3); }
+  /* ── ACCESS GATE ── */
+  #access-gate {
+    position: fixed; inset: 0; z-index: 500;
+    background: #020d0e;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: opacity 1.2s ease;
+  }
+  #access-gate.gone { opacity: 0; pointer-events: none; }
+  #gate-logo {
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.55em; text-transform: uppercase;
+    color: rgba(255,255,255,0.72);
+    margin-bottom: 0.5rem;
+  }
+  #gate-strap {
+    font-family: var(--sans); font-size: 11px;
+    font-weight: 300; font-style: italic;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 3.5rem;
+  }
+  .gate-block {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 0.75rem;
+    width: 260px;
+  }
+  .gate-input {
+    width: 100%;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.9);
+    font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.18em; text-align: center;
+    padding: 12px 14px; outline: none;
+    transition: border-color 0.2s;
+  }
+  .gate-input::placeholder { color: rgba(255,255,255,0.4); letter-spacing: 0.18em; }
+  .gate-input:focus { border-color: rgba(255,255,255,0.28); }
+  #gate-submit {
+    width: 100%; background: none;
+    border: 1px solid rgba(240,208,128,0.35);
+    color: rgba(240,208,128,0.85);
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.4em; text-transform: uppercase;
+    padding: 11px 14px; cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  #gate-submit:hover { border-color: rgba(240,208,128,0.75); color: rgba(240,208,128,0.95); }
+  #gate-error {
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(255,98,76,0.9);
+    opacity: 0; transition: opacity 0.3s; height: 13px;
+  }
+  #gate-error.vis { opacity: 1; }
+  #gate-rule {
+    width: 1px; height: 48px;
+    background: rgba(255,255,255,0.07);
+    margin: 2rem 0;
+  }
+  #gate-invite {
+    font-family: var(--sans); font-size: 12px;
+    font-weight: 300; font-style: italic;
+    color: rgba(255,255,255,0.58);
+    text-align: center; line-height: 1.7;
+    margin-bottom: 0.5rem; max-width: 28ch;
+  }
+  #gate-author {
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    text-decoration: none;
+    transition: color 0.2s; margin-bottom: 0.75rem;
+  }
+  #gate-author:hover { color: rgba(255,255,255,0.9); }
+  #gate-email-submit {
+    width: 100%; background: none;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.62);
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.32em; text-transform: uppercase;
+    padding: 11px 14px; cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  #gate-email-submit:hover { border-color: rgba(255,255,255,0.48); color: rgba(255,255,255,0.9); }
+  #gate-confirm {
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(0,255,136,0.78);
+    opacity: 0; transition: opacity 0.5s; height: 13px; text-align: center;
+  }
+  #gate-confirm.vis { opacity: 1; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
+<!-- ════ ACCESS GATE ════ -->
+<div id="access-gate">
+  <div id="gate-logo">DreamScreens</div>
+  <div id="gate-strap">Neural Reconstruction Lab — Restricted Access</div>
+
+  <div class="gate-block">
+    <input class="gate-input" id="gate-pw" type="password"
+      placeholder="ACCESS CODE" autocomplete="off" spellcheck="false"/>
+    <button id="gate-submit" onclick="gateSubmit()">Enter System →</button>
+    <div id="gate-error">access denied · signal rejected</div>
+  </div>
+
+  <div id="gate-rule"></div>
+
+  <div id="gate-invite">
+    The first analysis protocols are opening soon.<br>
+    Be among the first subjects.
+  </div>
+  <a id="gate-author" href="https://www.gileslamb.com" target="_blank">a project by giles lamb →</a>
+
+  <div class="gate-block">
+    <input class="gate-input" id="gate-email" type="email" placeholder="your@email.com"/>
+    <button id="gate-email-submit" onclick="gateEmailSubmit()">Register for first access →</button>
+    <div id="gate-confirm">Signal received. Your session will be allocated.</div>
+  </div>
+</div>
+
+<!-- ════ ENTRY SCREEN ════ -->
+<div id="s-entry">
+  <canvas id="entry-gl"></canvas>
+  <div id="entry-wordmark">
+    <span class="ew-name">DreamScreens</span>
+    <span class="ew-strap">Reconstructing what the mind almost remembers.</span>
+  </div>
+  <div id="entry-centre">
+    <div id="entry-tagline">Neural analysis system — primed</div>
+    <div id="entry-btn-wrap">
+      <canvas id="entry-ring-canvas" width="110" height="110"></canvas>
+      <div id="entry-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <defs>
+            <linearGradient id="egrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#b8960c"/>
+              <stop offset="100%" stop-color="#f0d080"/>
+            </linearGradient>
+          </defs>
+          <path d="M8 16L16 8M16 8H9M16 8V15" stroke="url(#egrad)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span id="entry-btn-label">ENTER</span>
+    </div>
+  </div>
+  <div id="entry-data-panel">
+    <div id="entry-pct">0%</div>
+    <div id="entry-msg">initialising</div>
+    <div id="entry-hex">0x00000000</div>
+    <div id="entry-metrics">
+      <span id="em-eeg">EEG — —</span>
+      <span id="em-diff">DIFF — —</span>
+      <span id="em-rem">REM — —</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════ NEURAL LOADER (onboarding entry) ════ -->
+<div id="neural-loader">
+  <canvas id="nl-ring-canvas" width="160" height="160"></canvas>
+  <div id="nl-pct">0%</div>
+  <div id="nl-msg">connecting</div>
+  <div id="nl-hex">0x00000000</div>
+  <div id="nl-metrics">
+    <span id="nl-eeg">EEG — —</span>
+    <span id="nl-diff">DIFF — —</span>
+    <span id="nl-rem">REM — —</span>
+  </div>
+</div>
+
+<!-- ════ HOME NAV ════ -->
+<div id="home-nav">
+  <div class="hn-left">
+    <div class="hn-logo">
+      <svg viewBox="0 0 44 44" fill="none">
+        <defs>
+          <linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#bbb" stop-opacity="0.7"/>
+            <stop offset="100%" stop-color="#888" stop-opacity="0.5"/>
+          </linearGradient>
+        </defs>
+        <circle cx="20" cy="20" r="13" stroke="url(#lg)" stroke-width="1.5" fill="none"/>
+        <line x1="30" y1="30" x2="37" y2="37" stroke="url(#lg)" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="hn-logo-name">DreamScreens</span>
+    </div>
+    <button id="skip-btn" onclick="skipToProtocols()">Skip to Experience Protocols →</button>
+  </div>
+  <nav class="hn-links">
+    <a href="#">Analyses</a>
+    <a href="#">Research</a>
+    <a href="#">Archive</a>
+    <a href="#">Contact</a>
+  </nav>
+</div>
 
 <div id="cursor"></div>
 <div id="scanlines"></div>
 <canvas id="noise"></canvas>
 <canvas id="gl"></canvas>
+
+<div id="protocol-player">
+  <div id="pp-title"></div>
+  <button id="pp-stop" onclick="stopProtocol()">Return to protocols ↩</button>
+</div>
 
 <div id="progress">
   <div class="dot" id="d0"></div>
@@ -505,12 +1038,18 @@
 
 <div id="next-prompt">· next memory ·</div>
 
-<!-- STAGE 0: Particle organism intro -->
-<div class="screen active" id="s0">
-  <div class="wordmark">DREAMSCREENS</div>
-  <div class="body-copy">Neural memory reconstruction — v4.1</div>
-  <button class="enter-btn" onclick="onEnter()" aria-label="Enter">→</button>
-  <div class="session-id">Session ID: <span id="sessionId"></span></div>
+<!-- STAGE 0: Home screen -->
+<div class="screen" id="s0">
+  <div class="s0-bottom">
+    <div class="wordmark">DS-NL · Neural Reconstruction Lab · v4.1</div>
+    <button class="enter-btn" onclick="void onEnter()" aria-label="Enter onboarding">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <path d="M5 12h14M13 6l6 6-6 6" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="enter-btn-label">ENTER ONBOARDING</div>
+  </div>
+  <div class="session-id">Session <span id="sessionId"></span></div>
   <div class="stage0-links" id="stage0Links">
     <a href="proposal.html" target="_blank">artistic proposition →</a>
     <a href="whitepaper.html" target="_blank">research overview →</a>
@@ -545,25 +1084,26 @@
 <!-- STAGE 5: Resolution organism + end card -->
 <div class="screen" id="s5">
   <div class="end-msg">
-    <div class="status">Reconstruction incomplete</div>
-    <h2>Memory fragment<br>archived.</h2>
-    <div class="byline">Dream Screens // The Feedback Loop</div>
-    <button class="restart" onclick="resetExperience()">Run again ↺</button>
+    <div class="status">Analysis begins.</div>
+    <h2>This is your mind, reconstructed.</h2>
+    <div class="byline">Welcome to DreamScreens.</div>
+    <button class="restart" onclick="resetExperience()">Re-enter analysis ↺</button>
   </div>
 </div>
 
-<!-- STAGE 6: Coming Soon / Archive -->
+<!-- STAGE 6: Archive / Analysis Protocols -->
 <div class="screen" id="s6">
-  <div class="archive-header" id="archive-header">DREAM SCREENS — ARCHIVE</div>
-  <div class="archive-framing-1" id="archiveFraming1">A new way to experience the album concept.</div>
-  <div class="archive-framing-2" id="archiveFraming2">Each archive is an immersive journey through a subliminal narrative.</div>
-  <div class="archive-list" id="archiveList"></div>
-  <div class="archive-tagline" id="archiveTagline">Each archive is an immersive journey through a subliminal narrative.</div>
-  <div class="archive-byline" id="archiveByline">dreamscreens.io</div>
-  <a href="whitepaper.html" target="_blank" class="archive-whitepaper" id="archiveWhitepaper">read the concept document →</a>
-  <button class="restart-archive" onclick="resetExperience()">
-    restart dream analysis ↺
-  </button>
+  <div class="archive-panel">
+    <div class="archive-header" id="archive-header">DREAMSCREENS — AVAILABLE ANALYSIS PROTOCOLS</div>
+    <div class="archive-framing-1" id="archiveFraming1">Each protocol is a complete neural reconstruction sequence.</div>
+    <div class="archive-framing-2" id="archiveFraming2">Select an analysis to begin dream reconstruction · DS-NL-2026</div>
+    <div class="archive-list" id="archiveList"></div>
+    <div class="archive-hint" id="archiveHint">· click an available protocol to begin ·</div>
+    <div class="archive-tagline" id="archiveTagline">Return to a moment you thought was lost.</div>
+    <div class="archive-byline" id="archiveByline">dreamscreens.io · Neural Reconstruction Lab</div>
+    <a href="whitepaper.html" target="_blank" class="archive-whitepaper" id="archiveWhitepaper">read the research document →</a>
+    <br><button class="restart-archive" onclick="resetExperience()">return to system home ↺</button>
+  </div>
 </div>
 
 <video id="vid1" style="display:none" crossorigin="anonymous" loop muted playsinline></video>
@@ -591,12 +1131,12 @@ const CONFIG = {
   ],
   videoSeek: 30,
   music: {
-    intro: 'Media/mp3/Virta.mp3',
-    stage1: 'Media/mp3/Signal Dreams.mp3',
-    stage2: 'Media/mp3/Feedback Memory.(Minus 197).mp3',
-    stage3: 'Media/mp3/Nature module 1.mp3',
-    stage4: 'Media/mp3/Brainwaves (grain Pysche).mp3',
-    stage5: 'Media/mp3/Module n5 v2.mp3'
+    intro:  'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Virta.mp3',
+    stage1: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Signal%20Dreams.mp3',
+    stage2: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Feedback%20Memory.(Minus%20197).mp3',
+    stage3: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Nature%20module%201.mp3',
+    stage4: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Brainwaves%20(grain%20Pysche).mp3',
+    stage5: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Module%20n5%20v2.mp3',
   },
   timing: {
     stage1Duration: 18000,
@@ -667,6 +1207,7 @@ uniform float u_blend;
 uniform float u_orgOpacity;
 uniform float u_orgGhost;
 uniform float u_archiveMode;
+uniform float u_orgSettle;
 uniform sampler2D u_vid1;
 uniform sampler2D u_vid2;
 uniform sampler2D u_vid3;
@@ -719,8 +1260,12 @@ void main() {
 
   if (showOrg || u_archiveMode > 0.001) {
     float rotY = u_t * 0.314;
-    float amp = isOrg5 ? 0.38 + 0.08 * sin(u_t * 0.4) : 0.35 + 0.08 * sin(u_t * 0.4);
-    float scale = 0.6 + 0.03 * sin(u_t * 0.25);
+    float stableAmp = isOrg5 ? 0.38 + 0.08 * sin(u_t * 0.4) : 0.35 + 0.08 * sin(u_t * 0.4);
+    float dispersedAmp = 2.2 + 0.3 * sin(u_t * 0.15);
+    float settle = clamp(u_orgSettle, 0.0, 1.0);
+    float settleEase = settle * settle * (3.0 - 2.0 * settle);
+    float amp = mix(dispersedAmp, stableAmp, settleEase);
+    float scale = mix(1.4, 0.6 + 0.03 * sin(u_t * 0.25), settleEase);
     if (isOrg5 || u_archiveMode > 0.001) rotY *= 0.5;
     vec3 coolPalette = vec3(0.4, 0.7, 1.0);
     vec3 baseColor = mix(organismColor(isOrg5), coolPalette, u_archiveMode);
@@ -855,6 +1400,7 @@ const uBlend = gl.getUniformLocation(prog, 'u_blend');
 const uOrgOpacity = gl.getUniformLocation(prog, 'u_orgOpacity');
 const uOrgGhost = gl.getUniformLocation(prog, 'u_orgGhost');
 const uArchiveMode = gl.getUniformLocation(prog, 'u_archiveMode');
+const uOrgSettle = gl.getUniformLocation(prog, 'u_orgSettle');
 const uVid1 = gl.getUniformLocation(prog, 'u_vid1');
 const uVid2 = gl.getUniformLocation(prog, 'u_vid2');
 const uVid3 = gl.getUniformLocation(prog, 'u_vid3');
@@ -924,6 +1470,7 @@ let glBlend = 0.0, glBlendTarget = 0.0;
 let glOrgOpacity = 1.0, glOrgOpacityTarget = 1.0;
 let glOrgGhost = 0.0;
 let glArchiveMode = 0.0, glArchiveModeTarget = 0.0;
+let glOrgSettle = 1.0, glOrgSettleTarget = 1.0;
 let manualOrgFade = false;
 
 function renderGL() {
@@ -938,6 +1485,7 @@ function renderGL() {
   glBlend += (glBlendTarget - glBlend) * 0.003;
   if (!manualOrgFade) glOrgOpacity += (glOrgOpacityTarget - glOrgOpacity) * 0.002;
   glArchiveMode += (glArchiveModeTarget - glArchiveMode) * 0.002;
+  glOrgSettle += (glOrgSettleTarget - glOrgSettle) * 0.008;
 
   gl.uniform1f(uT, t);
   gl.uniform2f(uRes, glCanvas.width, glCanvas.height);
@@ -946,6 +1494,7 @@ function renderGL() {
   gl.uniform1f(uOrgOpacity, glOrgOpacity);
   gl.uniform1f(uOrgGhost, glOrgGhost);
   gl.uniform1f(uArchiveMode, glArchiveMode);
+  gl.uniform1f(uOrgSettle, glOrgSettle);
 
   if (glStage >= 2.0) {
     if (glStage < 3.0 && vid1.readyState >= 2) {
@@ -982,6 +1531,12 @@ renderGL();
 // ════════════════════════════════════════
 let audioCtx = null;
 
+function mediaFetchUrl(relPath) {
+  if (!relPath || /^https?:\/\//i.test(relPath)) return relPath;
+  const enc = relPath.split('/').filter(Boolean).map(encodeURIComponent).join('/');
+  return new URL(enc, window.location.href).href;
+}
+
 function getCtx() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1007,6 +1562,11 @@ document.addEventListener('touchstart', unlockAudio, { once: true });
 document.addEventListener('touchend', unlockAudio, { once: true });
 document.addEventListener('click', unlockAudio, { once: true });
 
+document.addEventListener('visibilitychange', function () {
+  if (document.hidden || !audioCtx) return;
+  if (audioCtx.state === 'suspended') void audioCtx.resume();
+});
+
 let currentGain = null;
 let currentBuffer = null;
 
@@ -1014,8 +1574,10 @@ async function playTrack(path, opts) {
   const ctx = getCtx();
   if (ctx.state === 'suspended') await ctx.resume();
   const fadeInTC = (opts && opts.fadeInTimeConstant) || 10.0;
+  const url = mediaFetchUrl(path);
   try {
-    const res = await fetch(path);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const buf = await ctx.decodeAudioData(await res.arrayBuffer());
     const src = ctx.createBufferSource();
     src.buffer = buf;
@@ -1025,18 +1587,26 @@ async function playTrack(path, opts) {
     gain.gain.setValueAtTime(0, now);
     src.connect(gain);
     gain.connect(ctx.destination);
+    // Gesture may expire while fetch/decode runs; resume again before start (Chrome/Safari).
+    if (ctx.state === 'suspended') await ctx.resume();
     src.start(0);
+    const ramp = Math.min(0.35, Math.max(0.12, fadeInTC * 0.08));
     if (currentGain) {
-      currentGain.gain.setTargetAtTime(0, now, 10.0);
-      gain.gain.setTargetAtTime(0.75, now, fadeInTC);
+      currentGain.gain.setTargetAtTime(0, now, 4.0);
+      gain.gain.linearRampToValueAtTime(0.75, now + ramp);
       const oldSrc = currentBuffer;
       setTimeout(() => { try { if (oldSrc) oldSrc.stop(); } catch(e){} }, 45000);
     } else {
-      gain.gain.setTargetAtTime(0.75, now, fadeInTC);
+      gain.gain.linearRampToValueAtTime(0.75, now + ramp);
     }
     currentGain = gain;
     currentBuffer = src;
-  } catch (e) { console.warn('Audio load failed:', path, e); }
+  } catch (e) {
+    console.warn('Audio load failed:', path, url, e);
+    if (window.location.protocol === 'file:') {
+      console.warn('Open via a local server (e.g. python -m http.server) so fetch() can load Media/mp3.');
+    }
+  }
 }
 
 function stopAudio() {
@@ -1093,12 +1663,17 @@ let virtaStarted = false;
 function startVirta() {
   if (virtaStarted) return;
   virtaStarted = true;
+  const c = getCtx();
+  if (c.state === 'suspended') void c.resume();
   playTrack(CONFIG.media(CONFIG.music.intro));
 }
+// Web Audio requires a real user gesture (click/touch/pointer). Mousemove is NOT
+// treated as activation in Chrome/Safari/Firefox — only Cursor's browser may allow it.
 if (isIOS) {
-  document.addEventListener('touchstart', startVirta, { once: true });
+  document.addEventListener('touchstart', startVirta, { once: true, passive: true });
 } else {
-  document.addEventListener('mousemove', startVirta, { once: true });
+  document.addEventListener('pointerdown', startVirta, { once: true, capture: true });
+  document.addEventListener('click', startVirta, { once: true, capture: true });
 }
 
 function pulseOrganism() {
@@ -1138,18 +1713,21 @@ function showStage(n) {
   dots.forEach((id, i) => {
     document.getElementById(id).classList.toggle('active', i === n);
   });
+  const hn = document.getElementById('home-nav');
+  if (n >= 2 && n <= 4) hn.classList.add('vis');
+  else if (n === 1 || n === 5 || n === 6) hn.classList.remove('vis');
 }
 
 const LOG_LINES = [
-  { ts:'00:00:01', cls:'', text:'Initialising neural bridge...' },
-  { ts:'00:00:02', cls:'ok', text:'[OK] EEG sync established — 64 channels active' },
-  { ts:'00:00:04', cls:'', text:'Loading diffusion model weights...' },
-  { ts:'00:00:06', cls:'ok', text:'[OK] Model loaded — 1.4B parameters' },
-  { ts:'00:00:08', cls:'', text:'Scanning REM archive — subject GHL-7704' },
-  { ts:'00:00:11', cls:'warn', text:'[WARN] Memory trace degraded — confidence: 61%' },
-  { ts:'00:00:13', cls:'', text:'Attempting reconstruction from partial signal...' },
-  { ts:'00:00:16', cls:'ok', text:'[OK] Fragment recovered — rendering...' },
-  ...(isIOS ? [{ ts:'00:00:18', cls:'warn', text:'[NOTE] visual rendering limited on this device' }] : []),
+  { ts:'00:00:01', cls:'', text:'WELCOME TO DREAMSCREENS.' },
+  { ts:'00:00:02', cls:'', text:'WELCOME TO THE FUTURE OF MEMORY.' },
+  { ts:'00:00:04', cls:'', text:'Using differential retina scanning and remote EEG signal analysis —' },
+  { ts:'00:00:06', cls:'', text:'we isolate your neuro-cortical brain patterns in real time.' },
+  { ts:'00:00:08', cls:'', text:'We render your dreams.' },
+  { ts:'00:00:11', cls:'', text:'Our reverse-reconstruction technology re-engineers those dreams within your own experience.' },
+  { ts:'00:00:13', cls:'', text:'Return to a moment you thought was lost.' },
+  { ts:'00:00:16', cls:'', text:'Meet someone you\'ve been missing.' },
+  ...(isIOS ? [{ ts:'00:00:18', cls:'', text:'Become the person you always believed you could be.' }] : []),
 ];
 
 function runLogLines(callback) {
@@ -1170,16 +1748,21 @@ function runLogLines(callback) {
 }
 
 const ARCHIVE_TRACKS = [
-  { idx: '01', title: 'Signal Dreams', status: 'available' },
-  { idx: '02', title: 'Feedback Memory', status: 'available' },
-  { idx: '03', title: 'Nature Module', status: 'available' },
-  { idx: '04', title: 'Brainwaves', status: 'available' },
-  { idx: '05', title: 'Module N5', status: 'available' },
-  { idx: '06', title: 'Co-Dreaming', status: 'soon' },
-  { idx: '07', title: 'Free Will', status: 'soon' },
-  { idx: '08', title: 'Glitches Are Portals', status: 'soon' },
-  { idx: '09', title: 'The Dream Ends', status: 'soon' },
-  { idx: '10', title: 'Virta', status: 'soon' }
+  { idx: 'DS-01', title: 'Signal Dreams',          sub: 'REM cycle 1 · cortical signal',       status: 'available' },
+  { idx: 'DS-02', title: 'Feedback Memory',         sub: 'REM cycle 2 · echo pattern',          status: 'available' },
+  { idx: 'DS-03', title: 'Nature Module',           sub: 'REM cycle 3 · environmental trace',   status: 'available' },
+  { idx: 'DS-04', title: 'Brainwaves',              sub: 'REM cycle 4 · frequency analysis',    status: 'available' },
+  { idx: 'DS-05', title: 'Module N5',               sub: 'REM cycle 5 · deep signal',           status: 'available' },
+  { idx: 'DS-06', title: 'Co-Dreaming',             sub: 'REM cycle 6 · dual-subject trace',    status: 'available' },
+  { idx: 'DS-07', title: 'Free Will',               sub: 'REM cycle 7 · agency pattern',        status: 'available' },
+  { idx: 'DS-08', title: 'Glitches Are Portals',    sub: 'REM cycle 8 · corrupted signal',      status: 'available' },
+  { idx: 'DS-09', title: 'The Dream Architect',     sub: 'REM cycle 9 · structural memory',     status: 'available' },
+  { idx: 'DS-10', title: 'Silo',                    sub: 'REM cycle 10 · isolated trace',       status: 'available' },
+  { idx: 'DS-11', title: 'Rising',                  sub: 'REM cycle 11 · ascent pattern',       status: 'available' },
+  { idx: 'DS-12', title: 'Module 3',                sub: 'REM cycle 12 · signal fragment',      status: 'available' },
+  { idx: 'DS-13', title: 'Signal Dreams (Voice)',   sub: 'REM cycle 13 · vocal reconstruction', status: 'available' },
+  { idx: 'DS-14', title: 'Wind and Water',          sub: 'REM cycle 14 · ambient signal',       status: 'available' },
+  { idx: 'DS-15', title: 'Virta',                   sub: 'REM cycle 15 · origin unknown',       status: 'available' },
 ];
 
 function showArchiveOverlay() {
@@ -1195,80 +1778,133 @@ function showArchiveOverlay() {
   ARCHIVE_TRACKS.forEach((t, i) => {
     const el = document.createElement('div');
     el.className = 'archive-line' + (t.status === 'available' ? ' available' : ' soon');
-    el.innerHTML = '<span class="idx">' + t.idx + '</span> · <span class="title">' + t.title + '</span> · <span class="status">' + t.status + '</span>';
+    el.innerHTML = '<span class="idx">' + t.idx + '</span> · <span class="title">' + t.title + '</span><span class="sub"> · ' + t.sub + '</span> · <span class="status">' + (t.status === 'available' ? 'protocol available' : 'access restricted') + '</span>';
+    if (t.status === 'available') el.addEventListener('click', () => playProtocol(t));
     list.appendChild(el);
     setTimeout(() => el.classList.add('visible'), 2000 + 500 * i);
   });
   const lastTrackTime = 2000 + 500 * (ARCHIVE_TRACKS.length - 1);
+  setTimeout(() => document.getElementById('archiveHint').classList.add('visible'), lastTrackTime + 800);
   setTimeout(() => document.getElementById('archiveTagline').classList.add('visible'), lastTrackTime + 3000);
   setTimeout(() => document.getElementById('archiveByline').classList.add('visible'), lastTrackTime + 5000);
   setTimeout(() => document.getElementById('archiveWhitepaper').classList.add('visible'), lastTrackTime + 6000);
 }
 
 const FRAGS = [
-  { text: 'The train moved and she was watching the cables. The way they rose and fell like breathing. He didn\'t want to look away.', attr: 'Memory fragment · REM cycle 3 · confidence: 61%' },
-  { text: 'Not a playlist. Not a video. An experience that reshapes itself to fit the version of you that\'s watching it.', attr: 'Source: archived transmission · DreamScreens internal' },
-  { text: 'The glitch isn\'t a failure. It\'s the invitation.', attr: 'Fragment 7 · partially recovered' },
+  { text: 'Welcome to DreamScreens.',                                           attr: 'DreamScreens · Neural Reconstruction Lab' },
+  { text: 'You are about to undergo\nneural memory reconstruction.',             attr: '' },
+  { text: 'Our system maps your cortical signature\nacross 64 active channels.', attr: 'EEG analysis · diffusion model v4.1' },
+  { text: 'It isolates the REM-state pattern\nunique to your consciousness.',    attr: '' },
+  { text: 'And renders it at 61% visual confidence.',                           attr: 'DS-NL · subject GHL-7704' },
+  { text: 'Not retrieval.\n\nRemembering.',                                      attr: '' },
+  { text: 'The train moved\nand she was watching the cables.',                   attr: 'Memory fragment · REM cycle 3 · confidence 61%' },
+  { text: 'The way they rose and fell\nlike breathing.',                         attr: '' },
+  { text: 'He didn\'t want to look away.',                                       attr: '' },
+  { text: 'This is not a playlist.\nNot a video.',                              attr: 'Source · archived transmission · DreamScreens internal' },
+  { text: 'An experience that reshapes itself\nto fit the version of you\nthat\'s watching it.', attr: '' },
+  { text: 'The glitch isn\'t a failure.\nIt\'s the invitation.',                attr: 'Fragment 7 · partially recovered · origin unknown' },
+  { text: 'What follows has been classified\nas a remote conscious event.',      attr: 'DS-NL-2026 · classification: restricted' },
+  { text: 'It can be stored.\nReplicated.\nReturned to.',                        attr: '' },
+  { text: 'This is your mind.',                                                  attr: '' },
+  { text: 'Reconstructed.',                                                      attr: 'Analysis complete · session archived' },
 ];
 
 function showFrag(stageNum, idx) {
-  const f = FRAGS[idx % FRAGS.length];
+  const f = FRAGS[idx];
+  if (!f) return;
   const fragId = stageNum === 2 ? 'fragment2' : stageNum === 3 ? 'fragment3' : 'fragment4';
   const el = document.getElementById(fragId);
-  el.querySelector('p').textContent = f.text;
-  el.querySelector('.attr').textContent = f.attr;
-  el.classList.remove('visible');
-  void el.offsetHeight;
-  setTimeout(() => el.classList.add('visible'), 50);
+
+  const applyNew = () => {
+    el.querySelector('p').textContent = f.text;
+    el.querySelector('.attr').textContent = f.attr;
+    el.classList.remove('fading');
+    void el.offsetHeight;
+    el.classList.add('visible');
+  };
+
+  if (el.classList.contains('visible')) {
+    el.classList.remove('visible');
+    el.classList.add('fading');
+    setTimeout(applyNew, 2600);
+  } else {
+    applyNew();
+  }
 }
 
 let videoStageFallbackTimer = null;
+let videoAdvanceClickHandler = null;
 
 function enterVideoStage(stageNum, onAdvance) {
   const ctx = getCtx();
   if (ctx.state === 'suspended') ctx.resume();
   [vid1, vid2, vid3].forEach(v => { if (v.readyState >= 2) v.play().catch(()=>{}); });
   if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
+  if (videoAdvanceClickHandler) {
+    document.removeEventListener('click', videoAdvanceClickHandler);
+    videoAdvanceClickHandler = null;
+  }
   const nextPrompt = document.getElementById('next-prompt');
   nextPrompt.classList.remove('visible');
   const advance = () => {
     if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
     videoStageFallbackTimer = null;
+    if (videoAdvanceClickHandler) {
+      document.removeEventListener('click', videoAdvanceClickHandler);
+      videoAdvanceClickHandler = null;
+    }
     nextPrompt.classList.remove('visible');
-    document.removeEventListener('click', advanceOnClick);
     onAdvance();
   };
   const advanceOnClick = () => advance();
+  videoAdvanceClickHandler = advanceOnClick;
   document.addEventListener('click', advanceOnClick, { once: true });
   setTimeout(() => nextPrompt.classList.add('visible'), 15000);
   videoStageFallbackTimer = setTimeout(advance, 45000);
 }
 
-function onEnter() {
+async function onEnter() {
   const ctx = getCtx();
-  if (ctx.state === 'suspended') ctx.resume();
+  if (ctx.state === 'suspended') await ctx.resume();
+  if (!virtaStarted) startVirta();
   document.getElementById('stage0Links').classList.remove('visible');
-  document.getElementById('s0').classList.remove('active');
-  glStageTarget = 1.0;
-  showStage(1);
-  document.getElementById('progress').classList.add('visible');
-  playTrack(CONFIG.media(CONFIG.music.stage1));
-  manualOrgFade = true;
-  const fadeStart = Date.now();
-  const fadeDuration = 8000;
-  function fadeOrganism() {
-    const elapsed = Date.now() - fadeStart;
-    const progress = Math.min(elapsed / fadeDuration, 1.0);
-    glOrgOpacity = 1.0 - progress;
-    glOrgOpacityTarget = 0.0;
-    if (progress >= 1.0) manualOrgFade = false;
-    else requestAnimationFrame(fadeOrganism);
-  }
-  fadeOrganism();
-  stageTimer = setTimeout(() => {
-    runLogLines(() => {
-      const holdAfterLogs = CONFIG.timing.stage1Duration - LOG_LINES.length * CONFIG.logLinePause - 800;
-      stageTimer = setTimeout(() => {
+  document.getElementById('home-nav').classList.remove('vis');
+
+  runNeuralLoader(document.getElementById('nl-ring-canvas'), 4500, [
+    { pct: 0,  msg: 'WELCOME TO DREAMSCREENS.' },
+    { pct: 18, msg: 'WELCOME TO THE FUTURE OF MEMORY.' },
+    { pct: 35, msg: 'Using differential retina scanning and remote EEG signal analysis —' },
+    { pct: 52, msg: 'we isolate your neuro-cortical brain patterns in real time.' },
+    { pct: 68, msg: 'We render your dreams.' },
+    { pct: 82, msg: 'Our reverse-reconstruction technology re-engineers those dreams within your own experience.' },
+    { pct: 95, msg: 'Return to a moment you thought was lost.' },
+    { pct: 100, msg: 'Meet someone you\'ve been missing.' },
+  ], function() {
+    document.getElementById('s0').classList.remove('active');
+    glStageTarget = 1.0;
+    showStage(1);
+    document.getElementById('progress').classList.add('visible');
+    void (async () => {
+      const c = getCtx();
+      if (c.state === 'suspended') await c.resume();
+      playTrack(CONFIG.media(CONFIG.music.stage1));
+    })();
+    manualOrgFade = true;
+    const fadeStart = Date.now();
+    const fadeDuration = 8000;
+    function fadeOrganism() {
+      const elapsed = Date.now() - fadeStart;
+      const progress = Math.min(elapsed / fadeDuration, 1.0);
+      glOrgOpacity = 1.0 - progress;
+      glOrgOpacityTarget = 0.0;
+      if (progress >= 1.0) manualOrgFade = false;
+      else requestAnimationFrame(fadeOrganism);
+    }
+    fadeOrganism();
+    stageTimer = setTimeout(() => {
+      runLogLines(() => {
+        const holdAfterLogs = CONFIG.timing.stage1Duration - LOG_LINES.length * CONFIG.logLinePause - 800;
+        stageTimer = setTimeout(() => {
         staticBurst(200);
         glStageTarget = 2.0;
         glBlend = 0.0;
@@ -1276,8 +1912,12 @@ function onEnter() {
         showStage(2);
         playTrack(CONFIG.media(CONFIG.music.stage2));
         showFrag(2, 0);
-        const dwell = 5000;
-        for (let i = 1; i <= 5; i++) setTimeout(() => showFrag(2, i), dwell * i);
+        const dwell = 14000;
+        setTimeout(() => showFrag(2, 1), dwell * 1);
+        setTimeout(() => showFrag(2, 2), dwell * 2);
+        setTimeout(() => showFrag(2, 3), dwell * 3);
+        setTimeout(() => showFrag(2, 4), dwell * 4);
+        setTimeout(() => showFrag(2, 5), dwell * 5);
         enterVideoStage(2, () => {
           glBlendTarget = isIOS ? 0.3 : 1.0;
           stageTimer = setTimeout(() => {
@@ -1287,8 +1927,11 @@ function onEnter() {
             glBlendTarget = isIOS ? 0.3 : 1.0;
             showStage(3);
             playTrack(CONFIG.media(CONFIG.music.stage3));
-            showFrag(3, 0);
-            for (let i = 1; i <= 5; i++) setTimeout(() => showFrag(3, i), dwell * i);
+            showFrag(3, 6);
+            setTimeout(() => showFrag(3, 7),  dwell * 1);
+            setTimeout(() => showFrag(3, 8),  dwell * 2);
+            setTimeout(() => showFrag(3, 9),  dwell * 3);
+            setTimeout(() => showFrag(3, 10), dwell * 4);
             enterVideoStage(3, () => {
               glBlendTarget = isIOS ? 0.3 : 1.0;
               stageTimer = setTimeout(() => {
@@ -1298,8 +1941,11 @@ function onEnter() {
                 glBlendTarget = isIOS ? 0.3 : 1.0;
                 showStage(4);
                 playTrack(CONFIG.media(CONFIG.music.stage4));
-                showFrag(4, 0);
-                for (let i = 1; i <= 5; i++) setTimeout(() => showFrag(4, i), dwell * i);
+                showFrag(4, 11);
+                setTimeout(() => showFrag(4, 12), dwell * 1);
+                setTimeout(() => showFrag(4, 13), dwell * 2);
+                setTimeout(() => showFrag(4, 14), dwell * 3);
+                setTimeout(() => showFrag(4, 15), dwell * 4);
                 enterVideoStage(4, () => {
                   glBlendTarget = isIOS ? 0.3 : 1.0;
                   stageTimer = setTimeout(() => {
@@ -1324,12 +1970,17 @@ function onEnter() {
       }, holdAfterLogs);
     });
   }, 4000);
+  }); // end runNeuralLoader callback
 }
 
 function resetExperience() {
   clearTimeout(stageTimer);
   if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
   videoStageFallbackTimer = null;
+  if (videoAdvanceClickHandler) {
+    document.removeEventListener('click', videoAdvanceClickHandler);
+    videoAdvanceClickHandler = null;
+  }
   document.getElementById('next-prompt').classList.remove('visible');
   stopAudio();
   virtaStarted = false;
@@ -1352,6 +2003,8 @@ function resetExperience() {
   glOrgGhost = 0.0;
   glArchiveMode = 0.0;
   glArchiveModeTarget = 0.0;
+  glOrgSettle = 1.0;
+  glOrgSettleTarget = 1.0;
   manualOrgFade = false;
   document.getElementById('progress').classList.remove('visible');
   ['s1','s2','s3','s4','s5','s6'].forEach(id => document.getElementById(id).classList.remove('active'));
@@ -1365,14 +2018,427 @@ function resetExperience() {
   document.getElementById('archiveTagline').classList.remove('visible');
   document.getElementById('archiveByline').classList.remove('visible');
   document.getElementById('archiveWhitepaper').classList.remove('visible');
+  document.getElementById('archiveHint').classList.remove('visible');
   document.getElementById('stage0Links').classList.remove('visible');
   document.getElementById('sessionId').textContent =
     'DS-' + Math.random().toString(36).substring(2,7).toUpperCase();
   showStage(0);
+  document.getElementById('home-nav').classList.add('vis');
+  document.getElementById('neural-loader').classList.remove('vis');
+  document.getElementById('neural-loader').classList.remove('gone');
   setTimeout(() => document.getElementById('stage0Links').classList.add('visible'), 3000);
 }
+document.getElementById('s0').classList.remove('active');
 
-setTimeout(() => document.getElementById('stage0Links').classList.add('visible'), 3000);
+// ════════════════════════════════════════
+// ENTRY SCREEN
+// ════════════════════════════════════════
+(function() {
+  const ec = document.getElementById('entry-gl');
+  if (!ec) return;
+  function resizeEC() {
+    if (!ec) return;
+    ec.width = window.innerWidth; ec.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resizeEC); resizeEC();
+  const eg = ec.getContext('webgl') || ec.getContext('experimental-webgl');
+  if (!eg) {
+    // No WebGL — just make button work
+    document.getElementById('entry-btn-wrap').addEventListener('click', () => void doEnterTransition());
+    return;
+  }
+  const EVS = `attribute vec2 a;void main(){gl_Position=vec4(a,0,1);}`;
+  const EFS = `precision highp float;
+uniform float u_t;uniform vec2 u_res;
+float h(vec2 p){p=fract(p*vec2(234.34,435.345));p+=dot(p,p+34.23);return fract(p.x*p.y);}
+float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
+float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=n(p)*a;p*=2.01;a*=.5;}return v;}
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res;vec2 c=uv-0.5;
+  float dist=length(c);float angle=atan(c.y,c.x);
+  float breath=sin(u_t*0.4)*0.06+sin(u_t*0.17)*0.03;
+  float f1=fbm(vec2(cos(angle)*3.2,sin(angle)*3.2)+u_t*0.08);
+  float f2=fbm(vec2(cos(angle*2.0+u_t*0.05)*2.1,sin(angle*1.5)*2.1)+u_t*0.06+7.3);
+  float d=dist+(f1-0.5)*0.22+(f2-0.5)*0.12+breath;
+  float core=exp(-d*6.5)*1.4;float ring=exp(-abs(d-0.18)*18.0)*0.7;float halo=exp(-d*2.2)*0.18;
+  float sp=pow(max(0.0,sin(angle*7.0+u_t*0.3)*0.5+0.5),12.0)*exp(-abs(d-0.28)*30.0)*0.9;
+  float sp2=pow(max(0.0,sin(angle*13.0-u_t*0.18)*0.5+0.5),16.0)*exp(-abs(d-0.22)*40.0)*0.6;
+  vec3 teal=vec3(0.04,0.55,0.48);vec3 gold=vec3(0.72,0.50,0.08);vec3 wht=vec3(0.9,0.95,1.0);
+  vec3 col=teal*(core+halo)+mix(teal,gold,0.55)*ring+wht*sp+gold*sp2+teal*fbm(uv*4.5+u_t*0.09)*0.08;
+  col+=h(vec2(floor(uv.y*200.)/200.,floor(u_t*8.)*.1))*.03;
+  col*=1.-length(uv-.5)*0.9;
+  gl_FragColor=vec4(clamp(col,0.,1.),1.);
+}`;
+  function mkS(t,src){const s=eg.createShader(t);eg.shaderSource(s,src);eg.compileShader(s);return s;}
+  const ep=eg.createProgram();
+  eg.attachShader(ep,mkS(eg.VERTEX_SHADER,EVS));
+  eg.attachShader(ep,mkS(eg.FRAGMENT_SHADER,EFS));
+  eg.linkProgram(ep);eg.useProgram(ep);
+  const vb=eg.createBuffer();eg.bindBuffer(eg.ARRAY_BUFFER,vb);
+  eg.bufferData(eg.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),eg.STATIC_DRAW);
+  const ap=eg.getAttribLocation(ep,'a');eg.enableVertexAttribArray(ap);
+  eg.vertexAttribPointer(ap,2,eg.FLOAT,false,0,0);
+  const uT=eg.getUniformLocation(ep,'u_t'),uR=eg.getUniformLocation(ep,'u_res');
+  const t0e=Date.now(); let alive=true;
+  (function loop(){
+    if(!alive)return;
+    eg.viewport(0,0,ec.width,ec.height);
+    eg.uniform1f(uT,(Date.now()-t0e)/1000);
+    eg.uniform2f(uR,ec.width,ec.height);
+    eg.drawArrays(eg.TRIANGLE_STRIP,0,4);
+    requestAnimationFrame(loop);
+  })();
+
+  document.getElementById('entry-btn-wrap').addEventListener('click', function() {
+    void doEnterTransition();
+    setTimeout(() => { alive = false; }, 1500);
+  });
+})();
+
+async function doEnterTransition() {
+  try {
+    const ac = getCtx();
+    if (ac.state === 'suspended') await ac.resume();
+  } catch (e) {}
+  if (typeof startVirta === 'function') startVirta();
+
+  const ringCanvas = document.getElementById('entry-ring-canvas');
+  const dataPanel = document.getElementById('entry-data-panel');
+  const btnWrap = document.getElementById('entry-btn-wrap');
+  const btnLabel = document.getElementById('entry-btn-label');
+  if (btnLabel) btnLabel.style.opacity = '0';
+  if (btnWrap) btnWrap.style.pointerEvents = 'none';
+  if (ringCanvas) ringCanvas.classList.add('vis');
+  if (dataPanel) dataPanel.classList.add('vis');
+
+  const steps = [
+    { pct: 0,   msg: 'Using differential retina scanning and remote EEG signal analysis —' },
+    { pct: 15,  msg: 'we isolate your neuro-cortical brain patterns in real time.' },
+    { pct: 32,  msg: 'We render your dreams.' },
+    { pct: 55,  msg: 'Our reverse-reconstruction technology re-engineers those dreams within your own experience.' },
+    { pct: 74,  msg: 'Return to a moment you thought was lost.' },
+    { pct: 91,  msg: 'Meet someone you\'ve been missing.' },
+    { pct: 100, msg: 'Become the person you always believed you could be.' },
+  ];
+
+  runNeuralLoader(ringCanvas, 3500, steps, function() {
+    document.getElementById('s-entry').classList.add('gone');
+    setTimeout(() => document.getElementById('home-nav').classList.add('vis'), 600);
+    glOrgOpacity = 0.0; glOrgOpacityTarget = 1.0;
+    glOrgSettle = 0.0; glOrgSettleTarget = 1.0;
+    glStage = 0.0; glStageTarget = 0.0;
+    document.getElementById('s0').classList.add('active');
+    setTimeout(() => document.getElementById('stage0Links').classList.add('visible'), 3000);
+  },
+  document.getElementById('entry-pct'),
+  document.getElementById('entry-msg'),
+  document.getElementById('entry-hex'),
+  (document.getElementById('entry-metrics') || {querySelectorAll: () => []}).querySelectorAll('span')
+  );
+}
+
+// ═══════════════════════════════════════════
+// SHARED NEURAL LOADER
+// canvas: canvas element for ring drawing
+// duration: total ms
+// steps: [{pct, msg}]
+// onDone: callback when complete
+// pctEl, msgEl, hexEl, metricEls: display elements
+// ═══════════════════════════════════════════
+function runNeuralLoader(canvas, duration, steps, onDone, pctEl, msgEl, hexEl, metricEls) {
+  if (!canvas) { onDone && onDone(); return; }
+  const size = canvas.width;
+  const ctx2 = canvas.getContext('2d');
+  const cx = size / 2, cy = size / 2, r = size / 2 - 8;
+  const startTime = Date.now();
+  let done = false;
+
+  // Show the neural loader overlay if this is the onboarding loader
+  const nlEl = document.getElementById('neural-loader');
+  if (canvas.id === 'nl-ring-canvas') {
+    pctEl = document.getElementById('nl-pct');
+    msgEl = document.getElementById('nl-msg');
+    hexEl = document.getElementById('nl-hex');
+    metricEls = document.getElementById('nl-metrics').querySelectorAll('span');
+    nlEl.classList.add('vis');
+  }
+
+  const hexChars = '0123456789ABCDEF';
+  function randHex(n) {
+    let s = '0x';
+    for (let i = 0; i < n; i++) s += hexChars[Math.random()*16|0];
+    return s;
+  }
+  function randMetric(label, min, max, unit) {
+    return label + ' ' + (min + Math.random()*(max-min)).toFixed(1) + unit;
+  }
+
+  function draw(progress) {
+    ctx2.clearRect(0, 0, size, size);
+
+    // Track ring (dim)
+    ctx2.beginPath();
+    ctx2.arc(cx, cy, r, 0, Math.PI*2);
+    ctx2.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx2.lineWidth = 1.5;
+    ctx2.stroke();
+
+    // Progress arc
+    const angle = -Math.PI/2 + Math.PI*2*progress;
+    const grad = ctx2.createLinearGradient(cx-r, cy, cx+r, cy);
+    grad.addColorStop(0, 'rgba(184,150,12,0.5)');
+    grad.addColorStop(0.5, 'rgba(240,208,128,0.9)');
+    grad.addColorStop(1, 'rgba(184,150,12,0.5)');
+    ctx2.beginPath();
+    ctx2.arc(cx, cy, r, -Math.PI/2, angle);
+    ctx2.strokeStyle = grad;
+    ctx2.lineWidth = 1.5;
+    ctx2.lineCap = 'round';
+    ctx2.stroke();
+
+    // Tick marks every 10%
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI/2 + Math.PI*2*(i/10);
+      const filled = (i/10) <= progress;
+      const x1 = cx + (r-5)*Math.cos(a), y1 = cy + (r-5)*Math.sin(a);
+      const x2 = cx + (r+5)*Math.cos(a), y2 = cy + (r+5)*Math.sin(a);
+      ctx2.beginPath();
+      ctx2.moveTo(x1, y1); ctx2.lineTo(x2, y2);
+      ctx2.strokeStyle = filled ? 'rgba(240,208,128,0.4)' : 'rgba(255,255,255,0.08)';
+      ctx2.lineWidth = 1;
+      ctx2.stroke();
+    }
+
+    // Leading dot
+    const dotA = angle;
+    ctx2.beginPath();
+    ctx2.arc(cx + r*Math.cos(dotA), cy + r*Math.sin(dotA), 2.5, 0, Math.PI*2);
+    ctx2.fillStyle = 'rgba(240,208,128,0.9)';
+    ctx2.fill();
+  }
+
+  function tick() {
+    if (done) return;
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(elapsed / duration, 1.0);
+    const pct = Math.round(progress * 100);
+
+    draw(progress);
+
+    // Update % display — code/tech style
+    if (pctEl) {
+      const hexPct = pct.toString(16).toUpperCase().padStart(2,'0');
+      pctEl.textContent = pct.toString().padStart(3,'0') + '% · 0x' + hexPct;
+    }
+
+    // Update message based on steps
+    if (msgEl) {
+      for (let i = steps.length - 1; i >= 0; i--) {
+        if (pct >= steps[i].pct) { msgEl.textContent = steps[i].msg; break; }
+      }
+    }
+
+    // Ticking hex and metrics
+    if (hexEl && Math.random() < 0.3) hexEl.textContent = randHex(8);
+    if (metricEls && metricEls.length >= 3) {
+      if (Math.random() < 0.2) metricEls[0].textContent = randMetric('EEG ', 0.1, 9.9, 'μV');
+      if (Math.random() < 0.15) metricEls[1].textContent = randMetric('DIFF ', 40, 99, '%');
+      if (Math.random() < 0.1) metricEls[2].textContent = randMetric('REM ', 0.1, 4.9, 'Hz');
+    }
+
+    if (progress < 1.0) {
+      requestAnimationFrame(tick);
+    } else {
+      done = true;
+      if (pctEl) pctEl.textContent = '100% · 0x64';
+      if (msgEl) msgEl.textContent = steps[steps.length-1].msg;
+      // Fade out loader then call done
+      setTimeout(() => {
+        if (canvas.id === 'nl-ring-canvas') {
+          nlEl.classList.add('gone');
+          setTimeout(() => { nlEl.classList.remove('vis','gone'); onDone && onDone(); }, 600);
+        } else {
+          onDone && onDone();
+        }
+      }, 400);
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+// ── SKIP TO PROTOCOLS ──────────────────
+function skipToProtocols() {
+  try { const ac = getCtx(); if (ac.state === 'suspended') void ac.resume(); } catch(e) {}
+  clearTimeout(stageTimer);
+  stageTimer = null;
+  if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
+  videoStageFallbackTimer = null;
+  if (videoAdvanceClickHandler) {
+    document.removeEventListener('click', videoAdvanceClickHandler);
+    videoAdvanceClickHandler = null;
+  }
+  document.getElementById('next-prompt').classList.remove('visible');
+  document.getElementById('s-entry').classList.add('gone');
+  document.getElementById('s0').classList.remove('active');
+  ['s1', 's2', 's3', 's4', 's5'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('home-nav').classList.remove('vis');
+  glOrgOpacity = 1.0; glOrgOpacityTarget = 1.0;
+  glOrgSettle  = 1.0; glOrgSettleTarget  = 1.0;
+  glArchiveModeTarget = 1.0;
+  showArchiveOverlay();
+}
+
+// ── PROTOCOL PLAYER ───────────────────
+const PROTOCOL_MUSIC = {
+  'DS-01': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Signal%20Dreams.mp3',
+  'DS-02': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Feedback%20Memory.(Minus%20197).mp3',
+  'DS-03': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Nature%20module%201.mp3',
+  'DS-04': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Brainwaves%20(grain%20Pysche).mp3',
+  'DS-05': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Module%20n5%20v2.mp3',
+  'DS-06': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Co%20Dreaming%20(Limbic%20Nectar).mp3',
+  'DS-07': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Free%20Will.mp3',
+  'DS-08': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Glitches%20are%20Portals.mp3',
+  'DS-09': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/The%20Dream%20Architect.mp3',
+  'DS-10': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Silo.mp3',
+  'DS-11': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/rising.mp3',
+  'DS-12': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/module%203.mp3',
+  'DS-13': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/signal%20dreams%20voice.mp3',
+  'DS-14': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/wind%20and%20water%20v1.mp3',
+  'DS-15': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Virta.mp3',
+};
+let ppSrc = null, ppGain = null;
+
+function playProtocol(track) {
+  const path = PROTOCOL_MUSIC[track.idx];
+  if (!path) return;
+
+  // Hide archive
+  document.getElementById('s6').classList.remove('active');
+
+  // Set organism visible, stable, no archive mode
+  glStageTarget = 0.0;
+  glOrgOpacity = 1.0; glOrgOpacityTarget = 1.0;
+  glOrgSettle = 1.0; glOrgSettleTarget = 1.0;
+  glArchiveModeTarget = 0.0;
+
+  // Show protocol player overlay (just the organism + stop button for now)
+  const pp = document.getElementById('protocol-player');
+  const titleEl = document.getElementById('pp-title');
+  titleEl.textContent = track.title;
+  titleEl.classList.remove('vis');
+  pp.classList.remove('gone'); pp.classList.add('vis');
+
+  // Unlock audio
+  const ctx = getCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  if (ppGain) { ppGain.gain.setTargetAtTime(0, ctx.currentTime, 1.5); ppGain = null; }
+
+  // Run the neural loader progress sequence first (3.5s), then fade in title and start audio
+  runNeuralLoader(document.getElementById('nl-ring-canvas'), 3500, [
+    { pct: 0,   msg: 'Initialising neural bridge...' },
+    { pct: 20,  msg: 'EEG sync — 64 channels active' },
+    { pct: 45,  msg: 'Loading analysis protocol...' },
+    { pct: 70,  msg: 'Signal locked — ' + track.title },
+    { pct: 90,  msg: 'Rendering...' },
+    { pct: 100, msg: 'Signal acquired.' },
+  ], function() {
+    // Loader done — fade in track title slowly
+    setTimeout(() => titleEl.classList.add('vis'), 200);
+
+    // Start audio
+    fetch(mediaFetchUrl(path)).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); }).then(ab => ctx.decodeAudioData(ab)).then(async buf => {
+      if (ctx.state === 'suspended') await ctx.resume();
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.setTargetAtTime(0.8, ctx.currentTime, 4.0);
+      gain.connect(ctx.destination);
+      const src = ctx.createBufferSource();
+      src.buffer = buf; src.loop = false; src.connect(gain); src.start(0);
+      ppSrc = src; ppGain = gain;
+
+      // Track end — fade title out then return
+      src.onended = () => {
+        titleEl.classList.remove('vis'); // 4s fade out via CSS transition
+        setTimeout(returnToProtocols, 4500);
+      };
+    }).catch(() => {
+      // Audio unavailable — just show title and let user stop manually
+    });
+  });
+}
+
+function stopProtocol() {
+  if (ppGain) {
+    const ctx = getCtx();
+    ppGain.gain.setTargetAtTime(0, ctx.currentTime, 1.5);
+    const s = ppSrc;
+    setTimeout(() => { try { s.stop(); } catch(e){} }, 5000);
+    ppGain = null; ppSrc = null;
+  }
+  returnToProtocols();
+}
+
+function returnToProtocols() {
+  const pp = document.getElementById('protocol-player');
+  const titleEl = document.getElementById('pp-title');
+  titleEl.classList.remove('vis');
+  // Also stop audio if still playing
+  if (ppGain) {
+    const ctx = getCtx();
+    ppGain.gain.setTargetAtTime(0, ctx.currentTime, 1.5);
+    ppGain = null; ppSrc = null;
+  }
+  pp.classList.remove('vis'); pp.classList.add('gone');
+  // Reset neural loader in case it's visible
+  const nlEl = document.getElementById('neural-loader');
+  if (nlEl) { nlEl.classList.remove('vis', 'gone'); }
+  setTimeout(() => {
+    pp.classList.remove('gone');
+    glArchiveModeTarget = 1.0;
+    showArchiveOverlay();
+  }, 1000);
+}
+// ── ACCESS GATE ──────────────────────
+const GATE_PW = 'signal';
+const KIT_API_KEY = 'Y37b5a8d043f45319cbb3f1977ada5475';
+const KIT_FORM_ID = '7186ece150';
+
+function gateSubmit() {
+  const val = document.getElementById('gate-pw').value.trim().toLowerCase();
+  const err = document.getElementById('gate-error');
+  if (val === GATE_PW) {
+    err.classList.remove('vis');
+    const gate = document.getElementById('access-gate');
+    gate.classList.add('gone');
+    setTimeout(() => { gate.style.display = 'none'; }, 1300);
+  } else {
+    err.classList.add('vis');
+    document.getElementById('gate-pw').value = '';
+    setTimeout(() => err.classList.remove('vis'), 2200);
+  }
+}
+
+document.getElementById('gate-pw').addEventListener('keydown', e => {
+  if (e.key === 'Enter') gateSubmit();
+});
+
+document.getElementById('gate-email').addEventListener('keydown', e => {
+  if (e.key === 'Enter') gateEmailSubmit();
+});
+
+function gateEmailSubmit() {
+  const email = document.getElementById('gate-email').value.trim();
+  if (!email || !email.includes('@')) return;
+  fetch('https://api.convertkit.com/v3/forms/' + KIT_FORM_ID + '/subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    body: JSON.stringify({ api_key: KIT_API_KEY, email: email })
+  }).catch(() => {});
+  document.getElementById('gate-email').value = '';
+  document.getElementById('gate-email-submit').style.opacity = '0.25';
+  document.getElementById('gate-email-submit').style.pointerEvents = 'none';
+  document.getElementById('gate-confirm').classList.add('vis');
+}
 </script>
 </body>
 </html>
