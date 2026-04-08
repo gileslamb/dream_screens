@@ -817,10 +817,128 @@
     opacity: 0; animation: fadeUp 1s ease 5s forwards;
   }
   #pp-stop:hover { color: rgba(255,255,255,0.55); border-color: rgba(255,255,255,0.3); }
+  /* ── ACCESS GATE ── */
+  #access-gate {
+    position: fixed; inset: 0; z-index: 500;
+    background: #020d0e;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: opacity 1.2s ease;
+  }
+  #access-gate.gone { opacity: 0; pointer-events: none; }
+  #gate-logo {
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.55em; text-transform: uppercase;
+    color: rgba(255,255,255,0.72);
+    margin-bottom: 0.5rem;
+  }
+  #gate-strap {
+    font-family: var(--sans); font-size: 11px;
+    font-weight: 300; font-style: italic;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 3.5rem;
+  }
+  .gate-block {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 0.75rem;
+    width: 260px;
+  }
+  .gate-input {
+    width: 100%;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.9);
+    font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.18em; text-align: center;
+    padding: 12px 14px; outline: none;
+    transition: border-color 0.2s;
+  }
+  .gate-input::placeholder { color: rgba(255,255,255,0.4); letter-spacing: 0.18em; }
+  .gate-input:focus { border-color: rgba(255,255,255,0.28); }
+  #gate-submit {
+    width: 100%; background: none;
+    border: 1px solid rgba(240,208,128,0.35);
+    color: rgba(240,208,128,0.85);
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.4em; text-transform: uppercase;
+    padding: 11px 14px; cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  #gate-submit:hover { border-color: rgba(240,208,128,0.75); color: rgba(240,208,128,0.95); }
+  #gate-error {
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(255,98,76,0.9);
+    opacity: 0; transition: opacity 0.3s; height: 13px;
+  }
+  #gate-error.vis { opacity: 1; }
+  #gate-rule {
+    width: 1px; height: 48px;
+    background: rgba(255,255,255,0.07);
+    margin: 2rem 0;
+  }
+  #gate-invite {
+    font-family: var(--sans); font-size: 12px;
+    font-weight: 300; font-style: italic;
+    color: rgba(255,255,255,0.58);
+    text-align: center; line-height: 1.7;
+    margin-bottom: 0.5rem; max-width: 28ch;
+  }
+  #gate-author {
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    text-decoration: none;
+    transition: color 0.2s; margin-bottom: 0.75rem;
+  }
+  #gate-author:hover { color: rgba(255,255,255,0.9); }
+  #gate-email-submit {
+    width: 100%; background: none;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.62);
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.32em; text-transform: uppercase;
+    padding: 11px 14px; cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  #gate-email-submit:hover { border-color: rgba(255,255,255,0.48); color: rgba(255,255,255,0.9); }
+  #gate-confirm {
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(0,255,136,0.78);
+    opacity: 0; transition: opacity 0.5s; height: 13px; text-align: center;
+  }
+  #gate-confirm.vis { opacity: 1; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
+<!-- ════ ACCESS GATE ════ -->
+<div id="access-gate">
+  <div id="gate-logo">DreamScreens</div>
+  <div id="gate-strap">Neural Reconstruction Lab — Restricted Access</div>
+
+  <div class="gate-block">
+    <input class="gate-input" id="gate-pw" type="password"
+      placeholder="ACCESS CODE" autocomplete="off" spellcheck="false"/>
+    <button id="gate-submit" onclick="gateSubmit()">Enter System →</button>
+    <div id="gate-error">access denied · signal rejected</div>
+  </div>
+
+  <div id="gate-rule"></div>
+
+  <div id="gate-invite">
+    The first analysis protocols are opening soon.<br>
+    Be among the first subjects.
+  </div>
+  <a id="gate-author" href="https://www.gileslamb.com" target="_blank">a project by giles lamb →</a>
+
+  <div class="gate-block">
+    <input class="gate-input" id="gate-email" type="email" placeholder="your@email.com"/>
+    <button id="gate-email-submit" onclick="gateEmailSubmit()">Register for first access →</button>
+    <div id="gate-confirm">Signal received. Your session will be allocated.</div>
+  </div>
+</div>
 
 <!-- ════ ENTRY SCREEN ════ -->
 <div id="s-entry">
@@ -2279,6 +2397,47 @@ function returnToProtocols() {
     glArchiveModeTarget = 1.0;
     showArchiveOverlay();
   }, 1000);
+}
+// ── ACCESS GATE ──────────────────────
+const GATE_PW = 'signal';
+const KIT_API_KEY = 'Y37b5a8d043f45319cbb3f1977ada5475';
+const KIT_FORM_ID = '7186ece150';
+
+function gateSubmit() {
+  const val = document.getElementById('gate-pw').value.trim().toLowerCase();
+  const err = document.getElementById('gate-error');
+  if (val === GATE_PW) {
+    err.classList.remove('vis');
+    const gate = document.getElementById('access-gate');
+    gate.classList.add('gone');
+    setTimeout(() => { gate.style.display = 'none'; }, 1300);
+  } else {
+    err.classList.add('vis');
+    document.getElementById('gate-pw').value = '';
+    setTimeout(() => err.classList.remove('vis'), 2200);
+  }
+}
+
+document.getElementById('gate-pw').addEventListener('keydown', e => {
+  if (e.key === 'Enter') gateSubmit();
+});
+
+document.getElementById('gate-email').addEventListener('keydown', e => {
+  if (e.key === 'Enter') gateEmailSubmit();
+});
+
+function gateEmailSubmit() {
+  const email = document.getElementById('gate-email').value.trim();
+  if (!email || !email.includes('@')) return;
+  fetch('https://api.convertkit.com/v3/forms/' + KIT_FORM_ID + '/subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    body: JSON.stringify({ api_key: KIT_API_KEY, email: email })
+  }).catch(() => {});
+  document.getElementById('gate-email').value = '';
+  document.getElementById('gate-email-submit').style.opacity = '0.25';
+  document.getElementById('gate-email-submit').style.pointerEvents = 'none';
+  document.getElementById('gate-confirm').classList.add('vis');
 }
 </script>
 </body>
