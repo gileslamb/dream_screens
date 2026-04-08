@@ -1013,12 +1013,12 @@ const CONFIG = {
   ],
   videoSeek: 30,
   music: {
-    intro: 'Media/mp3/Virta.mp3',
-    stage1: 'Media/mp3/Signal Dreams.mp3',
-    stage2: 'Media/mp3/Feedback Memory.(Minus 197).mp3',
-    stage3: 'Media/mp3/Nature module 1.mp3',
-    stage4: 'Media/mp3/Brainwaves (grain Pysche).mp3',
-    stage5: 'Media/mp3/Module n5 v2.mp3'
+    intro:  'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Virta.mp3',
+    stage1: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Signal%20Dreams.mp3',
+    stage2: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Feedback%20Memory.(Minus%20197).mp3',
+    stage3: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Nature%20module%201.mp3',
+    stage4: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Brainwaves%20(grain%20Pysche).mp3',
+    stage5: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Module%20n5%20v2.mp3',
   },
   timing: {
     stage1Duration: 18000,
@@ -1630,16 +1630,21 @@ function runLogLines(callback) {
 }
 
 const ARCHIVE_TRACKS = [
-  { idx: 'DS-01', title: 'Signal Dreams',       sub: 'REM cycle 1 · cortical signal',      status: 'available' },
-  { idx: 'DS-02', title: 'Feedback Memory',      sub: 'REM cycle 2 · echo pattern',         status: 'available' },
-  { idx: 'DS-03', title: 'Nature Module',        sub: 'REM cycle 3 · environmental trace',  status: 'available' },
-  { idx: 'DS-04', title: 'Brainwaves',           sub: 'REM cycle 4 · frequency analysis',   status: 'available' },
-  { idx: 'DS-05', title: 'Module N5',            sub: 'REM cycle 5 · deep signal',          status: 'available' },
-  { idx: 'DS-06', title: 'Co-Dreaming',          sub: 'REM cycle 6 · dual-subject trace',   status: 'locked' },
-  { idx: 'DS-07', title: 'Free Will',            sub: 'REM cycle 7 · agency pattern',       status: 'locked' },
-  { idx: 'DS-08', title: 'Glitches Are Portals', sub: 'REM cycle 8 · corrupted signal',     status: 'locked' },
-  { idx: 'DS-09', title: 'The Dream Ends',       sub: 'REM cycle 9 · termination sequence', status: 'locked' },
-  { idx: 'DS-10', title: 'Virta',                sub: 'REM cycle 10 · origin unknown',      status: 'locked' }
+  { idx: 'DS-01', title: 'Signal Dreams',          sub: 'REM cycle 1 · cortical signal',       status: 'available' },
+  { idx: 'DS-02', title: 'Feedback Memory',         sub: 'REM cycle 2 · echo pattern',          status: 'available' },
+  { idx: 'DS-03', title: 'Nature Module',           sub: 'REM cycle 3 · environmental trace',   status: 'available' },
+  { idx: 'DS-04', title: 'Brainwaves',              sub: 'REM cycle 4 · frequency analysis',    status: 'available' },
+  { idx: 'DS-05', title: 'Module N5',               sub: 'REM cycle 5 · deep signal',           status: 'available' },
+  { idx: 'DS-06', title: 'Co-Dreaming',             sub: 'REM cycle 6 · dual-subject trace',    status: 'available' },
+  { idx: 'DS-07', title: 'Free Will',               sub: 'REM cycle 7 · agency pattern',        status: 'available' },
+  { idx: 'DS-08', title: 'Glitches Are Portals',    sub: 'REM cycle 8 · corrupted signal',      status: 'available' },
+  { idx: 'DS-09', title: 'The Dream Architect',     sub: 'REM cycle 9 · structural memory',     status: 'available' },
+  { idx: 'DS-10', title: 'Silo',                    sub: 'REM cycle 10 · isolated trace',       status: 'available' },
+  { idx: 'DS-11', title: 'Rising',                  sub: 'REM cycle 11 · ascent pattern',       status: 'available' },
+  { idx: 'DS-12', title: 'Module 3',                sub: 'REM cycle 12 · signal fragment',      status: 'available' },
+  { idx: 'DS-13', title: 'Signal Dreams (Voice)',   sub: 'REM cycle 13 · vocal reconstruction', status: 'available' },
+  { idx: 'DS-14', title: 'Wind and Water',          sub: 'REM cycle 14 · ambient signal',       status: 'available' },
+  { idx: 'DS-15', title: 'Virta',                   sub: 'REM cycle 15 · origin unknown',       status: 'available' },
 ];
 
 function showArchiveOverlay() {
@@ -2167,11 +2172,21 @@ function skipToProtocols() {
 
 // ── PROTOCOL PLAYER ───────────────────
 const PROTOCOL_MUSIC = {
-  'DS-01': 'Media/mp3/Signal Dreams.mp3',
-  'DS-02': 'Media/mp3/Feedback Memory.(Minus 197).mp3',
-  'DS-03': 'Media/mp3/Nature module 1.mp3',
-  'DS-04': 'Media/mp3/Brainwaves (grain Pysche).mp3',
-  'DS-05': 'Media/mp3/Module n5 v2.mp3',
+  'DS-01': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Signal%20Dreams.mp3',
+  'DS-02': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Feedback%20Memory.(Minus%20197).mp3',
+  'DS-03': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Nature%20module%201.mp3',
+  'DS-04': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Brainwaves%20(grain%20Pysche).mp3',
+  'DS-05': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Module%20n5%20v2.mp3',
+  'DS-06': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Co%20Dreaming%20(Limbic%20Nectar).mp3',
+  'DS-07': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Free%20Will.mp3',
+  'DS-08': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Glitches%20are%20Portals.mp3',
+  'DS-09': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/The%20Dream%20Architect.mp3',
+  'DS-10': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Silo.mp3',
+  'DS-11': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/rising.mp3',
+  'DS-12': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/module%203.mp3',
+  'DS-13': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/signal%20dreams%20voice.mp3',
+  'DS-14': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/wind%20and%20water%20v1.mp3',
+  'DS-15': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Virta.mp3',
 };
 let ppSrc = null, ppGain = null;
 
