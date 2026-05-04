@@ -281,6 +281,24 @@
     padding: 0;
     z-index: 20;
     pointer-events: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  @media (max-height: 750px) {
+    #s6 {
+      justify-content: flex-start;
+      padding: 4vh 0;
+    }
+  }
+  @media (max-width: 600px) {
+    #s6 {
+      justify-content: flex-start;
+      padding: 4vh 0;
+    }
+    #s6 .archive-panel {
+      width: 95vw;
+      padding: 3vh 5vw;
+    }
   }
   #s6 .archive-header {
     font-family: var(--mono);
