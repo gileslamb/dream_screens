@@ -261,7 +261,7 @@
 
 <!-- ── PHASE 2: VIDEO + OVERLAYS ── -->
 <div id="phase-video">
-  <video id="vid" playsinline></video>
+  <video id="vid" playsinline webkit-playsinline></video>
   <div id="data-overlay"></div>
 </div>
 
@@ -524,12 +524,11 @@ window.addEventListener('load', function() {
     gateBtn.addEventListener('click', function() {
       gate.classList.remove('vis');
 
-      // Call play() RIGHT NOW inside the click handler — this permanently
-      // unlocks the video element for future play() calls in this session,
-      // even after several seconds have elapsed (browser autoplay policy).
-      whenHlsReady(() => {
-        vid.play().then(() => vid.pause()).catch(() => {});
-      });
+      // iOS: call play() synchronously inside the gesture handler. The browser
+      // queues the request even before HLS metadata is loaded — calling it via
+      // an async callback (whenHlsReady) breaks this on slow mobile networks.
+      resumeAmbientContext();
+      vid.play().then(() => vid.pause()).catch(() => {});
 
       setTimeout(function() {
         runPhase1(function() {

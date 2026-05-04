@@ -246,6 +246,11 @@ function stopAmbientAudio(fadeMs) {
   _ambSrc = null; _ambGain = null;
 }
 
+// Call this inside a user-gesture handler on iOS to unlock a suspended AudioContext
+function resumeAmbientContext() {
+  if (_ambCtx && _ambCtx.state === 'suspended') _ambCtx.resume();
+}
+
 // ── WEB AUDIO UTILITIES (for audio-based protocols) ──
 let _audioCtx = null;
 
