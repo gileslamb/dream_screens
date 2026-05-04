@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DreamScreens · DS-01 · Signal Dreams</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="protocol-common.css"/>
+<style>
+/* ── DS-01 SPECIFIC ── */
+
+/* ── PHASE 1: INTRO ── */
+#phase-intro {
+  position: fixed; inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+#phase-intro.vis { opacity: 1; }
+
+.intro-line {
+  font-family: var(--mono);
+  font-size: clamp(9px, 1vw, 11px);
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.65);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.intro-line.is-title {
+  font-family: var(--sans);
+  font-size: clamp(14px, 1.8vw, 22px);
+  letter-spacing: 0.08em;
+  font-weight: 300;
+  color: rgba(255,255,255,0.78);
+}
+
+@keyframes glitch-in {
+  0%   { opacity: 0; transform: translateX(-6px) skewX(-3deg); filter: blur(2px); }
+  25%  { opacity: 0.75; transform: translateX(3px); filter: blur(0); }
+  45%  { opacity: 0.45; transform: translateX(-2px); }
+  65%  { opacity: 0.85; transform: translateX(1px); }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+@keyframes glitch-out {
+  0%   { opacity: 1; transform: none; }
+  30%  { opacity: 0.6; transform: translateX(4px) skewX(2deg); filter: blur(1px); }
+  70%  { opacity: 0.2; transform: translateX(-3px); }
+  100% { opacity: 0; transform: translateX(6px); filter: blur(2px); }
+}
+
+.intro-line.in  { animation: glitch-in  0.22s ease forwards; }
+.intro-line.out { animation: glitch-out 0.22s ease forwards; }
+
+/* Organism pulse ring — appears briefly with each text beat */
+#org-pulse {
+  position: fixed; inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.04) 0%, transparent 65%);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+#org-pulse.beat { opacity: 1; }
+
+/* ── BLACK FADE OVERLAY ── */
+#fade-overlay {
+  position: fixed; inset: 0;
+  z-index: 30;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 2s ease;
+}
+#fade-overlay.vis { opacity: 1; }
+
+/* ── PHASE 2: VIDEO ── */
+#phase-video {
+  position: fixed; inset: 0;
+  z-index: 15;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  /* Slow fade so organism is visible through it during transition */
+  transition: opacity 2.5s ease;
+}
+#phase-video.vis { opacity: 1; pointer-events: all; }
+
+#vid {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── DATA OVERLAYS ── */
+#data-overlay {
+  position: absolute;
+  bottom: 32px; right: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.data-line {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.65);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.data-line.in  { animation: glitch-in  0.2s ease forwards; }
+.data-line.out { animation: glitch-out 0.2s ease forwards; }
+
+/* ── PHASE 3: COMPLETION ── */
+#phase-complete {
+  position: fixed; inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+#phase-complete.vis { opacity: 1; }
+
+.complete-line {
+  font-family: var(--mono);
+  font-size: clamp(9px, 1vw, 11px);
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.65);
+  opacity: 0;
+}
+.complete-line.in  { animation: glitch-in  0.22s ease forwards; }
+
+#return-link {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255,255,255,0.18);
+  padding-bottom: 2px;
+  margin-top: 1.5rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: color 0.3s ease, opacity 1.5s ease;
+}
+#return-link.vis { opacity: 1; pointer-events: all; }
+#return-link:hover { color: rgba(255,255,255,0.75); }
+
+/* ── START GATE (user gesture unlock) ── */
+#start-gate {
+  position: fixed; inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1s ease;
+}
+#start-gate.vis { opacity: 1; pointer-events: all; }
+#start-gate .gate-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.45em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.25);
+}
+#start-gate .gate-btn {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(0,0,0,0.2);
+  color: rgba(255,255,255,0.6);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s;
+}
+#start-gate .gate-btn:hover {
+  border-color: rgba(255,255,255,0.65);
+  background: rgba(255,255,255,0.07);
+  transform: scale(1.06);
+}
+#start-gate .gate-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.14);
+}
+</style>
+</head>
+<body>
+
+<!-- ── CURSOR ── -->
+<div id="cursor"></div>
+
+<!-- ── ORGANISM ── -->
+<canvas id="gl"></canvas>
+<div id="scanlines"></div>
+<div id="org-pulse"></div>
+
+<!-- ── NEURAL LOADER ── -->
+<div id="neural-loader">
+  <canvas id="nl-ring-canvas" width="160" height="160"></canvas>
+  <div id="nl-pct">0%</div>
+  <div id="nl-msg">initialising</div>
+  <div id="nl-hex">0x00000000</div>
+  <div id="nl-metrics">
+    <span id="nl-eeg">EEG — —</span>
+    <span id="nl-diff">DIFF — —</span>
+    <span id="nl-rem">REM — —</span>
+  </div>
+</div>
+
+<!-- ── BACK BUTTON + SESSION ── -->
+<a id="back-btn" href="/">← Return to archive</a>
+<div id="session-id"></div>
+
+<!-- ── START GATE ── -->
+<div id="start-gate">
+  <div class="gate-label">Protocol DS-01 · Signal Dreams</div>
+  <button class="gate-btn" id="gate-btn" aria-label="Begin protocol">▶</button>
+  <div class="gate-sub">Begin Protocol</div>
+</div>
+
+<!-- ── BLACK FADE ── -->
+<div id="fade-overlay"></div>
+
+<!-- ── PHASE 1: INTRO ── -->
+<div id="phase-intro">
+  <div class="intro-line"            id="il-0">DREAMSCREENS PROTOCOL DS-01</div>
+  <div class="intro-line is-title"   id="il-1">Signal Dreams</div>
+  <div class="intro-line"            id="il-2">SUBJECT: NEURAL PATTERN ANALYSIS</div>
+  <div class="intro-line"            id="il-3">INITIATING MEMORY RECONSTRUCTION...</div>
+  <div class="intro-line"            id="il-4">PROTOCOL ACTIVE — STAND BY</div>
+</div>
+
+<!-- ── PHASE 2: VIDEO + OVERLAYS ── -->
+<div id="phase-video">
+  <video id="vid" playsinline></video>
+  <div id="data-overlay"></div>
+</div>
+
+<!-- ── PHASE 3: COMPLETION ── -->
+<div id="phase-complete">
+  <div class="complete-line" id="cl-0">DS-01 COMPLETE</div>
+  <div class="complete-line" id="cl-1">MEMORY FRAGMENT ARCHIVED</div>
+  <div class="complete-line" id="cl-2">PROTOCOL CLOSED</div>
+  <a id="return-link" href="/">Return to Archive</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="protocol-common.js"></script>
+<script>
+// ════════════════════════════════════════
+// DS-01 CONFIG
+// ════════════════════════════════════════
+const HLS_URL = 'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/a131766743d10c8960911211b41e64c7/manifest/video.m3u8';
+
+initSessionId('DS-01', 'Signal Dreams', 'REM cycle 1 · neural pattern analysis');
+
+// ── OVERLAY DEFINITIONS (seconds into video) ──
+const OVERLAYS = [
+  { t: 30,  text: 'ENTERING NEURAL CORRIDOR' },
+  { t: 60,  text: 'FRAME COHERENCE: 87%' },
+  { t: 135, text: 'DEEP MEMORY LAYER DETECTED' },
+  { t: 180, text: 'CONSCIOUSNESS LOCK ESTABLISHED' },
+  { t: 210, text: 'PATTERN RECOGNITION ACTIVE' },
+  { t: 270, text: 'MEMORY DEPTH: 84.3%' },
+  { t: 300, text: 'SIGNAL INTEGRITY OPTIMAL' },
+  { t: 375, text: 'MEMORY DISSOLUTION INITIATED' },
+  { t: 420, text: 'RECONSTRUCTION COMPLETE' },
+];
+
+// ════════════════════════════════════════
+// HLS VIDEO SETUP
+// ════════════════════════════════════════
+const vid = document.getElementById('vid');
+let hlsReady = false;
+let hlsReadyCbs = [];
+
+function onHlsReady() {
+  hlsReady = true;
+  hlsReadyCbs.forEach(fn => fn());
+  hlsReadyCbs = [];
+}
+
+function whenHlsReady(fn) {
+  if (hlsReady) { fn(); } else { hlsReadyCbs.push(fn); }
+}
+
+function attachHLS() {
+  // Safari plays HLS natively
+  if (vid.canPlayType('application/vnd.apple.mpegurl')) {
+    vid.src = HLS_URL;
+    vid.addEventListener('loadedmetadata', onHlsReady, { once: true });
+  } else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+    const hls = new Hls({ startLevel: -1 });
+    hls.loadSource(HLS_URL);
+    hls.attachMedia(vid);
+    hls.on(Hls.Events.MANIFEST_PARSED, onHlsReady);
+  } else {
+    console.warn('HLS not supported in this browser');
+    onHlsReady();
+  }
+}
+
+// ════════════════════════════════════════
+// GLITCH TEXT HELPERS
+// ════════════════════════════════════════
+function glitchIn(el) {
+  el.style.opacity = '';
+  el.classList.remove('out');
+  el.classList.add('in');
+  el.addEventListener('animationend', () => {
+    el.style.opacity = '1';
+  }, { once: true });
+}
+
+function glitchOut(el, then) {
+  el.style.opacity = '';
+  el.classList.remove('in');
+  el.classList.add('out');
+  el.addEventListener('animationend', () => {
+    el.style.opacity = '0';
+    el.classList.remove('out');
+    then && then();
+  }, { once: true });
+}
+
+// ════════════════════════════════════════
+// ORGANISM PULSE
+// ════════════════════════════════════════
+const orgPulse = document.getElementById('org-pulse');
+function pulse() {
+  orgPulse.classList.add('beat');
+  setTimeout(() => orgPulse.classList.remove('beat'), 200);
+}
+
+// ════════════════════════════════════════
+// PHASE 1 — INTRO SEQUENCE
+// ════════════════════════════════════════
+function runPhase1(onDone) {
+  const intro     = document.getElementById('phase-intro');
+  const phaseVideo = document.getElementById('phase-video');
+  const lines = [
+    document.getElementById('il-0'),
+    document.getElementById('il-1'),
+    document.getElementById('il-2'),
+    document.getElementById('il-3'),
+    document.getElementById('il-4'),
+  ];
+
+  glOrgSettleTarget = 0.3;
+  intro.classList.add('vis');
+
+  const cues = [0, 1500, 3000, 4500, 6000];
+  cues.forEach((delay, i) => {
+    setTimeout(() => {
+      pulse();
+      glitchIn(lines[i]);
+      glOrgSettleTarget = Math.min(1.0, 0.3 + i * 0.15);
+    }, delay);
+  });
+
+  // At 6.5s: start video + fade it in; simultaneously crossfade ambient out
+  setTimeout(() => {
+    vid.currentTime = 0;
+    vid.play().catch(e => console.warn('Video play:', e));
+    phaseVideo.classList.add('vis');
+    fadeAmbientTo(0, 2.0); // ambient out over 2s as video fades in over 2.5s
+  }, 6500);
+
+  // At 7.5s: glitch out text lines
+  setTimeout(() => {
+    lines.forEach(l => glitchOut(l));
+    intro.classList.remove('vis');
+  }, 7500);
+
+  // At 9s: organism is now fully covered by video — hand off to Phase 2
+  setTimeout(() => onDone && onDone(), 9000);
+}
+
+// ════════════════════════════════════════
+// PHASE 2 — VIDEO WITH DATA OVERLAYS
+// ════════════════════════════════════════
+function runPhase2(onDone) {
+  // Video is already playing (started at end of Phase 1)
+  const overlay = document.getElementById('data-overlay');
+  const fade    = document.getElementById('fade-overlay');
+
+  const overlayEls = OVERLAYS.map(o => {
+    const el = document.createElement('div');
+    el.className = 'data-line';
+    el.textContent = o.text;
+    overlay.appendChild(el);
+    return { el, t: o.t, shown: false, hiding: false };
+  });
+
+  // rAF loop: sync overlays to video.currentTime
+  let rafId;
+  function overlayLoop() {
+    const ct = vid.currentTime;
+    overlayEls.forEach(o => {
+      if (!o.shown && ct >= o.t) {
+        o.shown = true;
+        glitchIn(o.el);
+        setTimeout(() => {
+          if (!o.hiding) { o.hiding = true; glitchOut(o.el); }
+        }, 4200);
+      }
+    });
+    rafId = requestAnimationFrame(overlayLoop);
+  }
+  overlayLoop();
+
+  vid.addEventListener('ended', () => {
+    cancelAnimationFrame(rafId);
+    fade.classList.add('vis');
+    setTimeout(() => {
+      document.getElementById('phase-video').classList.remove('vis');
+      onDone && onDone();
+    }, 2000);
+  }, { once: true });
+}
+
+// ════════════════════════════════════════
+// PHASE 3 — COMPLETION
+// ════════════════════════════════════════
+function runPhase3() {
+  const complete  = document.getElementById('phase-complete');
+  const returnLnk = document.getElementById('return-link');
+  const lines = [
+    document.getElementById('cl-0'),
+    document.getElementById('cl-1'),
+    document.getElementById('cl-2'),
+  ];
+
+  complete.classList.add('vis');
+  glOrgSettleTarget = 1.0;
+
+  // Fade ambient music back in — audio continuum restored
+  fadeAmbientTo(0.5, 3.0);
+
+  const cues = [0, 1500, 3000];
+  cues.forEach((delay, i) => {
+    setTimeout(() => glitchIn(lines[i]), delay);
+  });
+
+  // Return link at 7s
+  setTimeout(() => {
+    returnLnk.classList.add('vis');
+    returnLnk.addEventListener('click', function() {
+      // Store return state so index.html skips entry screen and resumes music
+      if (ambientUrl) {
+        sessionStorage.setItem('dsReturn', JSON.stringify({ url: ambientUrl }));
+      } else {
+        sessionStorage.setItem('dsReturn', '1');
+      }
+      stopAmbientAudio(1200);
+    }, { once: true });
+  }, 7000);
+}
+
+// ════════════════════════════════════════
+// AMBIENT AUDIO — menu music continuity
+// ════════════════════════════════════════
+let ambientUrl = null;
+try {
+  const _d = JSON.parse(sessionStorage.getItem('dsMenuAudio') || 'null');
+  if (_d && _d.url) {
+    ambientUrl = _d.url;
+    sessionStorage.removeItem('dsMenuAudio');
+    startAmbientAudio(ambientUrl, 0.55);
+  }
+} catch(e) { console.warn('Ambient audio init failed:', e); }
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+window.addEventListener('load', function() {
+  // Start loading HLS in background during the neural loader
+  attachHLS();
+
+  runNeuralLoader(3500, [
+    { pct: 0,   msg: 'Initialising neural bridge...' },
+    { pct: 20,  msg: 'EEG sync — 64 channels active' },
+    { pct: 45,  msg: 'Loading Signal Dreams...' },
+    { pct: 70,  msg: 'HLS signal locked — buffering...' },
+    { pct: 90,  msg: 'Pattern confirmed.' },
+    { pct: 100, msg: 'Signal acquired.' },
+  ], function() {
+    // Show organism + start gate — click provides the user gesture for audio
+    glOrgOpacityTarget = 1.0;
+    glOrgSettleTarget  = 0.5;
+    const gate    = document.getElementById('start-gate');
+    const gateBtn = document.getElementById('gate-btn');
+    gate.classList.add('vis');
+
+    gateBtn.addEventListener('click', function() {
+      gate.classList.remove('vis');
+
+      // Call play() RIGHT NOW inside the click handler — this permanently
+      // unlocks the video element for future play() calls in this session,
+      // even after several seconds have elapsed (browser autoplay policy).
+      whenHlsReady(() => {
+        vid.play().then(() => vid.pause()).catch(() => {});
+      });
+
+      setTimeout(function() {
+        runPhase1(function() {
+          runPhase2(function() {
+            runPhase3();
+          });
+        });
+      }, 600);
+    }, { once: true });
+  });
+});
+</script>
+</body>
+</html>

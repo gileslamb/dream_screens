@@ -1569,6 +1569,7 @@ document.addEventListener('visibilitychange', function () {
 
 let currentGain = null;
 let currentBuffer = null;
+let currentTrackUrl = null;
 
 async function playTrack(path, opts) {
   const ctx = getCtx();
@@ -1601,6 +1602,7 @@ async function playTrack(path, opts) {
     }
     currentGain = gain;
     currentBuffer = src;
+    currentTrackUrl = url;
   } catch (e) {
     console.warn('Audio load failed:', path, url, e);
     if (window.location.protocol === 'file:') {
@@ -2033,9 +2035,42 @@ document.getElementById('s0').classList.remove('active');
 // ════════════════════════════════════════
 // ENTRY SCREEN
 // ════════════════════════════════════════
+// Check for return from a protocol page — skip entry, go straight to archive
+(function handleProtocolReturn() {
+  const ret = JSON.parse(sessionStorage.getItem('dsReturn') || 'null');
+  if (!ret) return;
+  sessionStorage.removeItem('dsReturn');
+
+  // Hide entry screen, set organism to archive state
+  const sEntry = document.getElementById('s-entry');
+  if (sEntry) sEntry.classList.add('gone');
+  glOrgOpacity = 1.0; glOrgOpacityTarget = 1.0;
+  glOrgSettle  = 1.0; glOrgSettleTarget  = 1.0;
+  if (typeof glArchiveModeTarget !== 'undefined') glArchiveModeTarget = 1.0;
+
+  // Resume the ambient track that was playing — fade it in on first user interaction
+  const url = typeof ret === 'object' ? ret.url : null;
+  if (url) {
+    // Try immediately (works if browser allows AudioContext after navigation gesture)
+    try {
+      const ctx = getCtx();
+      ctx.resume().then(() => playTrack(url, { fadeInTimeConstant: 1.5 })).catch(() => {});
+    } catch(e) {}
+    // Also wire the first interaction as a fallback
+    document.addEventListener('click', function resumeOnClick() {
+      if (!currentTrackUrl) playTrack(url, { fadeInTimeConstant: 1.5 });
+      document.removeEventListener('click', resumeOnClick);
+    }, { once: true });
+  }
+
+  showArchiveOverlay();
+})();
+
 (function() {
   const ec = document.getElementById('entry-gl');
   if (!ec) return;
+  // Skip entry animation if returning from a protocol (already handled above)
+  if (!document.getElementById('s-entry') || document.getElementById('s-entry').classList.contains('gone')) return;
   function resizeEC() {
     if (!ec) return;
     ec.width = window.innerWidth; ec.height = window.innerHeight;
@@ -2309,6 +2344,24 @@ const PROTOCOL_MUSIC = {
 let ppSrc = null, ppGain = null;
 
 function playProtocol(track) {
+  // DS-01 is a video protocol — navigate to its dedicated page
+  if (track.idx === 'DS-01') {
+    if (currentTrackUrl) {
+      sessionStorage.setItem('dsMenuAudio', JSON.stringify({ url: currentTrackUrl }));
+    }
+    // Fade music
+    if (currentGain) {
+      const ctx = getCtx();
+      currentGain.gain.setTargetAtTime(0, ctx.currentTime, 0.8);
+    }
+    // Hide archive immediately so there's clear visual feedback
+    document.getElementById('s6').classList.remove('active');
+    glArchiveModeTarget = 0.0;
+    // Navigate on next tick (lets the fade start first)
+    setTimeout(() => { window.location.href = '/protocols/ds-01.html'; }, 200);
+    return;
+  }
+
   const path = PROTOCOL_MUSIC[track.idx];
   if (!path) return;
 

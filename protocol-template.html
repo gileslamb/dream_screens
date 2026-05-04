@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DreamScreens · DS-00</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet"/>
+<style>
+  /* ── VARIABLES — match master site exactly ── */
+  :root {
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --green: #00ff88;
+    --muted: #444;
+    --text: #c8c8c0;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #020d0e;
+    overflow: hidden;
+    cursor: none;
+  }
+
+  /* ── CUSTOM CURSOR ── */
+  #cursor {
+    position: fixed;
+    width: 8px; height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    mix-blend-mode: difference;
+    transition: transform 0.05s ease;
+  }
+
+  /* ── ORGANISM CANVAS ── */
+  #gl {
+    position: fixed;
+    inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+    z-index: 1;
+  }
+
+  /* ── SCANLINES ── */
+  #scanlines {
+    position: fixed; inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+  }
+
+  /* ── BACK BUTTON ── */
+  #back-btn {
+    position: fixed;
+    top: 3vh; left: 4vw;
+    z-index: 50;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.22);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.2s;
+    text-decoration: none;
+    display: block;
+  }
+  #back-btn:hover { color: rgba(255,255,255,0.55); }
+
+  /* ── SESSION ID ── */
+  #session-id {
+    position: fixed;
+    top: 3vh; right: 4vw;
+    z-index: 50;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.12);
+    pointer-events: none;
+  }
+
+  /* ── PROTOCOL HEADER ── */
+  #protocol-header {
+    position: fixed;
+    bottom: 6vh;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 4s ease;
+  }
+  #protocol-header.vis { opacity: 1; }
+  #protocol-idx {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.45em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.2);
+  }
+  #protocol-title {
+    font-family: var(--sans);
+    font-size: clamp(18px, 2.5vw, 32px);
+    font-weight: 300;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.7);
+  }
+  #protocol-sub {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.18);
+  }
+
+  /* ── NEURAL LOADER (reused from master) ── */
+  #neural-loader {
+    position: fixed; inset: 0;
+    z-index: 100;
+    background: #020d0e;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 0;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+  #neural-loader.vis { opacity: 1; pointer-events: all; }
+  #neural-loader.gone { opacity: 0; pointer-events: none; }
+  #nl-ring-canvas { display: block; }
+  #nl-pct {
+    font-family: var(--mono); font-size: 42px;
+    font-weight: 300; letter-spacing: -0.02em;
+    color: rgba(255,255,255,0.7);
+    margin-top: 2rem; line-height: 1;
+  }
+  #nl-msg {
+    font-family: var(--sans); font-size: 12px;
+    font-weight: 300; font-style: italic;
+    color: rgba(255,255,255,0.3);
+    margin-top: 0.8rem; text-align: center;
+    max-width: 38ch; line-height: 1.5;
+  }
+  #nl-hex {
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.2em; color: rgba(255,255,255,0.15);
+    margin-top: 0.6rem;
+  }
+  #nl-metrics {
+    display: flex; gap: 2rem; margin-top: 0.5rem;
+  }
+  #nl-metrics span {
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.2em; color: rgba(0,255,136,0.3);
+    text-transform: uppercase;
+  }
+
+  /* ── EXPERIENCE LAYER
+     Your custom visual content goes here.
+     Add whatever CSS you need for your
+     specific protocol visual system.
+  ── */
+  #experience {
+    position: fixed; inset: 0;
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 2s ease;
+  }
+  #experience.vis { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ── CURSOR ── -->
+<div id="cursor"></div>
+
+<!-- ── ORGANISM + SCANLINES ── -->
+<canvas id="gl"></canvas>
+<div id="scanlines"></div>
+
+<!-- ── NEURAL LOADER ── -->
+<div id="neural-loader">
+  <canvas id="nl-ring-canvas" width="160" height="160"></canvas>
+  <div id="nl-pct">0%</div>
+  <div id="nl-msg">initialising</div>
+  <div id="nl-hex">0x00000000</div>
+  <div id="nl-metrics">
+    <span id="nl-eeg">EEG — —</span>
+    <span id="nl-diff">DIFF — —</span>
+    <span id="nl-rem">REM — —</span>
+  </div>
+</div>
+
+<!-- ── BACK BUTTON ── -->
+<a id="back-btn" href="/">← Return to protocols</a>
+
+<!-- ── SESSION ID ── -->
+<div id="session-id"></div>
+
+<!-- ── PROTOCOL HEADER (fades in after loader) ── -->
+<div id="protocol-header">
+  <div id="protocol-idx">DS-00</div>
+  <div id="protocol-title">Protocol Title</div>
+  <div id="protocol-sub">REM cycle 0 · signal type</div>
+</div>
+
+<!-- ════════════════════════════════════════
+  EXPERIENCE LAYER
+  Replace contents with your visual system.
+  This layer sits above the organism (z-index 10)
+  and below the UI chrome (z-index 50+).
+  ════════════════════════════════════════ -->
+<div id="experience">
+  <!-- YOUR VISUAL SYSTEM GOES HERE -->
+</div>
+
+<script>
+// ════════════════════════════════════════
+// PROTOCOL CONFIG — edit these for each protocol
+// ════════════════════════════════════════
+const PROTOCOL = {
+  idx:   'DS-00',
+  title: 'Protocol Title',
+  sub:   'REM cycle 0 · signal type',
+  audio: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Signal%20Dreams.mp3',
+};
+
+// ════════════════════════════════════════
+// SESSION ID
+// ════════════════════════════════════════
+(function() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let id = 'DS-';
+  for (let i = 0; i < 8; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  document.getElementById('session-id').textContent = 'Session ' + id;
+  document.getElementById('protocol-idx').textContent = PROTOCOL.idx;
+  document.getElementById('protocol-title').textContent = PROTOCOL.title;
+  document.getElementById('protocol-sub').textContent = PROTOCOL.sub;
+})();
+
+// ════════════════════════════════════════
+// CURSOR
+// ════════════════════════════════════════
+const cursor = document.getElementById('cursor');
+document.addEventListener('mousemove', e => {
+  cursor.style.transform = 'translate(' + (e.clientX - 4) + 'px, ' + (e.clientY - 4) + 'px)';
+});
+
+// ════════════════════════════════════════
+// ORGANISM WebGL
+// Identical to master site — do not modify
+// ════════════════════════════════════════
+const glCanvas = document.getElementById('gl');
+glCanvas.width  = Math.floor(window.innerWidth  * 0.75);
+glCanvas.height = Math.floor(window.innerHeight * 0.75);
+glCanvas.style.width  = '100%';
+glCanvas.style.height = '100%';
+window.addEventListener('resize', () => {
+  glCanvas.width  = Math.floor(window.innerWidth  * 0.75);
+  glCanvas.height = Math.floor(window.innerHeight * 0.75);
+});
+
+const gl = glCanvas.getContext('webgl') || glCanvas.getContext('experimental-webgl');
+
+const VS = `
+attribute vec2 a_pos;
+void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
+`;
+
+const FS = `
+precision highp float;
+uniform float u_t;
+uniform vec2  u_res;
+uniform float u_orgOpacity;
+uniform float u_orgSettle;
+
+#define N      150.0
+#define GOLDEN 2.399963
+
+float hash(vec2 p) {
+  p = fract(p * vec2(234.34, 435.345));
+  p += dot(p, p + 34.23);
+  return fract(p.x * p.y);
+}
+float noise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i), hash(i + vec2(1,0)), f.x),
+    mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x), f.y);
+}
+float fbm(vec2 p) {
+  float v = 0.0, amp = 0.5;
+  for (int i = 0; i < 5; i++) { v += noise(p) * amp; p *= 2.01; amp *= 0.5; }
+  return v;
+}
+
+void main() {
+  vec2 uv  = gl_FragCoord.xy / u_res;
+  vec2 ndc = uv * 2.0 - 1.0;
+  ndc.x   *= u_res.x / u_res.y;
+  vec3 col = vec3(0.01, 0.04, 0.05);
+
+  float settle     = clamp(u_orgSettle, 0.0, 1.0);
+  float settleEase = settle * settle * (3.0 - 2.0 * settle);
+  float amp        = mix(2.2 + 0.3 * sin(u_t * 0.15), 0.35 + 0.08 * sin(u_t * 0.4), settleEase);
+  float scale      = mix(1.4, 0.6 + 0.03 * sin(u_t * 0.25), settleEase);
+  float rotY       = u_t * 0.314;
+
+  vec3 baseColor = vec3(0.9, 0.85, 0.7);
+
+  for (float i = 0.0; i < N; i += 1.0) {
+    float theta = i * GOLDEN;
+    float phi   = acos(1.0 - 2.0 * (i + 0.5) / N);
+    vec3 pos    = vec3(sin(phi)*cos(theta), sin(phi)*sin(theta), cos(phi));
+    pos        += fbm(pos.xy * 3.0 + u_t * 0.2) * amp;
+    float c = cos(rotY), s = sin(rotY);
+    pos.xz      = vec2(pos.x*c - pos.z*s, pos.x*s + pos.z*c);
+    pos        *= scale;
+    vec2 proj   = pos.xy / (1.0 - pos.z * 0.3);
+    proj.x     /= u_res.x / u_res.y;
+    float d     = length(ndc - proj);
+    col        += baseColor * 0.0006 * u_orgOpacity / (d*d + 0.0005);
+  }
+
+  float dist = length(uv - vec2(0.5));
+  col *= clamp(1.0 - dist * 1.2, 0.0, 1.0);
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+
+function compileShader(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src); gl.compileShader(s); return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, compileShader(gl.VERTEX_SHADER, VS));
+gl.attachShader(prog, compileShader(gl.FRAGMENT_SHADER, FS));
+gl.linkProgram(prog); gl.useProgram(prog);
+
+const buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+const aPos = gl.getAttribLocation(prog, 'a_pos');
+gl.enableVertexAttribArray(aPos);
+gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+const uT          = gl.getUniformLocation(prog, 'u_t');
+const uRes        = gl.getUniformLocation(prog, 'u_res');
+const uOrgOpacity = gl.getUniformLocation(prog, 'u_orgOpacity');
+const uOrgSettle  = gl.getUniformLocation(prog, 'u_orgSettle');
+
+let glOrgOpacity      = 0.0;
+let glOrgOpacityTarget = 1.0;
+let glOrgSettle       = 0.0;
+let glOrgSettleTarget = 1.0;
+const t0 = Date.now();
+
+function renderGL() {
+  glOrgOpacity += (glOrgOpacityTarget - glOrgOpacity) * 0.012;
+  glOrgSettle  += (glOrgSettleTarget  - glOrgSettle)  * 0.008;
+  gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+  gl.uniform1f(uT, (Date.now() - t0) / 1000);
+  gl.uniform2f(uRes, glCanvas.width, glCanvas.height);
+  gl.uniform1f(uOrgOpacity, glOrgOpacity);
+  gl.uniform1f(uOrgSettle,  glOrgSettle);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  requestAnimationFrame(renderGL);
+}
+renderGL();
+
+// ════════════════════════════════════════
+// AUDIO
+// ════════════════════════════════════════
+let audioCtx = null;
+
+function getCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+let trackSrc = null, trackGain = null;
+
+function playProtocolAudio(onEnded) {
+  const ctx = getCtx();
+  fetch(PROTOCOL.audio)
+    .then(r => r.arrayBuffer())
+    .then(ab => ctx.decodeAudioData(ab))
+    .then(buf => {
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.setTargetAtTime(0.85, ctx.currentTime, 4.0);
+      gain.connect(ctx.destination);
+      const src = ctx.createBufferSource();
+      src.buffer = buf; src.loop = false;
+      src.connect(gain); src.start(0);
+      trackSrc = src; trackGain = gain;
+      if (onEnded) src.onended = onEnded;
+    })
+    .catch(e => console.warn('Audio failed:', e));
+}
+
+function stopAudio(fadeMs) {
+  if (!trackGain) return;
+  const ctx = getCtx();
+  trackGain.gain.setTargetAtTime(0, ctx.currentTime, (fadeMs || 2000) / 1000);
+  const s = trackSrc;
+  setTimeout(() => { try { s.stop(); } catch(e){} }, (fadeMs || 2000) + 500);
+  trackGain = null; trackSrc = null;
+}
+
+// ════════════════════════════════════════
+// NEURAL LOADER
+// Identical to master site — do not modify
+// ════════════════════════════════════════
+function runNeuralLoader(canvas, duration, steps, onDone) {
+  if (!canvas) { onDone && onDone(); return; }
+  const size = canvas.width;
+  const ctx2 = canvas.getContext('2d');
+  const cx = size/2, cy = size/2, r = size/2 - 8;
+  const startTime = Date.now();
+  const nlEl   = document.getElementById('neural-loader');
+  const pctEl  = document.getElementById('nl-pct');
+  const msgEl  = document.getElementById('nl-msg');
+  const hexEl  = document.getElementById('nl-hex');
+  const metricEls = document.getElementById('nl-metrics').querySelectorAll('span');
+  nlEl.classList.add('vis');
+
+  const hexChars = '0123456789ABCDEF';
+  function randHex(n) {
+    let s = '0x';
+    for (let i = 0; i < n; i++) s += hexChars[Math.random()*16|0];
+    return s;
+  }
+
+  function draw(progress) {
+    ctx2.clearRect(0, 0, size, size);
+    ctx2.beginPath();
+    ctx2.arc(cx, cy, r, 0, Math.PI*2);
+    ctx2.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx2.lineWidth = 1.5; ctx2.stroke();
+    const angle = -Math.PI/2 + progress * Math.PI * 2;
+    ctx2.beginPath();
+    ctx2.arc(cx, cy, r, -Math.PI/2, angle);
+    ctx2.strokeStyle = 'rgba(255,255,255,0.45)';
+    ctx2.lineWidth = 1.5; ctx2.stroke();
+    const pct = Math.round(progress * 100);
+    if (pctEl) pctEl.textContent = String(pct).padStart(3,'0') + '%';
+    if (hexEl) hexEl.textContent = randHex(8);
+    if (metricEls) {
+      metricEls[0] && (metricEls[0].textContent = 'EEG ' + (40 + Math.random()*20).toFixed(1) + 'Hz');
+      metricEls[1] && (metricEls[1].textContent = 'DIFF ' + (Math.random()*0.4+0.6).toFixed(2));
+      metricEls[2] && (metricEls[2].textContent = 'REM ' + (Math.random()*30+55).toFixed(1) + '%');
+    }
+    const step = steps.reduce((best, s) => s.pct/100 <= progress ? s : best, steps[0]);
+    if (msgEl && step) msgEl.textContent = step.msg;
+  }
+
+  function tick() {
+    const elapsed  = Date.now() - startTime;
+    const progress = Math.min(elapsed / duration, 1.0);
+    draw(progress);
+    if (progress < 1.0) {
+      requestAnimationFrame(tick);
+    } else {
+      setTimeout(() => {
+        nlEl.classList.add('gone');
+        setTimeout(() => {
+          nlEl.classList.remove('vis','gone');
+          onDone && onDone();
+        }, 600);
+      }, 400);
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+// ════════════════════════════════════════
+// INIT — runs on page load
+// ════════════════════════════════════════
+window.addEventListener('load', function() {
+  // Start organism dispersed, settle it in
+  glOrgOpacity = 1.0; glOrgOpacityTarget = 1.0;
+  glOrgSettle  = 0.0; glOrgSettleTarget  = 1.0;
+
+  // Run neural loader, then start audio and reveal experience
+  runNeuralLoader(
+    document.getElementById('nl-ring-canvas'),
+    3500,
+    [
+      { pct: 0,   msg: 'Initialising neural bridge...' },
+      { pct: 20,  msg: 'EEG sync — 64 channels active' },
+      { pct: 45,  msg: 'Loading ' + PROTOCOL.title + '...' },
+      { pct: 70,  msg: 'Signal locked — rendering...' },
+      { pct: 90,  msg: 'Pattern confirmed.' },
+      { pct: 100, msg: 'Signal acquired.' },
+    ],
+    function() {
+      // Loader done — reveal header
+      document.getElementById('protocol-header').classList.add('vis');
+
+      // Reveal experience layer
+      document.getElementById('experience').classList.add('vis');
+
+      // Start audio
+      getCtx();
+      playProtocolAudio(function() {
+        // Track ended — fade header out and return to protocols
+        document.getElementById('protocol-header').classList.remove('vis');
+        setTimeout(() => { window.location.href = '/'; }, 4000);
+      });
+
+      // ════════════════════════════════
+      // YOUR EXPERIENCE CODE STARTS HERE
+      // Called once loader completes and
+      // audio has begun.
+      // ════════════════════════════════
+      startExperience();
+    }
+  );
+});
+
+// ════════════════════════════════════════
+// startExperience()
+// Replace this function with your visual
+// system for this specific protocol.
+// The organism is running behind everything.
+// Audio is playing.
+// ════════════════════════════════════════
+function startExperience() {
+  // TODO: build your visual system here.
+  // The #experience div is now visible.
+  // PROTOCOL.title, PROTOCOL.idx available.
+  // stopAudio(fadeMs) to stop audio early.
+  // window.location.href = '/' to return.
+}
+</script>
+</body>
+</html>
