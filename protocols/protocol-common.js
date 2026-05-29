@@ -204,9 +204,13 @@ function runNeuralLoader(duration, steps, onDone) {
 
 // ── AMBIENT AUDIO (menu-music continuity across navigation) ──
 // Separate gain/src from protocol audio so they can crossfade independently.
+// If ds-audio.js is loaded (protocol pages), use its single shared context
+// so all audio — ambient music, SFX ticks, beds — shares ONE AudioContext
+// that is resumed synchronously in the gate gesture handler.
 let _ambCtx = null, _ambGain = null, _ambSrc = null;
 
 function _getAmbCtx() {
+  if (window.DS_AUDIO) return window.DS_AUDIO.ctx();
   if (!_ambCtx) _ambCtx = new (window.AudioContext || window.webkitAudioContext)();
   if (_ambCtx.state === 'suspended') _ambCtx.resume();
   return _ambCtx;
@@ -248,6 +252,7 @@ function stopAmbientAudio(fadeMs) {
 
 // Call this inside a user-gesture handler on iOS to unlock a suspended AudioContext
 function resumeAmbientContext() {
+  if (window.DS_AUDIO) { DS_AUDIO.resume(); return; }
   if (_ambCtx && _ambCtx.state === 'suspended') _ambCtx.resume();
 }
 

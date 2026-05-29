@@ -275,6 +275,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="/assets/ds-audio.js"></script>
 <script src="protocol-common.js"></script>
 <script src="/assets/ds-hud.js"></script>
 <script>
@@ -308,6 +309,17 @@ const HUD_CONFIG = {
     signalOverlap: { label: 'CORTICAL BASELINE', peakFrac: 150/480, peakValue: 100, warnAt: 200, accentAt: 200 },
     echoDuration:  { label: 'RETENTION',          resolveFrac: 350/480, text: 'OPTIMAL' },
     feedbackLoop:  { label: 'CANDIDATE STATUS',   stabiliseFrac:  90/480 },
+  },
+  sfx: {
+    feedTick: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/type-key-v2.wav',
+    uiTick:   'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/type-key-v3.wav',
+    beds: [
+      'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/space.wav',
+      'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/rain.wav',
+      'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/forest.wav',
+    ],
+    bedVolume: 0.10,   // slightly lower on DS-01 (more seductive/quiet)
+    sfxVolume: 0.18,
   },
 };
 DS_HUD.init(HUD_CONFIG);
@@ -561,6 +573,9 @@ window.addEventListener('load', function() {
       // iOS: call play() synchronously inside the gesture handler. The browser
       // queues the request even before HLS metadata is loaded — calling it via
       // an async callback (whenHlsReady) breaks this on slow mobile networks.
+      // DS_AUDIO.resume() is synchronous inside the gesture — this is what
+      // unlocks the shared AudioContext so SFX and beds play on iOS Safari.
+      if (window.DS_AUDIO) DS_AUDIO.resume();
       resumeAmbientContext();
       vid.play().then(() => vid.pause()).catch(() => {});
 

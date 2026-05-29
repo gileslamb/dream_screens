@@ -60,11 +60,9 @@
   // Timer
   let _timerEl = null;
 
-  // SFX (filled in commit #3)
-  let _sfxCtx  = null;
-  let _sfxGain = null;
-  let _sfxBufs = {};   // key → AudioBuffer
-  let _bedGains = [];  // one per bed URL
+  // SFX — routes through DS_AUDIO (shared context in /assets/ds-audio.js)
+  let _sfxBufs  = {};   // key → AudioBuffer (or pool sentinel)
+  let _bedGains = [];   // HTMLAudio fallback nodes only
   let _sfxReady = false;
 
   // ─────────────────────────────────────────────────────────────────
@@ -335,103 +333,96 @@
   }
 
   // ─────────────────────────────────────────────────────────────────
-  // SFX — Web Audio, gated behind hudStart (called after gate click)
-  // Falls back to HTMLAudioElement pool if fetch/CORS fails.
+  // SFX — routes through DS_AUDIO (shared AudioContext, /assets/ds-audio.js).
+  //
+  // Root cause of previous silence: ds-hud.js was creating a SECOND
+  // AudioContext outside the gate gesture handler. On iOS Safari, calling
+  // .resume() asynchronously (9.6s after the gesture) is ignored — the
+  // context stays suspended and src.start() queues silently. Fix: ONE
+  // shared context, resumed synchronously in gate click via DS_AUDIO.resume().
+  //
+  // CORS: confirmed working — R2 returns Access-Control-Allow-Origin: *
+  // on OPTIONS preflight and GET with Origin header. Files exist (200 OK).
+  // HTMLAudio fallback kept for edge cases (extreme network failure, etc.)
   // ─────────────────────────────────────────────────────────────────
-  // SFX is gated behind hudStart() which is called after the gate click.
-  // R2 bucket (pub-62666eef125a449aa31ba8192339a17e.r2.dev) already serves
-  // Access-Control-Allow-Origin: * — confirmed by protocol-common.js fetch().
-  // HTMLAudio pool fallback handles any per-file CORS edge cases.
   function _initSfx(cfg) {
     if (!cfg.sfx) return;
-    var sfx = cfg.sfx;
-    try {
-      _sfxCtx = new (window.AudioContext || window.webkitAudioContext)();
-      // Explicit resume — ensures the context is running even if created
-      // slightly outside the gesture window (e.g. on slow iOS devices).
-      _sfxCtx.resume().catch(function() {});
-
-      _sfxGain = _sfxCtx.createGain();
-      _sfxGain.gain.value = sfx.sfxVolume != null ? sfx.sfxVolume : 0.22;
-      _sfxGain.connect(_sfxCtx.destination);
-
-      // One-shot buffers: feedTick (subtle per-line tick), uiTick (chart events)
-      ['feedTick', 'uiTick'].forEach(function(key) {
-        var url = sfx[key];
-        if (!url) return;
-        fetch(url)
-          .then(function(r) { return r.arrayBuffer(); })
-          .then(function(ab) { return _sfxCtx.decodeAudioData(ab); })
-          .then(function(buf) { _sfxBufs[key] = buf; })
-          .catch(function() {
-            // CORS fallback — HTMLAudio pool (6 voices so rapid ticks don't cut)
-            var pool = [];
-            for (var k = 0; k < 6; k++) {
-              var a = new Audio(url);
-              a.volume = sfx.sfxVolume != null ? sfx.sfxVolume : 0.22;
-              pool.push(a);
-            }
-            _sfxBufs[key + '_pool'] = pool;
-            _sfxBufs[key + '_pi']   = 0;
-          });
-      });
-
-      // Ambient beds — looped, low volume (~0.12), emerge slowly so they
-      // fill the space under music and film without masking the score.
-      // Random start offset per bed so they don't phase-lock together.
-      var bedVol = sfx.bedVolume != null ? sfx.bedVolume : 0.12;
-      (sfx.beds || []).forEach(function(url, i) {
-        fetch(url)
-          .then(function(r) { return r.arrayBuffer(); })
-          .then(function(ab) { return _sfxCtx.decodeAudioData(ab); })
-          .then(function(buf) {
-            var gain = _sfxCtx.createGain();
-            gain.gain.value = 0;
-            gain.connect(_sfxCtx.destination);
-            var src = _sfxCtx.createBufferSource();
-            src.buffer = buf; src.loop = true;
-            src.connect(gain);
-            // Random position within the loop — keeps beds from phasing together
-            var offset = Math.random() * buf.duration;
-            src.start(0, offset);
-            // Very slow fade-in: 10s time constant → reaches target (~63%) in 10s
-            gain.gain.setTargetAtTime(bedVol, _sfxCtx.currentTime, 10.0);
-            _bedGains[i] = gain;
-          })
-          .catch(function() {
-            // HTMLAudio fallback
-            var a = new Audio(url);
-            a.loop = true; a.volume = 0;
-            a.play().catch(function() {});
-            var steps = 0;
-            var iv = setInterval(function() {
-              steps++;
-              a.volume = Math.min(bedVol, steps * bedVol / 30);
-              if (steps >= 30) clearInterval(iv);
-            }, 600);
-            _bedGains[i] = { _el: a };
-          });
-      });
-
-      _sfxReady = true;
-    } catch(e) {
-      console.warn('DS_HUD SFX init:', e);
-    }
-  }
-
-  function _playSfx(key) {
-    if (!_sfxCtx) return;
-    var buf = _sfxBufs[key];
-    if (buf) {
-      try {
-        var src = _sfxCtx.createBufferSource();
-        src.buffer = buf;
-        src.connect(_sfxGain);
-        src.start(0);
-      } catch(e) {}
+    if (!window.DS_AUDIO) {
+      console.warn('DS_HUD: ds-audio.js not loaded — SFX disabled');
       return;
     }
-    // Pool fallback
+    var sfx = cfg.sfx;
+    var sfxVol = sfx.sfxVolume != null ? sfx.sfxVolume : 0.22;
+    var bedVol = sfx.bedVolume != null ? sfx.bedVolume : 0.12;
+
+    // Create buses on the shared context (idempotent)
+    DS_AUDIO.bus('sfx',  sfxVol);
+    DS_AUDIO.bus('beds', 0);     // starts silent, ramped up after first bed loads
+
+    // One-shot buffers: feedTick (subtle per-line tick), uiTick (chart events)
+    ['feedTick', 'uiTick'].forEach(function(key) {
+      var url = sfx[key];
+      if (!url) return;
+      DS_AUDIO.load(url)
+        .then(function(buf) { _sfxBufs[key] = buf; })
+        .catch(function() {
+          // Last-resort HTMLAudio pool — 6 voices so rapid ticks don't cut
+          var pool = [];
+          for (var k = 0; k < 6; k++) {
+            var a = new Audio(url);
+            a.volume = sfxVol;
+            pool.push(a);
+          }
+          _sfxBufs[key + '_pool'] = pool;
+          _sfxBufs[key + '_pi']   = 0;
+        });
+    });
+
+    // Ambient beds — looped, low volume, emerge slowly to fill gaps under score.
+    // Random start offsets prevent phase-locking. All beds share the 'beds' bus
+    // so DS_AUDIO.ramp('beds', 0) fades them all together.
+    (sfx.beds || []).forEach(function(url) {
+      DS_AUDIO.load(url)
+        .then(function(buf) {
+          var offset = Math.random() * buf.duration;
+          DS_AUDIO.loop(buf, 'beds', offset);
+          // Slow fade-in — 10s time constant reaches ~63% of target
+          DS_AUDIO.ramp('beds', bedVol, 10.0);
+        })
+        .catch(function() {
+          // HTMLAudio fallback
+          var a = new Audio(url);
+          a.loop = true; a.volume = 0;
+          a.play().catch(function() {});
+          var steps = 0;
+          var iv = setInterval(function() {
+            steps++;
+            a.volume = Math.min(bedVol, steps * bedVol / 30);
+            if (steps >= 30) clearInterval(iv);
+          }, 600);
+          _bedGains.push({ _el: a });
+        });
+    });
+
+    _sfxReady = true;
+  }
+
+  // Throttle: feedTick fires at most once every 1.5s to prevent rapid-fire
+  // if two feed lines trigger in quick succession.
+  var _lastTickMs = 0;
+
+  function _playSfx(key) {
+    var buf = _sfxBufs[key];
+    if (buf && window.DS_AUDIO) {
+      if (key === 'feedTick') {
+        var now = Date.now();
+        if (now - _lastTickMs < 1500) return; // throttle
+        _lastTickMs = now;
+      }
+      DS_AUDIO.play(buf, 'sfx');
+      return;
+    }
+    // Pool fallback (only reached if DS_AUDIO unavailable or load failed)
     var pool = _sfxBufs[key + '_pool'];
     if (pool) {
       var pi = _sfxBufs[key + '_pi'] || 0;
@@ -441,18 +432,19 @@
   }
 
   function _fadeBeds(targetVol, timeConstant) {
+    // Primary path: ramp the shared 'beds' bus via DS_AUDIO
+    if (window.DS_AUDIO) {
+      DS_AUDIO.ramp('beds', targetVol, timeConstant || 2.0);
+    }
+    // HTMLAudio fallback nodes (only populated if DS_AUDIO.load failed)
     _bedGains.forEach(function(g) {
-      if (!g) return;
-      if (g._el) {
-        var a = g._el, start = a.volume, steps = 0, total = 20;
-        var iv = setInterval(function() {
-          steps++;
-          a.volume = start + (targetVol - start) * (steps / total);
-          if (steps >= total) clearInterval(iv);
-        }, (timeConstant * 1000) / total);
-      } else if (_sfxCtx) {
-        g.gain.setTargetAtTime(targetVol, _sfxCtx.currentTime, timeConstant);
-      }
+      if (!g || !g._el) return;
+      var a = g._el, start = a.volume, steps = 0, total = 20;
+      var iv = setInterval(function() {
+        steps++;
+        a.volume = start + (targetVol - start) * (steps / total);
+        if (steps >= total) clearInterval(iv);
+      }, ((timeConstant || 2) * 1000) / total);
     });
   }
 

@@ -270,6 +270,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="/assets/ds-audio.js"></script>
 <script src="protocol-common.js"></script>
 <script src="/assets/ds-hud.js"></script>
 <script>
@@ -589,6 +590,9 @@ window.addEventListener('load', function() {
 
       // iOS: call play() synchronously inside gesture handler so the browser
       // grants the media unlock before HLS metadata has fully loaded.
+      // DS_AUDIO.resume() is synchronous inside the gesture — this is the
+      // critical call that unlocks the shared AudioContext for SFX + beds.
+      if (window.DS_AUDIO) DS_AUDIO.resume();
       resumeAmbientContext();
       vid.play().then(() => vid.pause()).catch(() => {});
 
