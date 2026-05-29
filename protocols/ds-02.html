@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DreamScreens · DS-02 · Feedback Memory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="protocol-common.css"/>
+<style>
+/* ── DS-02 SPECIFIC ── */
+
+/*
+ * Lift the organism canvas above the video layer (z-15) so particles can
+ * appear over the film. mix-blend-mode:screen makes the near-black
+ * background transparent — only bright particles add light over the video.
+ * When the video fades out at the end, screen(organism, black) = organism,
+ * so the organism renders cleanly on the dark background in Phase 3.
+ */
+#gl {
+  z-index: 18;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* ── PHASE 1: INTRO ── */
+#phase-intro {
+  position: fixed; inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+#phase-intro.vis { opacity: 1; }
+
+.intro-line {
+  font-family: var(--mono);
+  font-size: clamp(9px, 1vw, 11px);
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.65);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.intro-line.is-title {
+  font-family: var(--sans);
+  font-size: clamp(14px, 1.8vw, 22px);
+  letter-spacing: 0.08em;
+  font-weight: 300;
+  color: rgba(255,255,255,0.78);
+}
+
+@keyframes glitch-in {
+  0%   { opacity: 0; transform: translateX(-6px) skewX(-3deg); filter: blur(2px); }
+  25%  { opacity: 0.75; transform: translateX(3px); filter: blur(0); }
+  45%  { opacity: 0.45; transform: translateX(-2px); }
+  65%  { opacity: 0.85; transform: translateX(1px); }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+@keyframes glitch-out {
+  0%   { opacity: 1; transform: none; }
+  30%  { opacity: 0.6; transform: translateX(4px) skewX(2deg); filter: blur(1px); }
+  70%  { opacity: 0.2; transform: translateX(-3px); }
+  100% { opacity: 0; transform: translateX(6px); filter: blur(2px); }
+}
+
+.intro-line.in  { animation: glitch-in  0.22s ease forwards; }
+.intro-line.out { animation: glitch-out 0.22s ease forwards; }
+
+/* Organism pulse ring */
+#org-pulse {
+  position: fixed; inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.04) 0%, transparent 65%);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+#org-pulse.beat { opacity: 1; }
+
+/* ── BLACK FADE OVERLAY ── */
+#fade-overlay {
+  position: fixed; inset: 0;
+  z-index: 30;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 2s ease;
+}
+#fade-overlay.vis { opacity: 1; }
+
+/* ── PHASE 2: VIDEO ── */
+#phase-video {
+  position: fixed; inset: 0;
+  z-index: 15;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 2.5s ease;
+}
+#phase-video.vis { opacity: 1; pointer-events: all; }
+
+#vid {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── DATA OVERLAY ── */
+#data-overlay {
+  position: absolute;
+  bottom: 32px; right: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  pointer-events: none;
+  /* transition applied in JS when feed dims in final 15s */
+}
+
+.data-line {
+  font-family: var(--mono);
+  font-size: clamp(8px, 0.8vw, 11px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.6);
+  opacity: 0;
+  will-change: transform, opacity;
+  white-space: nowrap;
+}
+.data-line.in  { animation: glitch-in  0.2s ease forwards; }
+.data-line.out { animation: glitch-out 0.2s ease forwards; }
+.data-line .ts   { color: rgba(255,255,255,0.25); margin-right: 0.7em; }
+.data-line .ok   { color: #00ff88; }
+.data-line .warn { color: #ffcc44; }
+
+/* ── PHASE 3: COMPLETION ── */
+#phase-complete {
+  position: fixed; inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+#phase-complete.vis { opacity: 1; }
+
+.complete-line {
+  font-family: var(--mono);
+  font-size: clamp(9px, 1vw, 11px);
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.65);
+  opacity: 0;
+}
+.complete-line.in { animation: glitch-in 0.22s ease forwards; }
+
+#return-link {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255,255,255,0.18);
+  padding-bottom: 2px;
+  margin-top: 1.5rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: color 0.3s ease, opacity 1.5s ease;
+}
+#return-link.vis { opacity: 1; pointer-events: all; }
+#return-link:hover { color: rgba(255,255,255,0.75); }
+
+/* ── START GATE ── */
+#start-gate {
+  position: fixed; inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1s ease;
+}
+#start-gate.vis { opacity: 1; pointer-events: all; }
+#start-gate .gate-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.45em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.25);
+}
+#start-gate .gate-btn {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(0,0,0,0.2);
+  color: rgba(255,255,255,0.6);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s;
+}
+#start-gate .gate-btn:hover {
+  border-color: rgba(255,255,255,0.65);
+  background: rgba(255,255,255,0.07);
+  transform: scale(1.06);
+}
+#start-gate .gate-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.14);
+}
+</style>
+</head>
+<body>
+
+<!-- ── CURSOR ── -->
+<div id="cursor"></div>
+
+<!-- ── ORGANISM (z-18 via DS-02 CSS, mix-blend-mode:screen) ── -->
+<canvas id="gl"></canvas>
+<div id="scanlines"></div>
+<div id="org-pulse"></div>
+
+<!-- ── NEURAL LOADER ── -->
+<div id="neural-loader">
+  <canvas id="nl-ring-canvas" width="160" height="160"></canvas>
+  <div id="nl-pct">0%</div>
+  <div id="nl-msg">initialising</div>
+  <div id="nl-hex">0x00000000</div>
+  <div id="nl-metrics">
+    <span id="nl-eeg">EEG — —</span>
+    <span id="nl-diff">DIFF — —</span>
+    <span id="nl-rem">REM — —</span>
+  </div>
+</div>
+
+<!-- ── BACK BUTTON + SESSION ── -->
+<a id="back-btn" href="/">← Return to archive</a>
+<div id="session-id"></div>
+
+<!-- ── START GATE ── -->
+<div id="start-gate">
+  <div class="gate-label">Protocol DS-02 · Feedback Memory</div>
+  <button class="gate-btn" id="gate-btn" aria-label="Begin protocol">▶</button>
+  <div class="gate-sub">Begin Protocol</div>
+</div>
+
+<!-- ── BLACK FADE ── -->
+<div id="fade-overlay"></div>
+
+<!-- ── PHASE 1: INTRO ── -->
+<div id="phase-intro">
+  <div class="intro-line"           id="il-0">DREAMSCREENS PROTOCOL DS-02</div>
+  <div class="intro-line is-title"  id="il-1">Feedback Memory</div>
+  <div class="intro-line"           id="il-2">SUBJECT: RECONSTRUCTED SUBSTRATES</div>
+  <div class="intro-line"           id="il-3">ECHO PATTERN ANALYSIS IN PROGRESS...</div>
+  <div class="intro-line"           id="il-4">PROTOCOL ACTIVE — STAND BY</div>
+</div>
+
+<!-- ── PHASE 2: VIDEO + DATA OVERLAY ── -->
+<div id="phase-video">
+  <!-- DS-02: audio is baked into the film — video is NOT muted -->
+  <video id="vid" playsinline webkit-playsinline></video>
+  <div id="data-overlay"></div>
+</div>
+
+<!-- ── PHASE 3: COMPLETION ── -->
+<!--
+  DS-02 does not resolve — it proceeds. Text reads as system going quiet,
+  not concluding. Organism stays at full opacity; no ambient fade-back.
+-->
+<div id="phase-complete">
+  <div class="complete-line" id="cl-0">DS-02 PROCEEDING</div>
+  <div class="complete-line" id="cl-1">FEEDBACK LOOP — OPEN</div>
+  <div class="complete-line" id="cl-2">PROTOCOL CONTINUES</div>
+  <a id="return-link" href="/">Return to Archive</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="protocol-common.js"></script>
+<script>
+// ════════════════════════════════════════
+// DS-02 CONFIG
+// ════════════════════════════════════════
+const HLS_URL = 'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/0ad67553f6221e74788ca0fbac3a5df7/manifest/video.m3u8';
+
+// DS-02 audio note:
+//   The film has its own music mix baked in.
+//   The <video> is NOT muted and no R2 ambient track is loaded.
+//   DS-01 by contrast carries a separate Signal Dreams.mp3 R2 ambient;
+//   if DS-01 is ever aligned to audio-from-film, remove its
+//   startAmbientAudio() call and the sessionStorage.dsMenuAudio pickup.
+
+initSessionId('DS-02', 'Feedback Memory', 'REM cycle 2 · echo pattern analysis');
+
+// ════════════════════════════════════════
+// OVERLAY DATA FEED
+// All timings are fractions of vid.duration so a re-mix of different
+// length still hits the right narrative beats.
+// ════════════════════════════════════════
+const FEED_LINES = [
+  { frac: 2/342,   ts: '00:00:02', cls: '',      text: 'session 02 · feedback memory · initialised'               },
+  { frac: 6/342,   ts: '00:00:06', cls: 'ok',    text: 'playback: reconstructed substrates — archived targets'    },
+  { frac: 90/342,  ts: '00:01:30', cls: 'ok',    text: 'demonstration accepted'                                    },
+  { frac: 160/342, ts: '00:02:40', cls: 'warn',  text: 'subject signal ≈ reconstructed targets · 73% overlap'     },
+  { frac: 210/342, ts: '00:03:30', cls: '',       text: 'feedback loop stable'                                     },
+  { frac: 270/342, ts: '00:04:30', cls: 'warn',  text: 'echo duration ≈ 30 years'                                  },
+  { frac: 300/342, ts: '00:05:00', cls: '',       text: 'architecturally significant'                              },
+  { frac: 320/342, ts: '00:05:20', cls: '',       text: 'proceeding —'                                             },
+];
+
+// ════════════════════════════════════════
+// ORGANISM INTRUSION SCHEDULE
+// Fractions of duration tied to narrative beats:
+//   ~40s  — early signal detection
+//   ~90s  — mirrors "demonstration accepted" feed line
+//   ~160s — mirrors "73% overlap" warn
+//   ~210s — mirrors "feedback loop stable"
+//   ~260s — mid-late presence
+//   ~295s — just before final 15s ramp
+// ════════════════════════════════════════
+const INTRUSION_FRACS = [0.117, 0.263, 0.468, 0.614, 0.760, 0.862];
+
+// ════════════════════════════════════════
+// HLS VIDEO SETUP
+// ════════════════════════════════════════
+const vid = document.getElementById('vid');
+
+function attachHLS() {
+  if (vid.canPlayType('application/vnd.apple.mpegurl')) {
+    vid.src = HLS_URL;
+  } else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+    const hls = new Hls({ startLevel: -1 });
+    hls.loadSource(HLS_URL);
+    hls.attachMedia(vid);
+  } else {
+    console.warn('HLS not supported in this browser');
+  }
+}
+
+// ════════════════════════════════════════
+// GLITCH TEXT HELPERS
+// ════════════════════════════════════════
+function glitchIn(el) {
+  el.style.opacity = '';
+  el.classList.remove('out');
+  el.classList.add('in');
+  el.addEventListener('animationend', () => { el.style.opacity = '1'; }, { once: true });
+}
+
+function glitchOut(el, then) {
+  el.style.opacity = '';
+  el.classList.remove('in');
+  el.classList.add('out');
+  el.addEventListener('animationend', () => {
+    el.style.opacity = '0';
+    el.classList.remove('out');
+    then && then();
+  }, { once: true });
+}
+
+// ════════════════════════════════════════
+// ORGANISM PULSE
+// ════════════════════════════════════════
+const orgPulse = document.getElementById('org-pulse');
+function pulse() {
+  orgPulse.classList.add('beat');
+  setTimeout(() => orgPulse.classList.remove('beat'), 200);
+}
+
+// ════════════════════════════════════════
+// PHASE 1 — INTRO SEQUENCE
+// ════════════════════════════════════════
+function runPhase1(onDone) {
+  const intro      = document.getElementById('phase-intro');
+  const phaseVideo = document.getElementById('phase-video');
+  const lines = [
+    document.getElementById('il-0'),
+    document.getElementById('il-1'),
+    document.getElementById('il-2'),
+    document.getElementById('il-3'),
+    document.getElementById('il-4'),
+  ];
+
+  glOrgSettleTarget = 0.3;
+  intro.classList.add('vis');
+
+  const cues = [0, 1500, 3000, 4500, 6000];
+  cues.forEach((delay, i) => {
+    setTimeout(() => {
+      pulse();
+      glitchIn(lines[i]);
+      glOrgSettleTarget = Math.min(1.0, 0.3 + i * 0.15);
+    }, delay);
+  });
+
+  // At 6.5s: start video — film audio plays naturally (no mute, no R2 track)
+  setTimeout(() => {
+    vid.currentTime = 0;
+    vid.play().catch(e => console.warn('Video play:', e));
+    phaseVideo.classList.add('vis');
+  }, 6500);
+
+  // At 7.5s: glitch out intro text
+  setTimeout(() => {
+    lines.forEach(l => glitchOut(l));
+    intro.classList.remove('vis');
+  }, 7500);
+
+  // At 9s: hand off — organism fades to near-zero during film body
+  setTimeout(() => {
+    glOrgOpacityTarget = 0.0;
+    glOrgSettleTarget  = 0.45;
+    onDone && onDone();
+  }, 9000);
+}
+
+// ════════════════════════════════════════
+// PHASE 2 — VIDEO WITH DATA FEED + ORGANISM
+// ════════════════════════════════════════
+function runPhase2(onDone) {
+  const overlay    = document.getElementById('data-overlay');
+  const phaseVideo = document.getElementById('phase-video');
+
+  // Build feed elements
+  const feedEls = FEED_LINES.map(o => {
+    const el = document.createElement('div');
+    el.className = 'data-line';
+    const tsHtml   = '<span class="ts">[' + o.ts + ']</span>';
+    const textHtml = o.cls
+      ? '<span class="' + o.cls + '"> ' + o.text + '</span>'
+      : '<span> '       + o.text + '</span>';
+    el.innerHTML = tsHtml + textHtml;
+    overlay.appendChild(el);
+    return { el, frac: o.frac, shown: false, hiding: false };
+  });
+
+  // State
+  let nextIntrusionIdx  = 0;
+  let intrusionActive   = false;
+  let intrusionTimer    = null;
+  let feedFading        = false;
+  let videoFadeStarted  = false;
+  let rafId;
+
+  function overlayLoop() {
+    const dur          = vid.duration && isFinite(vid.duration) ? vid.duration : 342;
+    const ct           = vid.currentTime;
+    const endThreshold = dur - 15;
+
+    // ── Data feed lines (suppress in final 15s) ──
+    if (!feedFading) {
+      feedEls.forEach(o => {
+        if (!o.shown && ct >= o.frac * dur) {
+          o.shown = true;
+          glitchIn(o.el);
+          setTimeout(() => {
+            if (!o.hiding) { o.hiding = true; glitchOut(o.el); }
+          }, 4200);
+        }
+      });
+    }
+
+    if (ct >= endThreshold && !feedFading) {
+      feedFading = true;
+      // Dim the feed — system going quiet, not concluding
+      overlay.style.transition = 'opacity 3s ease';
+      overlay.style.opacity    = '0';
+    }
+
+    // ── Final 15s: organism takes over, video fades ──
+    if (ct >= endThreshold) {
+      if (!videoFadeStarted) {
+        videoFadeStarted = true;
+        // Disable CSS transition so rAF drives opacity directly
+        phaseVideo.style.transition = 'none';
+        // Target: dispersed (low settle) so it reads as star-field,
+        // matching the film's persisting stars at its close.
+        glOrgSettleTarget = 0.2;
+      }
+      const p     = Math.min(1, (ct - endThreshold) / 15);
+      const eased = p * p * (3 - 2 * p); // smoothstep 0→1
+      glOrgOpacityTarget    = eased;
+      phaseVideo.style.opacity = String(Math.max(0, 1 - eased));
+
+    } else {
+      // ── Organism intrusions during film body ──
+      if (!intrusionActive && nextIntrusionIdx < INTRUSION_FRACS.length) {
+        if (ct >= INTRUSION_FRACS[nextIntrusionIdx] * dur) {
+          intrusionActive    = true;
+          glOrgOpacityTarget = 0.22;
+          pulse();
+          intrusionTimer = setTimeout(() => {
+            glOrgOpacityTarget = 0.0;
+            intrusionActive    = false;
+            nextIntrusionIdx++;
+          }, 4000);
+        }
+      }
+    }
+
+    rafId = requestAnimationFrame(overlayLoop);
+  }
+  overlayLoop();
+
+  vid.addEventListener('ended', () => {
+    cancelAnimationFrame(rafId);
+    if (intrusionTimer) clearTimeout(intrusionTimer);
+
+    // Organism is already dominant; clean up video layer
+    phaseVideo.classList.remove('vis');
+    phaseVideo.style.opacity    = '';
+    phaseVideo.style.transition = '';
+
+    // Ensure full organism visibility for Phase 3
+    glOrgOpacityTarget = 1.0;
+    glOrgSettleTarget  = 0.45;
+
+    onDone && onDone();
+  }, { once: true });
+}
+
+// ════════════════════════════════════════
+// PHASE 3 — COMPLETION
+// DS-02 does not resolve — the organism holds the frame.
+// No ambient audio to restore (DS-02 audio was baked into the film).
+// ════════════════════════════════════════
+function runPhase3() {
+  const complete  = document.getElementById('phase-complete');
+  const returnLnk = document.getElementById('return-link');
+  const lines = [
+    document.getElementById('cl-0'),
+    document.getElementById('cl-1'),
+    document.getElementById('cl-2'),
+  ];
+
+  complete.classList.add('vis');
+  glOrgOpacityTarget = 1.0;
+  glOrgSettleTarget  = 0.45;
+
+  const cues = [0, 1500, 3000];
+  cues.forEach((delay, i) => {
+    setTimeout(() => glitchIn(lines[i]), delay);
+  });
+
+  setTimeout(() => {
+    returnLnk.classList.add('vis');
+    // No ambient audio to stop; navigate directly
+  }, 7000);
+}
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+window.addEventListener('load', function() {
+  // Start loading HLS during neural loader
+  attachHLS();
+
+  runNeuralLoader(3500, [
+    { pct: 0,   msg: 'Initialising neural bridge...'    },
+    { pct: 20,  msg: 'EEG sync — 64 channels active'   },
+    { pct: 45,  msg: 'Loading Feedback Memory...'       },
+    { pct: 70,  msg: 'HLS signal locked — buffering...' },
+    { pct: 90,  msg: 'Echo pattern confirmed.'          },
+    { pct: 100, msg: 'Memory archived.'                 },
+  ], function() {
+    glOrgOpacityTarget = 1.0;
+    glOrgSettleTarget  = 0.5;
+
+    const gate    = document.getElementById('start-gate');
+    const gateBtn = document.getElementById('gate-btn');
+    gate.classList.add('vis');
+
+    gateBtn.addEventListener('click', function() {
+      gate.classList.remove('vis');
+
+      // iOS: call play() synchronously inside gesture handler so the browser
+      // grants the media unlock before HLS metadata has fully loaded.
+      resumeAmbientContext();
+      vid.play().then(() => vid.pause()).catch(() => {});
+
+      setTimeout(function() {
+        runPhase1(function() {
+          runPhase2(function() {
+            runPhase3();
+          });
+        });
+      }, 600);
+    }, { once: true });
+  });
+});
+</script>
+</body>
+</html>
