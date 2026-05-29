@@ -2049,12 +2049,24 @@ document.getElementById('s0').classList.remove('active');
 // ENTRY SCREEN
 // ════════════════════════════════════════
 // Check for return from a protocol page — skip entry, go straight to archive
+// ── GATE BYPASS ─────────────────────────────────────────────────────
+// Once authorised (ds_auth in sessionStorage), the password gate is never
+// shown again for the rest of the session — returning from a protocol lands
+// directly on the archive, and re-entering a protocol never re-prompts.
+(function bypassGateIfAuthorised() {
+  if (!sessionStorage.getItem('ds_auth')) return;
+  const gate = document.getElementById('access-gate');
+  if (gate) { gate.classList.add('gone'); gate.style.display = 'none'; }
+})();
+
 (function handleProtocolReturn() {
   const ret = JSON.parse(sessionStorage.getItem('dsReturn') || 'null');
   if (!ret) return;
   sessionStorage.removeItem('dsReturn');
 
-  // Hide entry screen, set organism to archive state
+  // Hide access gate and entry screen, set organism to archive state
+  const gate  = document.getElementById('access-gate');
+  if (gate) { gate.classList.add('gone'); gate.style.display = 'none'; }
   const sEntry = document.getElementById('s-entry');
   if (sEntry) sEntry.classList.add('gone');
   glOrgOpacity = 1.0; glOrgOpacityTarget = 1.0;
@@ -2475,6 +2487,7 @@ function gateSubmit() {
   const err = document.getElementById('gate-error');
   if (val === GATE_PW) {
     err.classList.remove('vis');
+    sessionStorage.setItem('ds_auth', '1'); // persists for session so returns skip the gate
     const gate = document.getElementById('access-gate');
     gate.classList.add('gone');
     setTimeout(() => { gate.style.display = 'none'; }, 1300);

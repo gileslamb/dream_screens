@@ -535,7 +535,13 @@ function runPhase3() {
 
   setTimeout(() => {
     returnLnk.classList.add('vis');
-    // No ambient audio to stop; navigate directly
+    returnLnk.addEventListener('click', function() {
+      // Set dsReturn so index.html skips the gate and opens straight to archive.
+      // DS-02 has no ambient URL to restore (film audio is baked in).
+      sessionStorage.setItem('dsReturn', '1');
+      // Fade beds before navigation
+      if (window.DS_AUDIO) DS_AUDIO.ramp('beds', 0, 1.0);
+    }, { once: true });
   }, 7000);
 }
 
