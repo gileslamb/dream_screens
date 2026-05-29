@@ -333,16 +333,24 @@
   // SFX — Web Audio, gated behind hudStart (called after gate click)
   // Falls back to HTMLAudioElement pool if fetch/CORS fails.
   // ─────────────────────────────────────────────────────────────────
+  // SFX is gated behind hudStart() which is called after the gate click.
+  // R2 bucket (pub-62666eef125a449aa31ba8192339a17e.r2.dev) already serves
+  // Access-Control-Allow-Origin: * — confirmed by protocol-common.js fetch().
+  // HTMLAudio pool fallback handles any per-file CORS edge cases.
   function _initSfx(cfg) {
     if (!cfg.sfx) return;
     var sfx = cfg.sfx;
     try {
-      _sfxCtx  = new (window.AudioContext || window.webkitAudioContext)();
+      _sfxCtx = new (window.AudioContext || window.webkitAudioContext)();
+      // Explicit resume — ensures the context is running even if created
+      // slightly outside the gesture window (e.g. on slow iOS devices).
+      _sfxCtx.resume().catch(function() {});
+
       _sfxGain = _sfxCtx.createGain();
       _sfxGain.gain.value = sfx.sfxVolume != null ? sfx.sfxVolume : 0.22;
       _sfxGain.connect(_sfxCtx.destination);
 
-      // One-shot buffers: feedTick, uiTick
+      // One-shot buffers: feedTick (subtle per-line tick), uiTick (chart events)
       ['feedTick', 'uiTick'].forEach(function(key) {
         var url = sfx[key];
         if (!url) return;
@@ -351,9 +359,9 @@
           .then(function(ab) { return _sfxCtx.decodeAudioData(ab); })
           .then(function(buf) { _sfxBufs[key] = buf; })
           .catch(function() {
-            // CORS fallback: HTMLAudio pool (6 voices per key)
+            // CORS fallback — HTMLAudio pool (6 voices so rapid ticks don't cut)
             var pool = [];
-            for (var i = 0; i < 6; i++) {
+            for (var k = 0; k < 6; k++) {
               var a = new Audio(url);
               a.volume = sfx.sfxVolume != null ? sfx.sfxVolume : 0.22;
               pool.push(a);
@@ -363,7 +371,9 @@
           });
       });
 
-      // Ambient beds — loop, low volume, crossfade with music
+      // Ambient beds — looped, low volume (~0.12), emerge slowly so they
+      // fill the space under music and film without masking the score.
+      // Random start offset per bed so they don't phase-lock together.
       var bedVol = sfx.bedVolume != null ? sfx.bedVolume : 0.12;
       (sfx.beds || []).forEach(function(url, i) {
         fetch(url)
@@ -375,8 +385,11 @@
             gain.connect(_sfxCtx.destination);
             var src = _sfxCtx.createBufferSource();
             src.buffer = buf; src.loop = true;
-            src.connect(gain); src.start(0);
-            // Slow fade-in — beds emerge to fill gaps, not mask score
+            src.connect(gain);
+            // Random position within the loop — keeps beds from phasing together
+            var offset = Math.random() * buf.duration;
+            src.start(0, offset);
+            // Very slow fade-in: 10s time constant → reaches target (~63%) in 10s
             gain.gain.setTargetAtTime(bedVol, _sfxCtx.currentTime, 10.0);
             _bedGains[i] = gain;
           })
