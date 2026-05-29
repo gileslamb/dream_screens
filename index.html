@@ -2362,8 +2362,8 @@ const PROTOCOL_MUSIC = {
 let ppSrc = null, ppGain = null;
 
 function playProtocol(track) {
-  // DS-01 is a video protocol — navigate to its dedicated page
-  if (track.idx === 'DS-01') {
+  // DS-01 and DS-02 are video protocols — navigate to their dedicated pages
+  if (track.idx === 'DS-01' || track.idx === 'DS-02') {
     if (currentTrackUrl) {
       sessionStorage.setItem('dsMenuAudio', JSON.stringify({ url: currentTrackUrl }));
     }
@@ -2376,7 +2376,8 @@ function playProtocol(track) {
     document.getElementById('s6').classList.remove('active');
     glArchiveModeTarget = 0.0;
     // Navigate on next tick (lets the fade start first)
-    setTimeout(() => { window.location.href = '/protocols/ds-01.html'; }, 200);
+    const dest = track.idx === 'DS-02' ? '/protocols/ds-02.html' : '/protocols/ds-01.html';
+    setTimeout(() => { window.location.href = dest; }, 200);
     return;
   }
 
