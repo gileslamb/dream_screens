@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link rel="stylesheet" href="protocol-common.css"/>
+<link rel="stylesheet" href="/assets/ds-hud.css"/>
 <style>
 /* ── DS-02 SPECIFIC ── */
 
@@ -297,6 +298,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script src="protocol-common.js"></script>
+<script src="/assets/ds-hud.js"></script>
 <script>
 // ════════════════════════════════════════
 // DS-02 CONFIG
@@ -311,6 +313,35 @@ const HLS_URL = 'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/0ad67553
 //   startAmbientAudio() call and the sessionStorage.dsMenuAudio pickup.
 
 initSessionId('DS-02', 'Feedback Memory', 'REM cycle 2 · echo pattern analysis');
+
+// ════════════════════════════════════════
+// HUD CONFIG — DS-02
+// Everything protocol-specific lives here; ds-hud.js is generic.
+// feed[] populated in commit #2 when old data-overlay is removed.
+// ════════════════════════════════════════
+const HUD_CONFIG = {
+  id:    'DS-02',
+  title: 'Feedback Memory',
+  sub:   'REM cycle 2 · echo pattern analysis',
+  feed: [], // ← feed lines added in commit #2
+  charts: {
+    signalOverlap: { peakFrac: 160/342, peakValue: 73, warnAt: 45, accentAt: 70 },
+    echoDuration:  { resolveFrac: 270/342, text: '~30 years' },
+    feedbackLoop:  { stabiliseFrac: 210/342 },
+  },
+  sfx: {
+    feedTick: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/type-key-v2.wav',
+    uiTick:   'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/type-key-v3.wav',
+    beds: [
+      'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/space.wav',
+      'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/rain.wav',
+      'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/forest.wav',
+    ],
+    bedVolume: 0.12,   // ambient beds sit well under score
+    sfxVolume: 0.22,   // type ticks + UI events
+  },
+};
+DS_HUD.init(HUD_CONFIG);
 
 // ════════════════════════════════════════
 // OVERLAY DATA FEED
@@ -441,6 +472,10 @@ function runPhase1(onDone) {
 // PHASE 2 — VIDEO WITH DATA FEED + ORGANISM
 // ════════════════════════════════════════
 function runPhase2(onDone) {
+  // Start HUD — frame fades in, charts begin, SFX beds start loading.
+  // Called after gate click so AudioContext creation is permitted.
+  DS_HUD.start(vid);
+
   const overlay    = document.getElementById('data-overlay');
   const phaseVideo = document.getElementById('phase-video');
 
@@ -538,6 +573,9 @@ function runPhase2(onDone) {
     // Ensure full organism visibility for Phase 3
     glOrgOpacityTarget = 1.0;
     glOrgSettleTarget  = 0.45;
+
+    // HUD already dimmed by its own loop at dur-15; stop rAF + fade beds
+    DS_HUD.stop();
 
     onDone && onDone();
   }, { once: true });

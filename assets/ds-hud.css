@@ -1,0 +1,231 @@
+/*
+ * ds-hud.css — DreamScreen Corporation monitoring layer
+ *
+ * Mounts at z-17: above the video (z-15), below the organism canvas
+ * (z-18, mix-blend-mode:screen). Organism particles screen-blend
+ * additively over the HUD — an intentional bleed that ties the clinical
+ * system-watching layer to the organic material it monitors.
+ *
+ * Transparent background throughout. Drop-in for any protocol page:
+ *   <link rel="stylesheet" href="/assets/ds-hud.css">
+ *   <script src="/assets/ds-hud.js"></script>
+ *   DS_HUD.init(HUD_CONFIG);
+ */
+
+:root {
+  --hud-green:  #00ff88;
+  --hud-warn:   #ffcc44;
+  --hud-accent: #ff3a2d;
+  --hud-mono:   'IBM Plex Mono', monospace;
+  /* Layout constants — override per-protocol if needed */
+  --hud-pad:    22px;
+  --hud-pad-b:  30px;
+  --hud-top:    5.5vh;   /* clears the back-btn (protocol-common, 3vh) */
+  --hud-side:   4.5vw;
+  --hud-bot:    6vh;
+}
+
+/* ── root ── */
+#ds-hud {
+  position: fixed; inset: 0;
+  z-index: 17;
+  pointer-events: none;
+  background: transparent;
+  opacity: 0;
+  transition: opacity 2.5s ease;
+}
+#ds-hud.hud-vis { opacity: 1; }
+/* .hud-dim overrides .hud-vis — slower fade as organism dominates */
+#ds-hud.hud-dim {
+  opacity: 0 !important;
+  transition: opacity 5s ease !important;
+}
+
+/* ── corner brackets — the frame ── */
+.hud-bracket {
+  position: absolute;
+  width: 14px; height: 14px;
+}
+.hud-bracket-tl { top: var(--hud-pad);   left: var(--hud-pad);   border-top:    1px solid rgba(0,255,136,0.2); border-left:  1px solid rgba(0,255,136,0.2); }
+.hud-bracket-tr { top: var(--hud-pad);   right: var(--hud-pad);  border-top:    1px solid rgba(0,255,136,0.2); border-right: 1px solid rgba(0,255,136,0.2); }
+.hud-bracket-bl { bottom: var(--hud-pad-b); left: var(--hud-pad);   border-bottom: 1px solid rgba(0,255,136,0.2); border-left:  1px solid rgba(0,255,136,0.2); }
+.hud-bracket-br { bottom: var(--hud-pad-b); right: var(--hud-pad);  border-bottom: 1px solid rgba(0,255,136,0.2); border-right: 1px solid rgba(0,255,136,0.2); }
+
+/* ── panels ── */
+.hud-panel {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--hud-mono);
+}
+.hud-panel-tl { top: var(--hud-top);  left: var(--hud-side);  gap: 4px; }
+.hud-panel-tr { top: var(--hud-top);  right: var(--hud-side); gap: 4px; align-items: flex-end; text-align: right; }
+.hud-panel-bl { bottom: var(--hud-bot); left: var(--hud-side); gap: 0; }
+.hud-panel-br { bottom: var(--hud-bot); right: var(--hud-side); align-items: flex-end; }
+
+/* ── top-left: identity ── */
+.hud-id {
+  font-size: 9px;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.4;
+}
+.hud-subject {
+  font-size: 8px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.16);
+}
+.hud-mode {
+  font-size: 8px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: rgba(0,255,136,0.22);
+  margin-top: 2px;
+}
+
+/* ── top-right: status + timer ── */
+.hud-status {
+  font-size: 8px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(0,255,136,0.38);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+}
+.hud-dot {
+  display: inline-block;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--hud-green);
+  animation: hud-dot-pulse 3s ease-in-out infinite;
+}
+@keyframes hud-dot-pulse {
+  0%, 100% { opacity: 0.2; }
+  50%       { opacity: 0.75; }
+}
+.hud-timer {
+  font-size: 22px;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  color: rgba(255,255,255,0.15);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  margin-top: 3px;
+  transition: color 1.5s ease;
+}
+.hud-timer.live { color: rgba(255,255,255,0.38); }
+
+/* ── bottom-left: feed ── */
+.hud-feed-label {
+  font-size: 7px;
+  letter-spacing: 0.45em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.1);
+  margin-bottom: 9px;
+}
+.hud-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: min(44vw, 380px);
+  transition: opacity 3s ease; /* dimmed when feed fades */
+}
+.hud-feed-line {
+  font-family: var(--hud-mono);
+  font-size: clamp(8px, 0.72vw, 10px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.52);
+  opacity: 0;
+  will-change: transform, opacity;
+  white-space: nowrap;
+}
+.hud-feed-line.hud-in  { animation: hud-glitch-in  0.18s ease forwards; }
+.hud-feed-line.hud-out { animation: hud-glitch-out 0.18s ease forwards; }
+.hud-feed-line .ts     { color: rgba(255,255,255,0.18); margin-right: 0.65em; }
+.hud-feed-line .ok     { color: var(--hud-green); }
+.hud-feed-line .warn   { color: var(--hud-warn);  }
+
+@keyframes hud-glitch-in {
+  0%   { opacity: 0; transform: translateX(-4px); filter: blur(1px); }
+  30%  { opacity: 0.7; transform: translateX(2px); filter: none; }
+  60%  { opacity: 0.5; transform: translateX(-1px); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes hud-glitch-out {
+  0%   { opacity: 1; transform: none; }
+  35%  { opacity: 0.35; transform: translateX(3px); }
+  100% { opacity: 0; transform: translateX(5px); filter: blur(1px); }
+}
+
+/* ── bottom-right: charts ── */
+.hud-chart-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+}
+.hud-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+.hud-chart-label {
+  font-family: var(--hud-mono);
+  font-size: 7px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.16);
+}
+.hud-chart-value {
+  font-family: var(--hud-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255,255,255,0.2);
+  text-align: right;
+  transition: color 0.8s ease;
+}
+.hud-chart-value.ok     { color: rgba(0,255,136,0.62); }
+.hud-chart-value.warn   { color: rgba(255,204,68,0.72); }
+.hud-chart-value.accent { color: rgba(255,58,45,0.85); }
+
+.hud-echo-display {
+  font-family: var(--hud-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255,255,255,0.1);
+  text-align: right;
+  min-width: 10ch;
+  transition: color 2.5s ease;
+}
+.hud-echo-display.active { color: rgba(255,204,68,0.68); }
+
+#hud-bar-canvas  { display: block; }
+#hud-liss-canvas { display: block; }
+
+/* ── bottom waveform strip ── */
+.hud-strip-canvas {
+  position: absolute;
+  bottom: 0; left: 0;
+  display: block;
+  /* width set by JS; height attribute on element */
+}
+
+/* ── responsive: hide right panels on narrow screens ── */
+@media (max-width: 600px) {
+  .hud-panel-tr,
+  .hud-panel-br,
+  .hud-bracket-tr,
+  .hud-bracket-br { display: none; }
+  .hud-subject,
+  .hud-mode       { display: none; }
+  .hud-feed       { max-width: 88vw; }
+}
