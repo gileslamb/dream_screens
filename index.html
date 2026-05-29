@@ -1767,22 +1767,17 @@ function runLogLines(callback) {
   });
 }
 
+// Canon 8-protocol listing.
+// `label` drives the status column — edit here to change per-protocol wording.
 const ARCHIVE_TRACKS = [
-  { idx: 'DS-01', title: 'Signal Dreams',          sub: 'REM cycle 1 · cortical signal',       status: 'available' },
-  { idx: 'DS-02', title: 'Feedback Memory',         sub: 'REM cycle 2 · echo pattern',          status: 'available' },
-  { idx: 'DS-03', title: 'Nature Module',           sub: 'REM cycle 3 · environmental trace',   status: 'available' },
-  { idx: 'DS-04', title: 'Brainwaves',              sub: 'REM cycle 4 · frequency analysis',    status: 'available' },
-  { idx: 'DS-05', title: 'Module N5',               sub: 'REM cycle 5 · deep signal',           status: 'available' },
-  { idx: 'DS-06', title: 'Co-Dreaming',             sub: 'REM cycle 6 · dual-subject trace',    status: 'available' },
-  { idx: 'DS-07', title: 'Free Will',               sub: 'REM cycle 7 · agency pattern',        status: 'available' },
-  { idx: 'DS-08', title: 'Glitches Are Portals',    sub: 'REM cycle 8 · corrupted signal',      status: 'available' },
-  { idx: 'DS-09', title: 'The Dream Architect',     sub: 'REM cycle 9 · structural memory',     status: 'available' },
-  { idx: 'DS-10', title: 'Silo',                    sub: 'REM cycle 10 · isolated trace',       status: 'available' },
-  { idx: 'DS-11', title: 'Rising',                  sub: 'REM cycle 11 · ascent pattern',       status: 'available' },
-  { idx: 'DS-12', title: 'Module 3',                sub: 'REM cycle 12 · signal fragment',      status: 'available' },
-  { idx: 'DS-13', title: 'Signal Dreams (Voice)',   sub: 'REM cycle 13 · vocal reconstruction', status: 'available' },
-  { idx: 'DS-14', title: 'Wind and Water',          sub: 'REM cycle 14 · ambient signal',       status: 'available' },
-  { idx: 'DS-15', title: 'Virta',                   sub: 'REM cycle 15 · origin unknown',       status: 'available' },
+  { idx: 'DS-01', title: 'Signal Dreams',   sub: 'REM cycle 1 · cortical signal',    status: 'available',  label: 'protocol available'          },
+  { idx: 'DS-02', title: 'Feedback Memory', sub: 'REM cycle 2 · echo pattern',        status: 'available',  label: 'protocol available'          },
+  { idx: 'DS-03', title: 'Brainwaves',      sub: 'REM cycle 3 · frequency analysis', status: 'scheduled',  label: 'scheduled · awaiting subject' },
+  { idx: 'DS-04', title: 'Module N5',       sub: 'REM cycle 4 · deep signal',         status: 'scheduled',  label: 'scheduled · awaiting subject' },
+  { idx: 'DS-05', title: 'Co-Dreaming',     sub: 'REM cycle 5 · dual-subject trace', status: 'scheduled',  label: 'scheduled · awaiting subject' },
+  { idx: 'DS-06', title: 'Module 3',        sub: 'REM cycle 6 · signal fragment',     status: 'scheduled',  label: 'scheduled · awaiting subject' },
+  { idx: 'DS-07', title: "Mum's Song",      sub: 'REM cycle 7 · familial trace',      status: 'scheduled',  label: 'scheduled · awaiting subject' },
+  { idx: 'DS-08', title: 'Virta',           sub: 'REM cycle 8 · origin unknown',      status: 'scheduled',  label: 'scheduled · awaiting subject' },
 ];
 
 function showArchiveOverlay() {
@@ -1798,7 +1793,7 @@ function showArchiveOverlay() {
   ARCHIVE_TRACKS.forEach((t, i) => {
     const el = document.createElement('div');
     el.className = 'archive-line' + (t.status === 'available' ? ' available' : ' soon');
-    el.innerHTML = '<span class="idx">' + t.idx + '</span> · <span class="title">' + t.title + '</span><span class="sub"> · ' + t.sub + '</span> · <span class="status">' + (t.status === 'available' ? 'protocol available' : 'access restricted') + '</span>';
+    el.innerHTML = '<span class="idx">' + t.idx + '</span> · <span class="title">' + t.title + '</span><span class="sub"> · ' + t.sub + '</span> · <span class="status">' + t.label + '</span>';
     if (t.status === 'available') el.addEventListener('click', () => playProtocol(t));
     list.appendChild(el);
     setTimeout(() => el.classList.add('visible'), 2000 + 500 * i);
