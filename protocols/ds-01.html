@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link rel="stylesheet" href="protocol-common.css"/>
+<link rel="stylesheet" href="/assets/ds-hud.css"/>
 <style>
 /* ── DS-01 SPECIFIC ── */
 
@@ -275,6 +276,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script src="protocol-common.js"></script>
+<script src="/assets/ds-hud.js"></script>
 <script>
 // ════════════════════════════════════════
 // DS-01 CONFIG
@@ -282,6 +284,33 @@
 const HLS_URL = 'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/a131766743d10c8960911211b41e64c7/manifest/video.m3u8';
 
 initSessionId('DS-01', 'Signal Dreams', 'REM cycle 1 · neural pattern analysis');
+
+// ════════════════════════════════════════
+// HUD CONFIG — DS-01
+// Calibration / seduction tone: lighter than DS-02's harder measurement.
+// Timing fracs use ~480s film estimate; HUD reads vid.duration at runtime.
+// No sfx key — SFX wired globally in commit #2.
+// ════════════════════════════════════════
+const HUD_CONFIG = {
+  id:    'DS-01',
+  title: 'Signal Dreams',
+  sub:   'REM cycle 1 · neural pattern analysis',
+  feed: [
+    { frac:  5/480, ts: '00:00:05', level: '',    text: 'session 01 · signal dreams · initialised' },
+    { frac: 25/480, ts: '00:00:25', level: '',    text: 'cortical baseline · capturing'             },
+    { frac: 90/480, ts: '00:01:30', level: 'ok',  text: 'primary candidate · confirmed'             },
+    { frac:200/480, ts: '00:03:20', level: 'ok',  text: 'subject consents to continue'              },
+    { frac:350/480, ts: '00:05:50', level: '',    text: 'retention indicators · optimal'             },
+  ],
+  charts: {
+    // Bar stays green throughout (warnAt/accentAt set above peakValue so never reached)
+    // — reaching 100% calibration is good, not alarming
+    signalOverlap: { label: 'CORTICAL BASELINE', peakFrac: 150/480, peakValue: 100, warnAt: 200, accentAt: 200 },
+    echoDuration:  { label: 'RETENTION',          resolveFrac: 350/480, text: 'OPTIMAL' },
+    feedbackLoop:  { label: 'CANDIDATE STATUS',   stabiliseFrac:  90/480 },
+  },
+};
+DS_HUD.init(HUD_CONFIG);
 
 // ── OVERLAY DEFINITIONS (seconds into video) ──
 const OVERLAYS = [
@@ -409,6 +438,10 @@ function runPhase1(onDone) {
 // PHASE 2 — VIDEO WITH DATA OVERLAYS
 // ════════════════════════════════════════
 function runPhase2(onDone) {
+  // Fade HUD in — DS-01's existing overlay system (OVERLAYS / #data-overlay)
+  // continues unchanged; the HUD adds a separate layer at z-17.
+  DS_HUD.start(vid);
+
   // Video is already playing (started at end of Phase 1)
   const overlay = document.getElementById('data-overlay');
   const fade    = document.getElementById('fade-overlay');
@@ -440,6 +473,7 @@ function runPhase2(onDone) {
 
   vid.addEventListener('ended', () => {
     cancelAnimationFrame(rafId);
+    DS_HUD.stop();
     fade.classList.add('vis');
     setTimeout(() => {
       document.getElementById('phase-video').classList.remove('vis');

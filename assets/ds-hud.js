@@ -143,22 +143,27 @@
     root.appendChild(bl);
 
     // Bottom-right: chart containers
-    // Bar canvas: thin 1px bar (height=4px, all rendering is 1px bar inside)
+    // Labels fall back to generic defaults if not set in cfg.charts.*.label
+    var ch = cfg.charts || {};
+    var bLabel = (ch.signalOverlap && ch.signalOverlap.label) || 'SIGNAL OVERLAP';
+    var eLabel = (ch.echoDuration  && ch.echoDuration.label)  || 'ECHO DURATION';
+    var lLabel = (ch.feedbackLoop  && ch.feedbackLoop.label)  || 'FEEDBACK LOOP';
+
     const br = document.createElement('div');
     br.className = 'hud-panel hud-panel-br';
     br.innerHTML =
       '<div class="hud-chart-group" id="hud-charts">'
     +   '<div class="hud-chart" id="hud-chart-bar">'
-    +     '<div class="hud-chart-label">SIGNAL OVERLAP</div>'
+    +     '<div class="hud-chart-label">' + bLabel + '</div>'
     +     '<canvas id="hud-bar-canvas" width="180" height="4"></canvas>'
     +     '<div class="hud-chart-value" id="hud-bar-value">—</div>'
     +   '</div>'
     +   '<div class="hud-chart" id="hud-chart-echo">'
-    +     '<div class="hud-chart-label">ECHO DURATION</div>'
+    +     '<div class="hud-chart-label">' + eLabel + '</div>'
     +     '<div class="hud-echo-display" id="hud-echo-display">— — —</div>'
     +   '</div>'
     +   '<div class="hud-chart" id="hud-chart-liss">'
-    +     '<div class="hud-chart-label">FEEDBACK LOOP</div>'
+    +     '<div class="hud-chart-label">' + lLabel + '</div>'
     +     '<canvas id="hud-liss-canvas" width="80" height="52"></canvas>'
     +   '</div>'
     + '</div>';
@@ -175,7 +180,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────
-  // Feed construction (commit #2 activates rendering; DOM built here)
+  // Feed construction
   // ─────────────────────────────────────────────────────────────────
   function _buildFeed(cfg) {
     const container = document.getElementById('hud-feed');
