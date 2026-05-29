@@ -353,13 +353,13 @@
     }
     var sfx = cfg.sfx;
     var sfxVol = sfx.sfxVolume != null ? sfx.sfxVolume : 0.22;
-    var bedVol = sfx.bedVolume != null ? sfx.bedVolume : 0.12;
 
-    // Create buses on the shared context (idempotent)
-    DS_AUDIO.bus('sfx',  sfxVol);
-    DS_AUDIO.bus('beds', 0);     // starts silent, ramped up after first bed loads
+    // Create sfx bus on the shared context (idempotent)
+    DS_AUDIO.bus('sfx', sfxVol);
 
-    // One-shot buffers: feedTick (subtle per-line tick), uiTick (chart events)
+    // One-shot buffers: feedTick (per-line tick), uiTick (chart events)
+    // Beds are NOT managed here — they are managed at the protocol page level
+    // by AUDIO_MODEL so timing is tied to the gate gesture and film start.
     ['feedTick', 'uiTick'].forEach(function(key) {
       var url = sfx[key];
       if (!url) return;
@@ -375,32 +375,6 @@
           }
           _sfxBufs[key + '_pool'] = pool;
           _sfxBufs[key + '_pi']   = 0;
-        });
-    });
-
-    // Ambient beds — looped, low volume, emerge slowly to fill gaps under score.
-    // Random start offsets prevent phase-locking. All beds share the 'beds' bus
-    // so DS_AUDIO.ramp('beds', 0) fades them all together.
-    (sfx.beds || []).forEach(function(url) {
-      DS_AUDIO.load(url)
-        .then(function(buf) {
-          var offset = Math.random() * buf.duration;
-          DS_AUDIO.loop(buf, 'beds', offset);
-          // Slow fade-in — 10s time constant reaches ~63% of target
-          DS_AUDIO.ramp('beds', bedVol, 10.0);
-        })
-        .catch(function() {
-          // HTMLAudio fallback
-          var a = new Audio(url);
-          a.loop = true; a.volume = 0;
-          a.play().catch(function() {});
-          var steps = 0;
-          var iv = setInterval(function() {
-            steps++;
-            a.volume = Math.min(bedVol, steps * bedVol / 30);
-            if (steps >= 30) clearInterval(iv);
-          }, 600);
-          _bedGains.push({ _el: a });
         });
     });
 

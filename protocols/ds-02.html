@@ -315,16 +315,33 @@ const HUD_CONFIG = {
   sfx: {
     feedTick: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/type-key-v2.wav',
     uiTick:   'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/type-key-v3.wav',
-    beds: [
-      'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/space.wav',
-      'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/rain.wav',
-      'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/forest.wav',
-    ],
-    bedVolume: 0.12,   // ambient beds sit well under score
-    sfxVolume: 0.22,   // type ticks + UI events
+    // beds removed from HUD config — managed at protocol level by AUDIO_MODEL below
+    sfxVolume: 0.22,
   },
 };
 DS_HUD.init(HUD_CONFIG);
+
+// ════════════════════════════════════════
+// AUDIO MODEL — DS-02
+// All timings config-driven. Beds managed here, not ds-hud.js.
+// ════════════════════════════════════════
+const AUDIO_MODEL = {
+  bedUrls: [
+    'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/rain.wav',
+    'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/space.wav',
+    'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/forest.wav',
+  ],
+  bedVolume:    0.14,   // bed target volume during bridge/film
+  bedFadeInTC:  2.5,    // time constant: bed fades IN over ~10s
+  menuFadeTC:   1.5,    // time constant: Virta fades OUT over ~6s
+  bedHoldS:     30,     // seconds bed holds AFTER film audio starts
+  bedFadeOutTC: 8.0,    // time constant: bed fades OUT under film over ~30s
+};
+
+// Pre-load beds at page init so buffers are cached by the time gate is clicked
+if (window.DS_AUDIO) {
+  AUDIO_MODEL.bedUrls.forEach(function(url) { DS_AUDIO.load(url).catch(function() {}); });
+}
 
 
 // ════════════════════════════════════════
@@ -412,14 +429,21 @@ function runPhase1(onDone) {
     }, delay);
   });
 
-  // At 6.5s: start video — film audio plays naturally (no mute, no R2 track).
-  // Simultaneously fade the holding track to 0 over ~5s (time constant 1.2):
-  // both sources overlap briefly while the ambient fades → crossfade, not cut.
+  // At 6.5s: start film. DS-02 audio is baked in.
+  // Menu music (Virta) is already fading from the gate handler.
+  // Bridge bed continues alongside the film for bedHoldS, then fades out,
+  // leaving the film's own soundtrack as the sole audio source.
   setTimeout(() => {
     vid.currentTime = 0;
     vid.play().catch(e => console.warn('Video play:', e));
     phaseVideo.classList.add('vis');
-    if (ambientUrl) fadeAmbientTo(0, 1.2);
+    if (ambientUrl) fadeAmbientTo(0, 1.2); // finish Virta fade in case it's still going
+    // Schedule bed fade-out after hold period
+    if (window.DS_AUDIO) {
+      setTimeout(function() {
+        DS_AUDIO.ramp('beds', 0, AUDIO_MODEL.bedFadeOutTC);
+      }, AUDIO_MODEL.bedHoldS * 1000);
+    }
   }, 6500);
 
   // At 7.5s: glitch out intro text
@@ -600,6 +624,23 @@ window.addEventListener('load', function() {
       // critical call that unlocks the shared AudioContext for SFX + beds.
       if (window.DS_AUDIO) DS_AUDIO.resume();
       resumeAmbientContext();
+
+      // ── BRIDGE BED: pick one random bed, crossfade from menu music ──
+      // Menu music (Virta / dsMenuAudio) fades out; bed fades in as the
+      // liminal layer covering the Virta→film seam.
+      if (window.DS_AUDIO) {
+        var _bedUrl = AUDIO_MODEL.bedUrls[Math.floor(Math.random() * AUDIO_MODEL.bedUrls.length)];
+        DS_AUDIO.bus('beds', 0);
+        DS_AUDIO.load(_bedUrl)
+          .then(function(buf) {
+            DS_AUDIO.loop(buf, 'beds', Math.random() * buf.duration);
+            DS_AUDIO.ramp('beds', AUDIO_MODEL.bedVolume, AUDIO_MODEL.bedFadeInTC);
+          })
+          .catch(function() {});
+        // Fade menu music (Virta) out as bed comes in
+        setTimeout(function() { fadeAmbientTo(0, AUDIO_MODEL.menuFadeTC); }, 800);
+      }
+
       vid.play().then(() => vid.pause()).catch(() => {});
 
       setTimeout(function() {

@@ -313,16 +313,35 @@ const HUD_CONFIG = {
   sfx: {
     feedTick: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/type-key-v2.wav',
     uiTick:   'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/type-key-v3.wav',
-    beds: [
-      'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/space.wav',
-      'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/rain.wav',
-      'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/forest.wav',
-    ],
-    bedVolume: 0.10,   // slightly lower on DS-01 (more seductive/quiet)
+    // beds removed from HUD config — managed at protocol level by AUDIO_MODEL below
     sfxVolume: 0.18,
   },
 };
 DS_HUD.init(HUD_CONFIG);
+
+// ════════════════════════════════════════
+// AUDIO MODEL — DS-01
+// All fade timings are config-driven for easy tuning.
+// Beds managed here (not ds-hud.js) so timing is tied to the protocol flow.
+// ════════════════════════════════════════
+const AUDIO_MODEL = {
+  bedUrls: [
+    'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/rain.wav',
+    'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/space.wav',
+    'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/forest.wav',
+  ],
+  bedVolume:    0.13,   // bed target volume (under menu music, not over it)
+  bedFadeInTC:  2.5,    // time constant: bed fades IN over ~10s
+  menuFadeTC:   2.0,    // time constant: Virta fades DOWN to menuUnderVol
+  menuUnderVol: 0.18,   // DS-01 keeps menu music soft under film (not faded to 0)
+  bedHoldS:     30,     // seconds bed holds after film starts
+  bedFadeOutTC: 8.0,    // time constant: bed fades OUT under film over ~30s
+};
+
+// Pre-load beds at page init so buffers are cached by the time the gate is clicked
+if (window.DS_AUDIO) {
+  AUDIO_MODEL.bedUrls.forEach(function(url) { DS_AUDIO.load(url).catch(function() {}); });
+}
 
 // ── OVERLAY DEFINITIONS (seconds into video) ──
 const OVERLAYS = [
@@ -428,12 +447,21 @@ function runPhase1(onDone) {
     }, delay);
   });
 
-  // At 6.5s: start video + fade it in; simultaneously crossfade ambient out
+  // At 6.5s: start video. DS-01 has no baked-in audio — menu music (Signal
+  // Dreams / Virta) remains as a soft underlay at menuUnderVol. The bridge bed
+  // continues alongside it for bedHoldS then fades, leaving menu music alone.
   setTimeout(() => {
     vid.currentTime = 0;
     vid.play().catch(e => console.warn('Video play:', e));
     phaseVideo.classList.add('vis');
-    fadeAmbientTo(0, 2.0); // ambient out over 2s as video fades in over 2.5s
+    // Keep ambient soft (not 0) — it IS the film music for DS-01
+    fadeAmbientTo(AUDIO_MODEL.menuUnderVol, 3.0);
+    // Schedule bed fade-out after hold period
+    if (window.DS_AUDIO) {
+      setTimeout(function() {
+        DS_AUDIO.ramp('beds', 0, AUDIO_MODEL.bedFadeOutTC);
+      }, AUDIO_MODEL.bedHoldS * 1000);
+    }
   }, 6500);
 
   // At 7.5s: glitch out text lines
@@ -577,6 +605,23 @@ window.addEventListener('load', function() {
       // unlocks the shared AudioContext so SFX and beds play on iOS Safari.
       if (window.DS_AUDIO) DS_AUDIO.resume();
       resumeAmbientContext();
+
+      // ── BRIDGE BED: pick one random bed, start crossfade with menu music ──
+      // The bed masks the Virta→film seam. Menu music (Signal Dreams / Virta)
+      // fades softly down to menuUnderVol; bed fades up simultaneously.
+      if (window.DS_AUDIO) {
+        var _bedUrl = AUDIO_MODEL.bedUrls[Math.floor(Math.random() * AUDIO_MODEL.bedUrls.length)];
+        DS_AUDIO.bus('beds', 0);
+        DS_AUDIO.load(_bedUrl)
+          .then(function(buf) {
+            DS_AUDIO.loop(buf, 'beds', Math.random() * buf.duration);
+            DS_AUDIO.ramp('beds', AUDIO_MODEL.bedVolume, AUDIO_MODEL.bedFadeInTC);
+          })
+          .catch(function() {});
+        // Fade menu music down (not to zero — it stays as soft DS-01 underlay)
+        setTimeout(function() { fadeAmbientTo(AUDIO_MODEL.menuUnderVol, AUDIO_MODEL.menuFadeTC); }, 600);
+      }
+
       vid.play().then(() => vid.pause()).catch(() => {});
 
       setTimeout(function() {
