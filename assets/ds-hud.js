@@ -61,9 +61,10 @@
   let _timerEl = null;
 
   // SFX — routes through DS_AUDIO (shared context in /assets/ds-audio.js)
-  let _sfxBufs  = {};   // key → AudioBuffer (or pool sentinel)
-  let _bedGains = [];   // HTMLAudio fallback nodes only
-  let _sfxReady = false;
+  let _sfxBufs   = {};   // key → AudioBuffer (or pool sentinel)
+  let _bedGains  = [];   // HTMLAudio fallback nodes only
+  let _sfxReady  = false;
+  let _charTickMs = 0;   // per-character tick throttle (separate from line-level)
 
   // ─────────────────────────────────────────────────────────────────
   // Tiny utilities
@@ -99,6 +100,70 @@
       el.classList.remove('hud-out');
       if (then) then();
     }, { once: true });
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Typewriter feed-line reveal
+  // Feed lines have structure: <span class="ts">[HH:MM:SS]</span>
+  //                            <span class="ok|warn|"> text</span>
+  // Timestamp appears immediately; text reveals char-by-char.
+  // type-key-v2 ticks per character (every 2nd–3rd, random timing/pitch).
+  // Tick stops the instant typing completes — onDone fires glitch-out timer.
+  // ─────────────────────────────────────────────────────────────────
+  function _typeFeedLine(el, onDone) {
+    el.style.opacity = '1'; // override default opacity:0
+
+    var spans = el.querySelectorAll('span');
+    if (!spans.length) { if (onDone) onDone(); return; }
+
+    // First span (timestamp): visible immediately (inherits parent opacity:1)
+    // Remaining spans: typewriter reveal
+    var textSpans = Array.prototype.slice.call(spans, 1);
+    if (!textSpans.length) { if (onDone) onDone(); return; }
+
+    var spanIdx = 0;
+    function typeNextSpan() {
+      if (spanIdx >= textSpans.length) {
+        if (onDone) onDone();
+        return;
+      }
+      var span = textSpans[spanIdx++];
+      var full = span.textContent;
+      span.textContent = '';
+      var i = 0, ticks = 0;
+
+      function typeChar() {
+        if (i >= full.length) { span.textContent = full; typeNextSpan(); return; }
+        span.textContent = full.substring(0, ++i);
+
+        // Tick every 2nd or 3rd char (slightly random) — locked to the reveal
+        var period = (ticks % 3 === 0 && Math.random() < 0.4) ? 3 : 2;
+        if (ticks % period === 0) _playSfxChar();
+        ticks++;
+
+        // 35–65ms per character (natural variance)
+        setTimeout(typeChar, 35 + Math.floor(Math.random() * 30));
+      }
+      typeChar();
+    }
+    typeNextSpan();
+  }
+
+  // Pitch-varied per-character tick. Separate throttle from line-level events.
+  function _playSfxChar() {
+    var buf = _sfxBufs['feedTick'];
+    if (!buf || !window.DS_AUDIO) return;
+    var now = Date.now();
+    if (now - _charTickMs < 65) return; // no more than once per ~65ms
+    _charTickMs = now;
+    try {
+      var ctx = DS_AUDIO.ctx();
+      var src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.playbackRate.value = 0.92 + Math.random() * 0.16; // ±8% pitch
+      src.connect(DS_AUDIO.bus('sfx'));
+      src.start(0);
+    } catch(e) {}
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -381,18 +446,11 @@
     _sfxReady = true;
   }
 
-  // Throttle: feedTick fires at most once every 1.5s to prevent rapid-fire
-  // if two feed lines trigger in quick succession.
-  var _lastTickMs = 0;
-
+  // _playSfx is now only used for uiTick (chart events).
+  // feedTick is played per-character via _playSfxChar — no throttle here.
   function _playSfx(key) {
     var buf = _sfxBufs[key];
     if (buf && window.DS_AUDIO) {
-      if (key === 'feedTick') {
-        var now = Date.now();
-        if (now - _lastTickMs < 1500) return; // throttle
-        _lastTickMs = now;
-      }
       DS_AUDIO.play(buf, 'sfx');
       return;
     }
@@ -443,16 +501,17 @@
         }
       }
 
-      // Feed lines
+      // Feed lines — typewriter reveal; glitch-out timer starts after typing
       if (!_feedFading) {
         _feedEls.forEach(function(o) {
           if (!o.shown && ct >= o.frac * dur) {
             o.shown = true;
-            _glitchIn(o.el);
-            _playSfx('feedTick');
-            setTimeout(function() {
-              if (!o.hiding) { o.hiding = true; _glitchOut(o.el); }
-            }, 4200);
+            _typeFeedLine(o.el, function() {
+              // Hold 4200ms after fully typed, then glitch out
+              setTimeout(function() {
+                if (!o.hiding) { o.hiding = true; _glitchOut(o.el); }
+              }, 4200);
+            });
           }
         });
       }
