@@ -112,33 +112,6 @@
   display: block;
 }
 
-/* ── DATA OVERLAY ── */
-#data-overlay {
-  position: absolute;
-  bottom: 32px; right: 32px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.5rem;
-  pointer-events: none;
-  /* transition applied in JS when feed dims in final 15s */
-}
-
-.data-line {
-  font-family: var(--mono);
-  font-size: clamp(8px, 0.8vw, 11px);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.6);
-  opacity: 0;
-  will-change: transform, opacity;
-  white-space: nowrap;
-}
-.data-line.in  { animation: glitch-in  0.2s ease forwards; }
-.data-line.out { animation: glitch-out 0.2s ease forwards; }
-.data-line .ts   { color: rgba(255,255,255,0.25); margin-right: 0.7em; }
-.data-line .ok   { color: #00ff88; }
-.data-line .warn { color: #ffcc44; }
 
 /* ── PHASE 3: COMPLETION ── */
 #phase-complete {
@@ -277,11 +250,11 @@
   <div class="intro-line"           id="il-4">PROTOCOL ACTIVE — STAND BY</div>
 </div>
 
-<!-- ── PHASE 2: VIDEO + DATA OVERLAY ── -->
+<!-- ── PHASE 2: VIDEO ── -->
+<!-- DS-02: audio is baked into the film — video is NOT muted -->
+<!-- Data feed + charts live in #ds-hud (ds-hud.js) not inline here -->
 <div id="phase-video">
-  <!-- DS-02: audio is baked into the film — video is NOT muted -->
   <video id="vid" playsinline webkit-playsinline></video>
-  <div id="data-overlay"></div>
 </div>
 
 <!-- ── PHASE 3: COMPLETION ── -->
@@ -317,13 +290,22 @@ initSessionId('DS-02', 'Feedback Memory', 'REM cycle 2 · echo pattern analysis'
 // ════════════════════════════════════════
 // HUD CONFIG — DS-02
 // Everything protocol-specific lives here; ds-hud.js is generic.
-// feed[] populated in commit #2 when old data-overlay is removed.
+// feed[] — all 8 lines rendered by ds-hud.js, not inline.
 // ════════════════════════════════════════
 const HUD_CONFIG = {
   id:    'DS-02',
   title: 'Feedback Memory',
   sub:   'REM cycle 2 · echo pattern analysis',
-  feed: [], // ← feed lines added in commit #2
+  feed: [
+    { frac: 2/342,   ts: '00:00:02', level: '',      text: 'session 02 · feedback memory · initialised'            },
+    { frac: 6/342,   ts: '00:00:06', level: 'ok',    text: 'playback: reconstructed substrates — archived targets' },
+    { frac: 90/342,  ts: '00:01:30', level: 'ok',    text: 'demonstration accepted'                                 },
+    { frac: 160/342, ts: '00:02:40', level: 'warn',  text: 'subject signal ≈ reconstructed targets · 73% overlap'  },
+    { frac: 210/342, ts: '00:03:30', level: '',       text: 'feedback loop stable'                                  },
+    { frac: 270/342, ts: '00:04:30', level: 'warn',  text: 'echo duration ≈ 30 years'                               },
+    { frac: 300/342, ts: '00:05:00', level: '',       text: 'architecturally significant'                           },
+    { frac: 320/342, ts: '00:05:20', level: '',       text: 'proceeding —'                                          },
+  ],
   charts: {
     signalOverlap: { peakFrac: 160/342, peakValue: 73, warnAt: 45, accentAt: 70 },
     echoDuration:  { resolveFrac: 270/342, text: '~30 years' },
@@ -343,21 +325,6 @@ const HUD_CONFIG = {
 };
 DS_HUD.init(HUD_CONFIG);
 
-// ════════════════════════════════════════
-// OVERLAY DATA FEED
-// All timings are fractions of vid.duration so a re-mix of different
-// length still hits the right narrative beats.
-// ════════════════════════════════════════
-const FEED_LINES = [
-  { frac: 2/342,   ts: '00:00:02', cls: '',      text: 'session 02 · feedback memory · initialised'               },
-  { frac: 6/342,   ts: '00:00:06', cls: 'ok',    text: 'playback: reconstructed substrates — archived targets'    },
-  { frac: 90/342,  ts: '00:01:30', cls: 'ok',    text: 'demonstration accepted'                                    },
-  { frac: 160/342, ts: '00:02:40', cls: 'warn',  text: 'subject signal ≈ reconstructed targets · 73% overlap'     },
-  { frac: 210/342, ts: '00:03:30', cls: '',       text: 'feedback loop stable'                                     },
-  { frac: 270/342, ts: '00:04:30', cls: 'warn',  text: 'echo duration ≈ 30 years'                                  },
-  { frac: 300/342, ts: '00:05:00', cls: '',       text: 'architecturally significant'                              },
-  { frac: 320/342, ts: '00:05:20', cls: '',       text: 'proceeding —'                                             },
-];
 
 // ════════════════════════════════════════
 // ORGANISM INTRUSION SCHEDULE
@@ -472,31 +439,15 @@ function runPhase1(onDone) {
 // PHASE 2 — VIDEO WITH DATA FEED + ORGANISM
 // ════════════════════════════════════════
 function runPhase2(onDone) {
-  // Start HUD — frame fades in, charts begin, SFX beds start loading.
+  // HUD: frame fades in, feed + charts begin, SFX beds start loading.
   // Called after gate click so AudioContext creation is permitted.
   DS_HUD.start(vid);
 
-  const overlay    = document.getElementById('data-overlay');
   const phaseVideo = document.getElementById('phase-video');
 
-  // Build feed elements
-  const feedEls = FEED_LINES.map(o => {
-    const el = document.createElement('div');
-    el.className = 'data-line';
-    const tsHtml   = '<span class="ts">[' + o.ts + ']</span>';
-    const textHtml = o.cls
-      ? '<span class="' + o.cls + '"> ' + o.text + '</span>'
-      : '<span> '       + o.text + '</span>';
-    el.innerHTML = tsHtml + textHtml;
-    overlay.appendChild(el);
-    return { el, frac: o.frac, shown: false, hiding: false };
-  });
-
-  // State
   let nextIntrusionIdx  = 0;
   let intrusionActive   = false;
   let intrusionTimer    = null;
-  let feedFading        = false;
   let videoFadeStarted  = false;
   let rafId;
 
@@ -506,39 +457,16 @@ function runPhase2(onDone) {
     // 35s window: covers the film's full ~30s star-field dissolve phase
     const endThreshold = dur - 35;
 
-    // ── Data feed lines (suppress once organism ramp begins) ──
-    if (!feedFading) {
-      feedEls.forEach(o => {
-        if (!o.shown && ct >= o.frac * dur) {
-          o.shown = true;
-          glitchIn(o.el);
-          setTimeout(() => {
-            if (!o.hiding) { o.hiding = true; glitchOut(o.el); }
-          }, 4200);
-        }
-      });
-    }
-
-    if (ct >= endThreshold && !feedFading) {
-      feedFading = true;
-      // Dim the feed — system going quiet, not concluding
-      overlay.style.transition = 'opacity 3s ease';
-      overlay.style.opacity    = '0';
-    }
-
     // ── Final 35s: organism takes over, video fades ──
     if (ct >= endThreshold) {
       if (!videoFadeStarted) {
         videoFadeStarted = true;
-        // Disable CSS transition so rAF drives opacity directly
         phaseVideo.style.transition = 'none';
-        // Target: dispersed (low settle) so it reads as star-field,
-        // matching the film's persisting stars at its close.
         glOrgSettleTarget = 0.2;
       }
       const p     = Math.min(1, (ct - endThreshold) / 35);
       const eased = p * p * (3 - 2 * p); // smoothstep 0→1 over 35s
-      glOrgOpacityTarget    = eased;
+      glOrgOpacityTarget       = eased;
       phaseVideo.style.opacity = String(Math.max(0, 1 - eased));
 
     } else {
