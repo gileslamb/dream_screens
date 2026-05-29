@@ -465,9 +465,10 @@ function runPhase2(onDone) {
   function overlayLoop() {
     const dur          = vid.duration && isFinite(vid.duration) ? vid.duration : 342;
     const ct           = vid.currentTime;
-    const endThreshold = dur - 15;
+    // 35s window: covers the film's full ~30s star-field dissolve phase
+    const endThreshold = dur - 35;
 
-    // ── Data feed lines (suppress in final 15s) ──
+    // ── Data feed lines (suppress once organism ramp begins) ──
     if (!feedFading) {
       feedEls.forEach(o => {
         if (!o.shown && ct >= o.frac * dur) {
@@ -487,7 +488,7 @@ function runPhase2(onDone) {
       overlay.style.opacity    = '0';
     }
 
-    // ── Final 15s: organism takes over, video fades ──
+    // ── Final 35s: organism takes over, video fades ──
     if (ct >= endThreshold) {
       if (!videoFadeStarted) {
         videoFadeStarted = true;
@@ -497,8 +498,8 @@ function runPhase2(onDone) {
         // matching the film's persisting stars at its close.
         glOrgSettleTarget = 0.2;
       }
-      const p     = Math.min(1, (ct - endThreshold) / 15);
-      const eased = p * p * (3 - 2 * p); // smoothstep 0→1
+      const p     = Math.min(1, (ct - endThreshold) / 35);
+      const eased = p * p * (3 - 2 * p); // smoothstep 0→1 over 35s
       glOrgOpacityTarget    = eased;
       phaseVideo.style.opacity = String(Math.max(0, 1 - eased));
 
