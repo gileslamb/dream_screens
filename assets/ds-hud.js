@@ -64,7 +64,8 @@
   let _sfxBufs   = {};   // key → AudioBuffer (or pool sentinel)
   let _bedGains  = [];   // HTMLAudio fallback nodes only
   let _sfxReady  = false;
-  let _charTickMs = 0;   // per-character tick throttle (separate from line-level)
+  let _charTickMs  = 0;   // per-character tick throttle (separate from line-level)
+  let _lastTickSrc = null; // most-recently started tick source — stopped when typing ends
 
   // ─────────────────────────────────────────────────────────────────
   // Tiny utilities
@@ -133,7 +134,7 @@
       var i = 0, ticks = 0;
 
       function typeChar() {
-        if (i >= full.length) { span.textContent = full; typeNextSpan(); return; }
+        if (i >= full.length) { span.textContent = full; _stopTick(); typeNextSpan(); return; }
         span.textContent = full.substring(0, ++i);
 
         // Tick every 2nd or 3rd char (slightly random) — locked to the reveal
@@ -150,6 +151,8 @@
   }
 
   // Pitch-varied per-character tick. Separate throttle from line-level events.
+  // Stores the source in _lastTickSrc so _stopTick() can hard-stop it the
+  // instant the last character is placed (buffer never runs past animation end).
   function _playSfxChar() {
     var buf = _sfxBufs['feedTick'];
     if (!buf || !window.DS_AUDIO) return;
@@ -163,7 +166,16 @@
       src.playbackRate.value = 0.92 + Math.random() * 0.16; // ±8% pitch
       src.connect(DS_AUDIO.bus('sfx'));
       src.start(0);
+      _lastTickSrc = src;
     } catch(e) {}
+  }
+
+  // Hard-stop the current tick source the instant typing ends.
+  function _stopTick() {
+    if (_lastTickSrc) {
+      try { _lastTickSrc.stop(); } catch(e) {}
+      _lastTickSrc = null;
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────
