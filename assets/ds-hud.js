@@ -61,11 +61,11 @@
   let _timerEl = null;
 
   // SFX — routes through DS_AUDIO (shared context in /assets/ds-audio.js)
-  let _sfxBufs   = {};   // key → AudioBuffer (or pool sentinel)
-  let _bedGains  = [];   // HTMLAudio fallback nodes only
-  let _sfxReady  = false;
-  let _charTickMs  = 0;   // per-character tick throttle (separate from line-level)
-  let _lastTickSrc = null; // most-recently started tick source — stopped when typing ends
+  let _sfxBufs    = {};   // key → AudioBuffer (or pool sentinel)
+  let _bedGains   = [];   // HTMLAudio fallback nodes only
+  let _sfxReady   = false;
+  let _lastTickSrc  = null; // looping typing-texture source node
+  let _lastTickGain = null; // gain node for smooth start/stop of texture
 
   // ─────────────────────────────────────────────────────────────────
   // Tiny utilities
@@ -108,41 +108,38 @@
   // Feed lines have structure: <span class="ts">[HH:MM:SS]</span>
   //                            <span class="ok|warn|"> text</span>
   // Timestamp appears immediately; text reveals char-by-char.
-  // type-key-v2 ticks per character (every 2nd–3rd, random timing/pitch).
-  // Tick stops the instant typing completes — onDone fires glitch-out timer.
+  // type-key-v2 is a ~2s continuous typing TEXTURE, not a single keystroke.
+  // It is started ONCE as a looping source at the first character of the line
+  // and hard-stopped (with a 40ms gain fade to avoid a click) when the last
+  // character of the line is placed — never runs past the animation.
   // ─────────────────────────────────────────────────────────────────
   function _typeFeedLine(el, onDone) {
-    el.style.opacity = '1'; // override default opacity:0
+    el.style.opacity = '1';
 
     var spans = el.querySelectorAll('span');
     if (!spans.length) { if (onDone) onDone(); return; }
 
-    // First span (timestamp): visible immediately (inherits parent opacity:1)
-    // Remaining spans: typewriter reveal
     var textSpans = Array.prototype.slice.call(spans, 1);
     if (!textSpans.length) { if (onDone) onDone(); return; }
 
     var spanIdx = 0;
+    var textureStarted = false;
+
     function typeNextSpan() {
       if (spanIdx >= textSpans.length) {
+        _stopTick();       // all spans done — fade-stop the texture
         if (onDone) onDone();
         return;
       }
       var span = textSpans[spanIdx++];
       var full = span.textContent;
       span.textContent = '';
-      var i = 0, ticks = 0;
+      var i = 0;
 
       function typeChar() {
-        if (i >= full.length) { span.textContent = full; _stopTick(); typeNextSpan(); return; }
+        if (i >= full.length) { span.textContent = full; typeNextSpan(); return; }
         span.textContent = full.substring(0, ++i);
-
-        // Tick every 2nd or 3rd char (slightly random) — locked to the reveal
-        var period = (ticks % 3 === 0 && Math.random() < 0.4) ? 3 : 2;
-        if (ticks % period === 0) _playSfxChar();
-        ticks++;
-
-        // 35–65ms per character (natural variance)
+        if (!textureStarted) { textureStarted = true; _startTypingTexture(); }
         setTimeout(typeChar, 35 + Math.floor(Math.random() * 30));
       }
       typeChar();
@@ -150,32 +147,45 @@
     typeNextSpan();
   }
 
-  // Pitch-varied per-character tick. Separate throttle from line-level events.
-  // Stores the source in _lastTickSrc so _stopTick() can hard-stop it the
-  // instant the last character is placed (buffer never runs past animation end).
-  function _playSfxChar() {
+  // Start the typing texture as a single looping source.
+  // Called once at the first character of a feed line.
+  function _startTypingTexture() {
     var buf = _sfxBufs['feedTick'];
     if (!buf || !window.DS_AUDIO) return;
-    var now = Date.now();
-    if (now - _charTickMs < 65) return; // no more than once per ~65ms
-    _charTickMs = now;
+    if (_lastTickSrc) return; // guard: already running
     try {
-      var ctx = DS_AUDIO.ctx();
+      var ctx  = DS_AUDIO.ctx();
+      var gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(1.0, ctx.currentTime + 0.03); // 30ms fade-in
+      gain.connect(DS_AUDIO.bus('sfx'));
       var src = ctx.createBufferSource();
       src.buffer = buf;
-      src.playbackRate.value = 0.92 + Math.random() * 0.16; // ±8% pitch
-      src.connect(DS_AUDIO.bus('sfx'));
+      src.loop = true;
+      src.playbackRate.value = 0.94 + Math.random() * 0.12; // subtle pitch variation
+      src.connect(gain);
       src.start(0);
-      _lastTickSrc = src;
+      _lastTickSrc  = src;
+      _lastTickGain = gain;
     } catch(e) {}
   }
 
-  // Hard-stop the current tick source the instant typing ends.
+  // Fade-stop the typing texture — ~40ms gain decay then hard-stop.
+  // The gain fade avoids the click/pop that a bare .stop() would cause.
   function _stopTick() {
-    if (_lastTickSrc) {
-      try { _lastTickSrc.stop(); } catch(e) {}
-      _lastTickSrc = null;
+    var src  = _lastTickSrc;
+    var gain = _lastTickGain;
+    if (!src) return;
+    _lastTickSrc  = null;
+    _lastTickGain = null;
+    if (gain && window.DS_AUDIO) {
+      try {
+        var ctx = DS_AUDIO.ctx();
+        gain.gain.cancelScheduledValues(ctx.currentTime);
+        gain.gain.setTargetAtTime(0, ctx.currentTime, 0.013); // τ=13ms ≈ 40ms to silence
+      } catch(e) {}
     }
+    setTimeout(function() { try { src.stop(); } catch(e) {} }, 60);
   }
 
   // ─────────────────────────────────────────────────────────────────
