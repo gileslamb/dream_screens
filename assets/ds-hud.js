@@ -567,6 +567,17 @@
   var DS_HUD = {};
 
   DS_HUD.init = function(cfg) {
+    // Reset per-run state so re-init after a prior session works cleanly
+    if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
+    _feedFading  = false;
+    _echoShown   = false;
+    _started     = false;
+    _sfxBufs     = {};
+    _sfxReady    = false;
+    _lastTickSrc  = null;
+    _lastTickGain = null;
+    _vid         = null;
+
     _cfg  = cfg;
     _root = _buildDOM(cfg);
     document.body.appendChild(_root);

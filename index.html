@@ -938,8 +938,99 @@
     opacity: 0; transition: opacity 0.5s; height: 13px; text-align: center;
   }
   #gate-confirm.vis { opacity: 1; }
+
+  /* ── IN-PAGE VIDEO PROTOCOL OVERLAYS ── */
+  /* HUD sits above the in-page video when a protocol is active */
+  body.vp-active #ds-hud { z-index: 26 !important; }
+
+  /* org-pulse: subtle radial flash on organism beats */
+  #vp-org-pulse {
+    position: fixed; inset: 0; z-index: 25;
+    pointer-events: none;
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.04) 0%, transparent 65%);
+    opacity: 0; transition: opacity 0.15s ease;
+  }
+  #vp-org-pulse.beat { opacity: 1; }
+
+  /* phase overlays */
+  #vp-fade-overlay {
+    position: fixed; inset: 0; z-index: 29;
+    background: #000; opacity: 0; pointer-events: none;
+    transition: opacity 2s ease;
+  }
+  #vp-fade-overlay.vis { opacity: 1; }
+
+  #vp-phase-intro {
+    position: fixed; inset: 0; z-index: 28;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 1.4rem; pointer-events: none; opacity: 0; transition: opacity 0.6s ease;
+  }
+  #vp-phase-intro.vis { opacity: 1; }
+
+  .vp-intro-line {
+    font-family: var(--mono); font-size: clamp(9px,1vw,11px);
+    letter-spacing: 0.35em; text-transform: uppercase;
+    color: rgba(255,255,255,0.65); opacity: 0; will-change: transform,opacity;
+  }
+  .vp-intro-line.is-title {
+    font-family: var(--sans); font-size: clamp(14px,1.8vw,22px);
+    letter-spacing: 0.08em; font-weight: 300; color: rgba(255,255,255,0.78);
+  }
+  @keyframes vp-glitch-in {
+    0%   { opacity:0; transform:translateX(-6px) skewX(-3deg); filter:blur(2px); }
+    25%  { opacity:0.75; transform:translateX(3px); filter:blur(0); }
+    45%  { opacity:0.45; transform:translateX(-2px); }
+    65%  { opacity:0.85; transform:translateX(1px); }
+    100% { opacity:1; transform:none; filter:none; }
+  }
+  @keyframes vp-glitch-out {
+    0%   { opacity:1; transform:none; }
+    30%  { opacity:0.6; transform:translateX(4px) skewX(2deg); filter:blur(1px); }
+    70%  { opacity:0.2; transform:translateX(-3px); }
+    100% { opacity:0; transform:translateX(6px); filter:blur(2px); }
+  }
+  .vp-intro-line.in  { animation: vp-glitch-in  0.22s ease forwards; }
+  .vp-intro-line.out { animation: vp-glitch-out 0.22s ease forwards; }
+
+  #vp-data-overlay {
+    position: fixed; bottom: 32px; right: 32px; z-index: 27;
+    display: flex; flex-direction: column; align-items: flex-end;
+    gap: 0.5rem; pointer-events: none;
+  }
+  .vp-data-line {
+    font-family: var(--mono); font-size: 0.85rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: rgba(255,255,255,0.65);
+    opacity: 0; will-change: transform,opacity;
+  }
+  .vp-data-line.in  { animation: vp-glitch-in  0.2s ease forwards; }
+  .vp-data-line.out { animation: vp-glitch-out 0.2s ease forwards; }
+
+  #vp-phase-complete {
+    position: fixed; inset: 0; z-index: 28;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 1.4rem; pointer-events: none; opacity: 0; transition: opacity 0.8s ease;
+  }
+  #vp-phase-complete.vis { opacity: 1; pointer-events: all; }
+  .vp-complete-line {
+    font-family: var(--mono); font-size: clamp(9px,1vw,11px);
+    letter-spacing: 0.35em; text-transform: uppercase;
+    color: rgba(255,255,255,0.65); opacity: 0;
+  }
+  .vp-complete-line.in { animation: vp-glitch-in 0.22s ease forwards; }
+  #vp-return-link {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.4em;
+    text-transform: uppercase; color: rgba(255,255,255,0.4);
+    text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.18);
+    padding-bottom: 2px; margin-top: 1.5rem;
+    opacity: 0; pointer-events: none; transition: color 0.3s ease, opacity 1.5s ease;
+    cursor: pointer;
+  }
+  #vp-return-link.vis { opacity: 1; pointer-events: all; }
+  #vp-return-link:hover { color: rgba(255,255,255,0.75); }
 </style>
+<link rel="stylesheet" href="/assets/ds-hud.css"/>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="/assets/ds-hud.js" defer></script>
 </head>
 <body>
 <!-- ════ ACCESS GATE ════ -->
@@ -1201,13 +1292,86 @@ const CONFIG = {
     'DS-01': {
       hlsUrl: 'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/a131766743d10c8960911211b41e64c7/manifest/video.m3u8',
       bakedAudio: false,
+      introLines: [
+        { text: 'DREAMSCREENS PROTOCOL DS-01', isTitle: false },
+        { text: 'Signal Dreams',                isTitle: true  },
+        { text: 'SUBJECT: NEURAL PATTERN ANALYSIS', isTitle: false },
+        { text: 'INITIATING MEMORY RECONSTRUCTION...', isTitle: false },
+        { text: 'PROTOCOL ACTIVE — STAND BY',    isTitle: false },
+      ],
+      completionLines: ['DS-01 COMPLETE', 'MEMORY FRAGMENT ARCHIVED', 'PROTOCOL CLOSED'],
+      overlays: [
+        { t:  30, text: 'ENTERING NEURAL CORRIDOR'   },
+        { t:  60, text: 'FRAME COHERENCE: 87%'       },
+        { t: 135, text: 'DEEP MEMORY LAYER DETECTED' },
+        { t: 180, text: 'CONSCIOUSNESS LOCK ESTABLISHED' },
+        { t: 210, text: 'PATTERN RECOGNITION ACTIVE' },
+        { t: 270, text: 'MEMORY DEPTH: 84.3%'        },
+        { t: 300, text: 'SIGNAL INTEGRITY OPTIMAL'   },
+        { t: 375, text: 'MEMORY DISSOLUTION INITIATED' },
+        { t: 420, text: 'RECONSTRUCTION COMPLETE'    },
+      ],
+      intrusionFracs: null,
+      hudConfig: {
+        id: 'DS-01', title: 'Signal Dreams', sub: 'REM cycle 1 · neural pattern analysis',
+        feed: [
+          { frac:  5/480, ts: '00:00:05', level: '',   text: 'session 01 · signal dreams · initialised' },
+          { frac: 25/480, ts: '00:00:25', level: '',   text: 'cortical baseline · capturing'            },
+          { frac: 90/480, ts: '00:01:30', level: 'ok', text: 'primary candidate · confirmed'            },
+          { frac:200/480, ts: '00:03:20', level: 'ok', text: 'subject consents to continue'             },
+          { frac:350/480, ts: '00:05:50', level: '',   text: 'retention indicators · optimal'            },
+        ],
+        charts: {
+          signalOverlap: { label: 'CORTICAL BASELINE', peakFrac: 150/480, peakValue: 100, warnAt: 200, accentAt: 200 },
+          echoDuration:  { label: 'RETENTION', resolveFrac: 350/480, text: 'OPTIMAL' },
+          feedbackLoop:  { label: 'CANDIDATE STATUS', stabiliseFrac: 90/480 },
+        },
+        sfx: {
+          feedTick: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/type-key-v2.wav',
+          uiTick:   'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/type-key-v3.wav',
+          sfxVolume: 0.18,
+        },
+      },
     },
     'DS-02': {
       hlsUrl: 'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/0ad67553f6221e74788ca0fbac3a5df7/manifest/video.m3u8',
-      bakedAudio:    true,
-      videoFadeInMs: 3500,
+      bakedAudio:     true,
+      videoFadeInMs:  3500,
       bedFadeAfterMs: 30000,
       bedFadeOutTC:   8.0,
+      introLines: [
+        { text: 'DREAMSCREENS PROTOCOL DS-02',     isTitle: false },
+        { text: 'Feedback Memory',                  isTitle: true  },
+        { text: 'SUBJECT: RECONSTRUCTED SUBSTRATES', isTitle: false },
+        { text: 'ECHO PATTERN ANALYSIS IN PROGRESS...', isTitle: false },
+        { text: 'PROTOCOL ACTIVE — STAND BY',       isTitle: false },
+      ],
+      completionLines: ['DS-02 PROCEEDING', 'FEEDBACK LOOP — OPEN', 'PROTOCOL CONTINUES'],
+      overlays: null,
+      intrusionFracs: [0.117, 0.263, 0.468, 0.614, 0.760, 0.862],
+      hudConfig: {
+        id: 'DS-02', title: 'Feedback Memory', sub: 'REM cycle 2 · echo pattern analysis',
+        feed: [
+          { frac:  2/342, ts: '00:00:02', level: '',     text: 'session 02 · feedback memory · initialised'           },
+          { frac:  6/342, ts: '00:00:06', level: 'ok',   text: 'playback: reconstructed substrates — archived targets'},
+          { frac: 90/342, ts: '00:01:30', level: 'ok',   text: 'demonstration accepted'                                },
+          { frac:160/342, ts: '00:02:40', level: 'warn', text: 'subject signal ≈ reconstructed targets · 73% overlap' },
+          { frac:210/342, ts: '00:03:30', level: '',     text: 'feedback loop stable'                                  },
+          { frac:270/342, ts: '00:04:30', level: 'warn', text: 'echo duration ≈ 30 years'                              },
+          { frac:300/342, ts: '00:05:00', level: '',     text: 'architecturally significant'                           },
+          { frac:320/342, ts: '00:05:20', level: '',     text: 'proceeding —'                                          },
+        ],
+        charts: {
+          signalOverlap: { peakFrac: 160/342, peakValue: 73, warnAt: 45, accentAt: 70 },
+          echoDuration:  { resolveFrac: 270/342, text: '~30 years' },
+          feedbackLoop:  { stabiliseFrac: 210/342 },
+        },
+        sfx: {
+          feedTick: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/type-key-v2.wav',
+          uiTick:   'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/type-key-v3.wav',
+          sfxVolume: 0.22,
+        },
+      },
     },
   },
 };
@@ -1690,6 +1854,59 @@ function bedFadeUp() {
 function bedRestoreAfterProtocol() {
   bedFadeUp();
 }
+
+// ── DS_AUDIO SHIM ────────────────────────────────────────────────────────────
+// Provides the DS_AUDIO API surface that ds-hud.js expects, bridged to
+// index.html's existing audioCtx so everything stays in ONE AudioContext.
+// 'beds' ramp is a no-op — the bed is managed by the global bedGain substrate.
+(function installDsAudioShim() {
+  if (window.DS_AUDIO) return; // ds-audio.js already loaded (shouldn't happen on index.html)
+  const _buses = {}, _cache = {};
+  window.DS_AUDIO = {
+    ctx:    function()      { return getCtx(); },
+    resume: function()      { const c = getCtx(); if (c.state === 'suspended') c.resume(); },
+    bus:    function(name, initVol) {
+      if (!_buses[name]) {
+        const g = getCtx().createGain();
+        g.gain.value = (initVol != null) ? initVol : 1.0;
+        g.connect(getCtx().destination);
+        _buses[name] = g;
+      }
+      return _buses[name];
+    },
+    ramp:   function(name, targetVal, timeConstant) {
+      if (name === 'beds') return; // bed managed by global bedGain
+      const b = _buses[name];
+      if (b) b.gain.setTargetAtTime(targetVal, getCtx().currentTime, timeConstant || 2.0);
+    },
+    set:    function(name, val) {
+      const b = _buses[name];
+      if (b) b.gain.setValueAtTime(val, getCtx().currentTime);
+    },
+    load:   function(url) {
+      const full = mediaFetchUrl(url);
+      if (_cache[full]) return Promise.resolve(_cache[full]);
+      return fetch(full)
+        .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+        .then(function(ab) { return getCtx().decodeAudioData(ab); })
+        .then(function(buf) { _cache[full] = buf; return buf; });
+    },
+    play:   function(buf, busName) {
+      if (!buf) return;
+      try { const s = getCtx().createBufferSource(); s.buffer = buf; s.connect(_buses[busName] || getCtx().destination); s.start(0); } catch(e) {}
+    },
+    loop:   function(buf, busName, startOffset) {
+      if (!buf) return null;
+      try {
+        const s = getCtx().createBufferSource();
+        s.buffer = buf; s.loop = true;
+        s.connect(_buses[busName] || getCtx().destination);
+        s.start(0, startOffset || 0);
+        return s;
+      } catch(e) { return null; }
+    },
+  };
+})();
 
 // ── PROGRESS-CIRCLE REVERB TEXTURE ─────────────────────────────────────────
 // type-key-v3 looped through a short synthetic ConvolverNode reverb,
@@ -2609,6 +2826,239 @@ function playProtocol(track) {
   });
 }
 
+// ── VIDEO PROTOCOL PHASE ENGINE ─────────────────────────────────────────────
+let _vpOvls          = null;   // overlay DOM refs (set by vpSetupOverlays)
+let _vpRafId         = null;   // rAF loop id
+let _vpIntrusionTimer = null;  // DS-02 intrusion clearTimeout handle
+
+function _vpGlitchIn(el) {
+  el.style.opacity = '';
+  el.classList.remove('out'); el.classList.add('in');
+  el.addEventListener('animationend', function() { el.style.opacity = '1'; }, { once: true });
+}
+function _vpGlitchOut(el, then) {
+  el.style.opacity = '';
+  el.classList.remove('in'); el.classList.add('out');
+  el.addEventListener('animationend', function() {
+    el.style.opacity = '0'; el.classList.remove('out');
+    if (then) then();
+  }, { once: true });
+}
+function _vpPulse() {
+  const p = document.getElementById('vp-org-pulse');
+  if (!p) return;
+  p.classList.add('beat');
+  setTimeout(function() { p.classList.remove('beat'); }, 200);
+}
+
+function vpSetupOverlays(vpCfg) {
+  vpCleanup(); // ensure previous run's elements are gone
+
+  const orgPulse = document.createElement('div');
+  orgPulse.id = 'vp-org-pulse';
+  document.body.appendChild(orgPulse);
+
+  const fadeOverlay = document.createElement('div');
+  fadeOverlay.id = 'vp-fade-overlay';
+  document.body.appendChild(fadeOverlay);
+
+  const phaseIntro = document.createElement('div');
+  phaseIntro.id = 'vp-phase-intro';
+  const introLines = (vpCfg.introLines || []).map(function(cfg, i) {
+    const el = document.createElement('div');
+    el.className = 'vp-intro-line' + (cfg.isTitle ? ' is-title' : '');
+    el.textContent = cfg.text;
+    phaseIntro.appendChild(el);
+    return el;
+  });
+  document.body.appendChild(phaseIntro);
+
+  let dataOverlay = null;
+  if (vpCfg.overlays && vpCfg.overlays.length) {
+    dataOverlay = document.createElement('div');
+    dataOverlay.id = 'vp-data-overlay';
+    document.body.appendChild(dataOverlay);
+  }
+
+  const phaseComplete = document.createElement('div');
+  phaseComplete.id = 'vp-phase-complete';
+  const completeLines = (vpCfg.completionLines || []).map(function(text) {
+    const el = document.createElement('div');
+    el.className = 'vp-complete-line';
+    el.textContent = text;
+    phaseComplete.appendChild(el);
+    return el;
+  });
+  const returnLink = document.createElement('a');
+  returnLink.id = 'vp-return-link'; returnLink.href = '#';
+  returnLink.textContent = 'Return to Archive';
+  phaseComplete.appendChild(returnLink);
+  document.body.appendChild(phaseComplete);
+
+  // Mount HUD (remove stale instance first so re-entry works cleanly)
+  const oldHud = document.getElementById('ds-hud');
+  if (oldHud) oldHud.remove();
+  if (window.DS_HUD && vpCfg.hudConfig) DS_HUD.init(vpCfg.hudConfig);
+
+  document.body.classList.add('vp-active');
+  return { orgPulse, fadeOverlay, phaseIntro, introLines, dataOverlay, phaseComplete, completeLines, returnLink };
+}
+
+function vpCleanup() {
+  if (_vpRafId) { cancelAnimationFrame(_vpRafId); _vpRafId = null; }
+  if (_vpIntrusionTimer) { clearTimeout(_vpIntrusionTimer); _vpIntrusionTimer = null; }
+  if (window.DS_HUD) try { DS_HUD.stop(); } catch(e) {}
+  ['vp-org-pulse','vp-fade-overlay','vp-phase-intro','vp-data-overlay','vp-phase-complete'].forEach(function(id) {
+    const el = document.getElementById(id); if (el) el.remove();
+  });
+  const hudEl = document.getElementById('ds-hud'); if (hudEl) hudEl.remove();
+  document.body.classList.remove('vp-active');
+  glOrgOpacityTarget = 1.0; glOrgSettleTarget = 1.0;
+  _vpOvls = null;
+}
+
+function vpRunPhase1(ppVid, vpCfg, ovls, onDone) {
+  glOrgSettleTarget = 0.3;
+  ovls.phaseIntro.classList.add('vis');
+
+  const cues = [0, 1500, 3000, 4500, 6000];
+  ovls.introLines.forEach(function(el, i) {
+    setTimeout(function() {
+      _vpPulse(); _vpGlitchIn(el);
+      glOrgSettleTarget = Math.min(1.0, 0.3 + i * 0.15);
+    }, cues[i]);
+  });
+
+  // 6.5s: start film
+  setTimeout(function() {
+    ppVid.currentTime = 0;
+    if (vpCfg.bakedAudio) {
+      ppVid.volume = 0;
+      (function fadeVidIn() {
+        var t0 = Date.now(), dur = vpCfg.videoFadeInMs || 3500;
+        function step() {
+          var p = Math.min(1, (Date.now() - t0) / dur);
+          if (!ppVid.paused) ppVid.volume = p * p;
+          if (p < 1) ppVidFadeRaf = requestAnimationFrame(step); else ppVid.volume = 1;
+        }
+        ppVidFadeRaf = requestAnimationFrame(step);
+      })();
+      setTimeout(function() { bedFadeOut(); }, vpCfg.bedFadeAfterMs || CONFIG.bed.filmHoldMs);
+    }
+    ppVid.play().catch(function(e) { console.warn('Video play:', e); });
+    ppVid.classList.add('vis');
+  }, 6500);
+
+  // 7.5s: glitch out intro
+  setTimeout(function() {
+    ovls.introLines.forEach(function(l) { _vpGlitchOut(l); });
+    ovls.phaseIntro.classList.remove('vis');
+  }, 7500);
+
+  // 9s: hand off to Phase 2
+  setTimeout(function() {
+    if (vpCfg.bakedAudio) { glOrgOpacityTarget = 0.0; glOrgSettleTarget = 0.45; }
+    onDone && onDone();
+  }, 9000);
+}
+
+function vpRunPhase2(ppVid, vpCfg, ovls, onDone) {
+  if (window.DS_HUD) DS_HUD.start(ppVid);
+
+  // DS-01 timed data overlays
+  const overlayEls = [];
+  if (vpCfg.overlays && ovls.dataOverlay) {
+    vpCfg.overlays.forEach(function(o) {
+      const el = document.createElement('div');
+      el.className = 'vp-data-line'; el.textContent = o.text;
+      ovls.dataOverlay.appendChild(el);
+      overlayEls.push({ el: el, t: o.t, shown: false, hiding: false });
+    });
+  }
+
+  const intrFracs = vpCfg.intrusionFracs;
+  let nextIntrusionIdx = 0, intrusionActive = false, videoFadeStarted = false;
+
+  function overlayLoop() {
+    const dur = ppVid.duration && isFinite(ppVid.duration) ? ppVid.duration : 342;
+    const ct  = ppVid.currentTime;
+
+    overlayEls.forEach(function(o) {
+      if (!o.shown && ct >= o.t) {
+        o.shown = true;
+        _vpGlitchIn(o.el);
+        setTimeout(function() { if (!o.hiding) { o.hiding = true; _vpGlitchOut(o.el); } }, 4200);
+      }
+    });
+
+    if (intrFracs) {
+      const endThreshold = dur - 35;
+      if (ct >= endThreshold) {
+        if (!videoFadeStarted) {
+          videoFadeStarted = true;
+          ppVid.style.transition = 'none';
+          glOrgSettleTarget = 0.2;
+        }
+        const p = Math.min(1, (ct - endThreshold) / 35);
+        const eased = p * p * (3 - 2 * p);
+        glOrgOpacityTarget  = eased;
+        ppVid.style.opacity = String(Math.max(0, 1 - eased));
+      } else if (!intrusionActive && nextIntrusionIdx < intrFracs.length) {
+        if (ct >= intrFracs[nextIntrusionIdx] * dur) {
+          intrusionActive = true; glOrgOpacityTarget = 0.22; _vpPulse();
+          _vpIntrusionTimer = setTimeout(function() {
+            glOrgOpacityTarget = 0.0; intrusionActive = false;
+            nextIntrusionIdx++; _vpIntrusionTimer = null;
+          }, 4000);
+        }
+      }
+    }
+
+    _vpRafId = requestAnimationFrame(overlayLoop);
+  }
+  overlayLoop();
+
+  ppVid.addEventListener('ended', function() {
+    cancelAnimationFrame(_vpRafId); _vpRafId = null;
+    if (_vpIntrusionTimer) { clearTimeout(_vpIntrusionTimer); _vpIntrusionTimer = null; }
+    if (window.DS_HUD) try { DS_HUD.stop(); } catch(e) {}
+
+    if (!vpCfg.bakedAudio) {
+      // DS-01: black fade before completion screen
+      ovls.fadeOverlay.classList.add('vis');
+      setTimeout(function() {
+        ppVid.classList.remove('vis');
+        ovls.fadeOverlay.classList.remove('vis');
+        onDone && onDone();
+      }, 2000);
+    } else {
+      // DS-02: organism already dominant
+      ppVid.classList.remove('vis');
+      ppVid.style.opacity = ''; ppVid.style.transition = '';
+      glOrgOpacityTarget = 1.0; glOrgSettleTarget = 0.45;
+      onDone && onDone();
+    }
+  }, { once: true });
+}
+
+function vpRunPhase3(vpCfg, ovls, stopFn) {
+  ovls.phaseComplete.classList.add('vis');
+  glOrgOpacityTarget = 1.0;
+  glOrgSettleTarget  = vpCfg.bakedAudio ? 0.45 : 1.0;
+
+  const cues = [0, 1500, 3000];
+  ovls.completeLines.forEach(function(el, i) {
+    setTimeout(function() { _vpGlitchIn(el); }, cues[i]);
+  });
+
+  setTimeout(function() {
+    ovls.returnLink.classList.add('vis');
+    ovls.returnLink.addEventListener('click', function(e) {
+      e.preventDefault(); stopFn();
+    }, { once: true });
+  }, 7000);
+}
+
 // ── IN-PAGE VIDEO PROTOCOL PLAYER (DS-01, DS-02) ─────────────────────────────
 function playVideoProtocol(track) {
   const vpCfg = CONFIG.videoProtocols[track.idx];
@@ -2620,19 +3070,18 @@ function playVideoProtocol(track) {
   glOrgSettle  = 1.0; glOrgSettleTarget  = 1.0;
   glArchiveModeTarget = 0.0;
 
-  const pp     = document.getElementById('protocol-player');
-  const ppVid  = document.getElementById('pp-vid');
-  const titleEl = document.getElementById('pp-title');
-  titleEl.textContent = track.title;
-  titleEl.classList.remove('vis');
+  const pp    = document.getElementById('protocol-player');
+  const ppVid = document.getElementById('pp-vid');
+  // pp-title not used for video protocols — phase 1 intro lines handle the title
+  document.getElementById('pp-title').classList.remove('vis');
   ppIsVideo = true;
 
-  // The archive click IS the gesture — unlock AudioContext now
+  // Archive click IS the gesture — unlock AudioContext now and prime media permission
   const ctx = getCtx();
   if (ctx.state === 'suspended') ctx.resume();
+  ppVid.play().then(function() { ppVid.pause(); }).catch(function() {});
 
-  // Fade out Virta over the still-playing bed. Bed does NOT fade here —
-  // it keeps playing through the click, covering the transition.
+  // Fade out Virta; bed keeps playing through the click (no gap)
   if (currentGain) {
     currentGain.gain.setTargetAtTime(0, ctx.currentTime, 0.7);
   }
@@ -2642,13 +3091,13 @@ function playVideoProtocol(track) {
 
   // Clean up any previous HLS / video
   if (ppHls) { try { ppHls.destroy(); } catch(e) {} ppHls = null; }
+  if (ppVidFadeRaf) { cancelAnimationFrame(ppVidFadeRaf); ppVidFadeRaf = null; }
   ppVid.classList.remove('vis');
-  ppVid.pause();
-  ppVid.src = '';
+  ppVid.style.opacity = ''; ppVid.style.transition = '';
+  ppVid.pause(); ppVid.src = '';
+  ppVid.volume = 1; // phase 1 manages the DS-02 ramp itself
 
-  ppVid.volume = vpCfg.bakedAudio ? 0 : 1;
-
-  // Load HLS concurrently while the neural loader spins
+  // Load HLS while the neural loader spins
   if (ppVid.canPlayType('application/vnd.apple.mpegurl')) {
     ppVid.src = vpCfg.hlsUrl;
   } else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
@@ -2665,27 +3114,13 @@ function playVideoProtocol(track) {
     { pct: 90,  msg: 'Signal confirmed.' },
     { pct: 100, msg: 'Signal acquired.' },
   ], function() {
-    ppVid.classList.add('vis');
-    ppVid.play().catch(e => console.warn('Video play:', e));
-
-    // Ramp video volume for protocols with baked-in audio (DS-02)
-    if (vpCfg.bakedAudio) {
-      if (ppVidFadeRaf) { cancelAnimationFrame(ppVidFadeRaf); ppVidFadeRaf = null; }
-      const t0 = Date.now(), dur = vpCfg.videoFadeInMs || 3500;
-      function fadeVidIn() {
-        const p = Math.min(1, (Date.now() - t0) / dur);
-        if (!ppVid.paused) ppVid.volume = p * p;
-        if (p < 1) ppVidFadeRaf = requestAnimationFrame(fadeVidIn);
-        else ppVid.volume = 1;
-      }
-      ppVidFadeRaf = requestAnimationFrame(fadeVidIn);
-
-      // Bed fades out slowly ~30s after film audio starts
-      setTimeout(function() { bedFadeOut(); }, vpCfg.bedFadeAfterMs || CONFIG.bed.filmHoldMs);
-    }
-
-    setTimeout(() => titleEl.classList.add('vis'), 200);
-    ppVid.addEventListener('ended', function() { stopVideoProtocol(); }, { once: true });
+    // Loader done — set up all overlay elements then run the 3-phase pipeline
+    _vpOvls = vpSetupOverlays(vpCfg);
+    vpRunPhase1(ppVid, vpCfg, _vpOvls, function() {
+      vpRunPhase2(ppVid, vpCfg, _vpOvls, function() {
+        vpRunPhase3(vpCfg, _vpOvls, stopVideoProtocol);
+      });
+    });
   });
 }
 
@@ -2694,9 +3129,11 @@ function stopVideoProtocol() {
   const ppVid = document.getElementById('pp-vid');
   ppVid.pause();
   ppVid.classList.remove('vis');
+  ppVid.style.opacity = ''; ppVid.style.transition = '';
   if (ppHls) { try { ppHls.destroy(); } catch(e) {} ppHls = null; }
   ppVid.src = '';
   ppIsVideo = false;
+  vpCleanup(); // remove overlay DOM, stop HUD, reset organism
   returnToProtocols();
 }
 
