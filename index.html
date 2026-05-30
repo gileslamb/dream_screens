@@ -835,6 +835,15 @@
     opacity: 0; animation: fadeUp 1s ease 5s forwards;
   }
   #pp-stop:hover { color: rgba(255,255,255,0.55); border-color: rgba(255,255,255,0.3); }
+  /* More visible during a video protocol — still subtle, not intrusive */
+  body.vp-active #pp-stop {
+    color: rgba(255,255,255,0.35);
+    border-color: rgba(255,255,255,0.18);
+  }
+  body.vp-active #pp-stop:hover {
+    color: rgba(255,255,255,0.70);
+    border-color: rgba(255,255,255,0.45);
+  }
   /* ── VIDEO PROTOCOL OVERLAY ── */
   #pp-vid {
     position: fixed; inset: 0;
@@ -1152,7 +1161,7 @@
 <video id="pp-vid" playsinline webkit-playsinline></video>
 <div id="protocol-player">
   <div id="pp-title"></div>
-  <button id="pp-stop" onclick="stopProtocol()">Return to protocols ↩</button>
+  <button id="pp-stop" onclick="stopProtocol()">← Return to archive</button>
 </div>
 
 <div id="progress">
