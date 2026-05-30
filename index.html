@@ -1192,6 +1192,10 @@ const CONFIG = {
     filmHoldMs: 30000, // ms of film audio before bed fades out under it
     filmFadeTC: 8.0,   // time constant: bed fades out under film (≈30s)
   },
+  // SFX
+  sfx: {
+    uiTick: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/type-key-v3.wav',
+  },
   // Video protocols — play in-page, no navigation
   videoProtocols: {
     'DS-01': {
@@ -1685,6 +1689,90 @@ function bedFadeUp() {
 // Overrides the stub from commit #1
 function bedRestoreAfterProtocol() {
   bedFadeUp();
+}
+
+// ── PROGRESS-CIRCLE REVERB TEXTURE ─────────────────────────────────────────
+// type-key-v3 looped through a short synthetic ConvolverNode reverb,
+// playing OVER the bed while any neural loader spins. Atmospheric texture,
+// not a UI beep. Starts when the loader starts; fades out when it ends.
+let _loaderTexSrc  = null;
+let _loaderTexGain = null;
+let _uiTickBuf     = null;
+let _reverbIR      = null;  // cached impulse response
+
+function _makeIR(ctx) {
+  if (_reverbIR) return _reverbIR;
+  const sr  = ctx.sampleRate;
+  const len = Math.floor(sr * 0.55);  // 550ms reverb tail
+  const ir  = ctx.createBuffer(2, len, sr);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = ir.getChannelData(ch);
+    for (let i = 0; i < len; i++) {
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.8);
+    }
+  }
+  _reverbIR = ir;
+  return ir;
+}
+
+async function _loadUiTick() {
+  if (_uiTickBuf) return _uiTickBuf;
+  try {
+    const ctx = getCtx();
+    const res = await fetch(mediaFetchUrl(CONFIG.sfx.uiTick));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    _uiTickBuf = await ctx.decodeAudioData(await res.arrayBuffer());
+    return _uiTickBuf;
+  } catch(e) { return null; }
+}
+// Pre-cache the tick buffer on page interaction so it's ready when needed
+document.addEventListener('pointerdown', function primeUiTick() {
+  void _loadUiTick();
+  document.removeEventListener('pointerdown', primeUiTick);
+}, { once: true, capture: true });
+
+async function startLoaderTexture() {
+  if (_loaderTexSrc) return;
+  const ctx = getCtx();
+  if (ctx.state === 'suspended') return;  // no gesture yet
+  const buf = await _loadUiTick();
+  if (!buf) return;
+
+  const convolver = ctx.createConvolver();
+  convolver.buffer = _makeIR(ctx);
+
+  const wetGain    = ctx.createGain(); wetGain.gain.value  = 0.55;
+  const masterGain = ctx.createGain();
+  masterGain.gain.setValueAtTime(0, ctx.currentTime);
+  masterGain.gain.linearRampToValueAtTime(0.30, ctx.currentTime + 0.5);
+  masterGain.connect(ctx.destination);
+
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop   = true;
+  src.playbackRate.value = 0.90 + Math.random() * 0.10;
+  src.connect(convolver);
+  convolver.connect(wetGain);
+  wetGain.connect(masterGain);
+  src.start(0);
+
+  _loaderTexSrc  = src;
+  _loaderTexGain = masterGain;
+}
+
+function stopLoaderTexture() {
+  const src  = _loaderTexSrc;
+  const gain = _loaderTexGain;
+  _loaderTexSrc  = null;
+  _loaderTexGain = null;
+  if (!src) return;
+  if (gain) {
+    try {
+      const ctx = getCtx();
+      gain.gain.setTargetAtTime(0, ctx.currentTime, 0.12); // ~400ms fade
+    } catch(e) {}
+  }
+  setTimeout(function() { try { src.stop(); } catch(e) {} }, 500);
 }
 
 async function playTrack(path, opts) {
@@ -2306,6 +2394,9 @@ function runNeuralLoader(canvas, duration, steps, onDone, pctEl, msgEl, hexEl, m
     nlEl.classList.add('vis');
   }
 
+  // Reverb texture over the progress circle — atmospheric, over the bed
+  void startLoaderTexture();
+
   const hexChars = '0123456789ABCDEF';
   function randHex(n) {
     let s = '0x';
@@ -2395,7 +2486,8 @@ function runNeuralLoader(canvas, duration, steps, onDone, pctEl, msgEl, hexEl, m
       done = true;
       if (pctEl) pctEl.textContent = '100% · 0x64';
       if (msgEl) msgEl.textContent = steps[steps.length-1].msg;
-      // Fade out loader then call done
+      // Stop reverb texture and fade out loader then call done
+      stopLoaderTexture();
       setTimeout(() => {
         if (canvas.id === 'nl-ring-canvas') {
           nlEl.classList.add('gone');
