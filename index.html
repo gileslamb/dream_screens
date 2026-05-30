@@ -835,6 +835,17 @@
     opacity: 0; animation: fadeUp 1s ease 5s forwards;
   }
   #pp-stop:hover { color: rgba(255,255,255,0.55); border-color: rgba(255,255,255,0.3); }
+  /* ── VIDEO PROTOCOL OVERLAY ── */
+  #pp-vid {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: 24; /* below protocol-player UI at 25 */
+    background: #000;
+    opacity: 0; pointer-events: none;
+    transition: opacity 2.5s ease;
+  }
+  #pp-vid.vis { opacity: 1; }
   /* ── ACCESS GATE ── */
   #access-gate {
     position: fixed; inset: 0; z-index: 500;
@@ -1039,6 +1050,7 @@
 <canvas id="noise"></canvas>
 <canvas id="gl"></canvas>
 
+<video id="pp-vid" playsinline webkit-playsinline></video>
 <div id="protocol-player">
   <div id="pp-title"></div>
   <button id="pp-stop" onclick="stopProtocol()">Return to protocols ↩</button>
@@ -1165,7 +1177,21 @@ const CONFIG = {
     transitionMs: 2500,
     crossfadeMs: 30000
   },
-  logLinePause: 550
+  logLinePause: 550,
+  // Video protocols — play in-page, no navigation
+  videoProtocols: {
+    'DS-01': {
+      hlsUrl: 'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/a131766743d10c8960911211b41e64c7/manifest/video.m3u8',
+      bakedAudio: false,
+    },
+    'DS-02': {
+      hlsUrl: 'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/0ad67553f6221e74788ca0fbac3a5df7/manifest/video.m3u8',
+      bakedAudio:    true,
+      videoFadeInMs: 3500,
+      bedFadeAfterMs: 30000,
+      bedFadeOutTC:   8.0,
+    },
+  },
 };
 
 // ════════════════════════════════════════
@@ -2349,20 +2375,12 @@ const PROTOCOL_MUSIC = {
   'DS-15': 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Virta.mp3',
 };
 let ppSrc = null, ppGain = null;
+let ppHls = null, ppIsVideo = false, ppVidFadeRaf = null;
 
 function playProtocol(track) {
-  // DS-01 and DS-02 are video protocols — navigate to their dedicated pages
-  if (track.idx === 'DS-01' || track.idx === 'DS-02') {
-    // Fade menu audio gently before navigating — no audio survives the page change
-    if (currentGain) {
-      const ctx = getCtx();
-      currentGain.gain.setTargetAtTime(0, ctx.currentTime, 0.7);
-    }
-    document.getElementById('s6').classList.remove('active');
-    glArchiveModeTarget = 0.0;
-    // Navigate after ~2.5s (≈ 3 time-constants at TC=0.7 ≈ silence)
-    const dest = track.idx === 'DS-02' ? '/protocols/ds-02.html' : '/protocols/ds-01.html';
-    setTimeout(() => { window.location.href = dest; }, 2500);
+  // DS-01 and DS-02 are video protocols — play in-page, no navigation
+  if (CONFIG.videoProtocols && CONFIG.videoProtocols[track.idx]) {
+    playVideoProtocol(track);
     return;
   }
 
@@ -2424,7 +2442,103 @@ function playProtocol(track) {
   });
 }
 
+// ── IN-PAGE VIDEO PROTOCOL PLAYER (DS-01, DS-02) ─────────────────────────────
+function playVideoProtocol(track) {
+  const vpCfg = CONFIG.videoProtocols[track.idx];
+  if (!vpCfg) return;
+
+  document.getElementById('s6').classList.remove('active');
+  glStageTarget = 0.0;
+  glOrgOpacity = 1.0; glOrgOpacityTarget = 1.0;
+  glOrgSettle  = 1.0; glOrgSettleTarget  = 1.0;
+  glArchiveModeTarget = 0.0;
+
+  const pp     = document.getElementById('protocol-player');
+  const ppVid  = document.getElementById('pp-vid');
+  const titleEl = document.getElementById('pp-title');
+  titleEl.textContent = track.title;
+  titleEl.classList.remove('vis');
+  ppIsVideo = true;
+
+  // The archive click IS the gesture — unlock AudioContext now
+  const ctx = getCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+
+  // Fade menu audio (Virta) — commit #2 adds the bed which keeps playing under this
+  if (currentGain) {
+    currentGain.gain.setTargetAtTime(0, ctx.currentTime, 0.7);
+  }
+
+  pp.classList.remove('gone');
+  pp.classList.add('vis');
+
+  // Clean up any previous HLS / video
+  if (ppHls) { try { ppHls.destroy(); } catch(e) {} ppHls = null; }
+  ppVid.classList.remove('vis');
+  ppVid.pause();
+  ppVid.src = '';
+
+  ppVid.volume = vpCfg.bakedAudio ? 0 : 1;
+
+  // Load HLS concurrently while the neural loader spins
+  if (ppVid.canPlayType('application/vnd.apple.mpegurl')) {
+    ppVid.src = vpCfg.hlsUrl;
+  } else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+    ppHls = new Hls({ startLevel: -1, maxBufferLength: 30, maxMaxBufferLength: 60 });
+    ppHls.loadSource(vpCfg.hlsUrl);
+    ppHls.attachMedia(ppVid);
+  }
+
+  runNeuralLoader(document.getElementById('nl-ring-canvas'), 3500, [
+    { pct: 0,   msg: 'Initialising neural bridge...' },
+    { pct: 20,  msg: 'EEG sync — 64 channels active' },
+    { pct: 45,  msg: 'Loading ' + track.title + '...' },
+    { pct: 70,  msg: 'HLS stream locked — buffering...' },
+    { pct: 90,  msg: 'Signal confirmed.' },
+    { pct: 100, msg: 'Signal acquired.' },
+  ], function() {
+    ppVid.classList.add('vis');
+    ppVid.play().catch(e => console.warn('Video play:', e));
+
+    // Ramp video volume for protocols with baked-in audio (DS-02)
+    if (vpCfg.bakedAudio) {
+      if (ppVidFadeRaf) { cancelAnimationFrame(ppVidFadeRaf); ppVidFadeRaf = null; }
+      const t0 = Date.now(), dur = vpCfg.videoFadeInMs || 3500;
+      function fadeVidIn() {
+        const p = Math.min(1, (Date.now() - t0) / dur);
+        if (!ppVid.paused) ppVid.volume = p * p;
+        if (p < 1) ppVidFadeRaf = requestAnimationFrame(fadeVidIn);
+        else ppVid.volume = 1;
+      }
+      ppVidFadeRaf = requestAnimationFrame(fadeVidIn);
+
+      // Bed (commit #2) fades out ~30s after film audio starts
+      // Placeholder hook — bedFadeOut() is a no-op until commit #2 adds the bed
+      setTimeout(function() { bedFadeOut(); }, vpCfg.bedFadeAfterMs || 30000);
+    }
+
+    setTimeout(() => titleEl.classList.add('vis'), 200);
+    ppVid.addEventListener('ended', function() { stopVideoProtocol(); }, { once: true });
+  });
+}
+
+function stopVideoProtocol() {
+  if (ppVidFadeRaf) { cancelAnimationFrame(ppVidFadeRaf); ppVidFadeRaf = null; }
+  const ppVid = document.getElementById('pp-vid');
+  ppVid.pause();
+  ppVid.classList.remove('vis');
+  if (ppHls) { try { ppHls.destroy(); } catch(e) {} ppHls = null; }
+  ppVid.src = '';
+  ppIsVideo = false;
+  returnToProtocols();
+}
+
+// Stubs — replaced in commit #2 when the continuous bed is wired up
+function bedFadeOut() {}
+function bedRestoreAfterProtocol() {}
+
 function stopProtocol() {
+  if (ppIsVideo) { stopVideoProtocol(); return; }
   if (ppGain) {
     const ctx = getCtx();
     ppGain.gain.setTargetAtTime(0, ctx.currentTime, 1.5);
@@ -2453,6 +2567,11 @@ function returnToProtocols() {
     pp.classList.remove('gone');
     glArchiveModeTarget = 1.0;
     showArchiveOverlay();
+    // Restore Virta after any protocol — reset flag so playTrack can fade it back in
+    virtaStarted = false;
+    startVirta();
+    // Commit #2 adds bed restore here
+    bedRestoreAfterProtocol();
   }, 1000);
 }
 // ── ACCESS GATE ──────────────────────
