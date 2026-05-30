@@ -549,29 +549,15 @@ function runPhase3() {
   setTimeout(() => {
     returnLnk.classList.add('vis');
     returnLnk.addEventListener('click', function() {
-      // Store return state so index.html skips entry screen and resumes music
-      if (ambientUrl) {
-        sessionStorage.setItem('dsReturn', JSON.stringify({ url: ambientUrl }));
-      } else {
-        sessionStorage.setItem('dsReturn', '1');
-      }
-      stopAmbientAudio(1200);
+      sessionStorage.setItem('ds_return_to_archive', '1');
     }, { once: true });
   }, 7000);
 }
 
-// ════════════════════════════════════════
-// AMBIENT AUDIO — menu music continuity
-// ════════════════════════════════════════
-let ambientUrl = null;
-try {
-  const _d = JSON.parse(sessionStorage.getItem('dsMenuAudio') || 'null');
-  if (_d && _d.url) {
-    ambientUrl = _d.url;
-    sessionStorage.removeItem('dsMenuAudio');
-    startAmbientAudio(ambientUrl, 0.55);
-  }
-} catch(e) { console.warn('Ambient audio init failed:', e); }
+// ── BACK BUTTON: wire sessionStorage flag so index.html skips straight to archive ──
+document.getElementById('back-btn').addEventListener('click', function() {
+  sessionStorage.setItem('ds_return_to_archive', '1');
+});
 
 // ════════════════════════════════════════
 // INIT

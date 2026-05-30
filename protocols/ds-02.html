@@ -560,38 +560,16 @@ function runPhase3() {
   setTimeout(() => {
     returnLnk.classList.add('vis');
     returnLnk.addEventListener('click', function() {
-      // Set dsReturn so index.html skips the gate and opens straight to archive.
-      // DS-02 has no ambient URL to restore (film audio is baked in).
-      sessionStorage.setItem('dsReturn', '1');
-      // Fade beds before navigation
+      sessionStorage.setItem('ds_return_to_archive', '1');
       if (window.DS_AUDIO) DS_AUDIO.ramp('beds', 0, 1.0);
     }, { once: true });
   }, 7000);
 }
 
-// ════════════════════════════════════════
-// AMBIENT AUDIO — holding-track crossfade
-// The archive stores the currently-playing holding track URL in
-// sessionStorage.dsMenuAudio before navigating here. We pick it up,
-// start it immediately (it actually begins playing on the gate click
-// once resumeAmbientContext() unlocks the AudioContext), and fade it
-// to 0 over ~5s as the film audio comes up. This creates a smooth
-// crossfade rather than a hard cut.
-//
-// DS-01 alignment note: DS-01 uses the same pickup mechanism but never
-// fades the ambient out — it plays the holding track as background
-// alongside a (silent) video. DS-02 reverses the priority: the film's
-// baked-in audio is the primary source and the holding track fades away.
-// ════════════════════════════════════════
-let ambientUrl = null;
-try {
-  const _d = JSON.parse(sessionStorage.getItem('dsMenuAudio') || 'null');
-  if (_d && _d.url) {
-    ambientUrl = _d.url;
-    sessionStorage.removeItem('dsMenuAudio');
-    startAmbientAudio(ambientUrl, 0.55);
-  }
-} catch(e) { console.warn('Ambient audio init:', e); }
+// ── BACK BUTTON: wire sessionStorage flag so index.html skips straight to archive ──
+document.getElementById('back-btn').addEventListener('click', function() {
+  sessionStorage.setItem('ds_return_to_archive', '1');
+});
 
 // ════════════════════════════════════════
 // INIT
