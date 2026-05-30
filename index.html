@@ -1328,7 +1328,9 @@ const CONFIG = {
         { t: 375, text: 'MEMORY DISSOLUTION INITIATED' },
         { t: 420, text: 'RECONSTRUCTION COMPLETE'    },
       ],
-      intrusionFracs: null,
+      // 4 intrusions ~every 2 min — sparser than DS-02 (6 intrusions).
+      // Adjust fracs here to tune timing against the actual film.
+      intrusionFracs: [0.15, 0.38, 0.60, 0.82],
       hudConfig: {
         id: 'DS-01', title: 'Signal Dreams', sub: 'REM cycle 1 · neural pattern analysis',
         feed: [
@@ -2979,9 +2981,11 @@ function vpRunPhase1(ppVid, vpCfg, ovls, onDone) {
     ovls.phaseIntro.classList.remove('vis');
   }, 7500);
 
-  // 9s: hand off to Phase 2
+  // 9s: hand off to Phase 2. Organism dissolves for ALL video protocols so
+  // intrusions emerge from near-zero rather than from a constant bright layer.
   setTimeout(function() {
-    if (vpCfg.bakedAudio) { glOrgOpacityTarget = 0.0; glOrgSettleTarget = 0.45; }
+    glOrgOpacityTarget = 0.0;
+    if (vpCfg.bakedAudio) glOrgSettleTarget = 0.45; // DS-02 settle for organism body
     onDone && onDone();
   }, 9000);
 }
@@ -3016,18 +3020,28 @@ function vpRunPhase2(ppVid, vpCfg, ovls, onDone) {
     });
 
     if (intrFracs) {
-      const endThreshold = dur - 35;
-      if (ct >= endThreshold) {
-        if (!videoFadeStarted) {
-          videoFadeStarted = true;
-          ppVid.style.transition = 'none';
-          glOrgSettleTarget = 0.2;
+      // DS-02 only: final-35s organism dissolve/dominance sequence.
+      // DS-01 ends with a straight black fade in the 'ended' handler — no
+      // star-field dissolve — so the end-sequence block is guarded by bakedAudio.
+      let inEndSeq = false;
+      if (vpCfg.bakedAudio) {
+        const endThreshold = dur - 35;
+        if (ct >= endThreshold) {
+          inEndSeq = true;
+          if (!videoFadeStarted) {
+            videoFadeStarted = true;
+            ppVid.style.transition = 'none';
+            glOrgSettleTarget = 0.2;
+          }
+          const p = Math.min(1, (ct - endThreshold) / 35);
+          const eased = p * p * (3 - 2 * p);
+          glOrgOpacityTarget  = eased;
+          ppVid.style.opacity = String(Math.max(0, 1 - eased));
         }
-        const p = Math.min(1, (ct - endThreshold) / 35);
-        const eased = p * p * (3 - 2 * p);
-        glOrgOpacityTarget  = eased;
-        ppVid.style.opacity = String(Math.max(0, 1 - eased));
-      } else if (!intrusionActive && nextIntrusionIdx < intrFracs.length) {
+      }
+
+      // Intrusions — both DS-01 and DS-02, suppressed during DS-02's end sequence
+      if (!inEndSeq && !intrusionActive && nextIntrusionIdx < intrFracs.length) {
         if (ct >= intrFracs[nextIntrusionIdx] * dur) {
           intrusionActive = true; glOrgOpacityTarget = 0.22; _vpPulse();
           _vpIntrusionTimer = setTimeout(function() {
