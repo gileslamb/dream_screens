@@ -165,6 +165,34 @@
 #return-link.vis { opacity: 1; pointer-events: all; }
 #return-link:hover { color: rgba(255,255,255,0.75); }
 
+/* ── TAP-TO-ENTER PROMPT (audio unlock, shown after neural loader) ── */
+#tap-prompt {
+  position: fixed; inset: 0;
+  z-index: 59;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.8rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.9s ease;
+  cursor: pointer;
+}
+#tap-prompt.vis { opacity: 1; pointer-events: all; }
+#tap-prompt .tap-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.45em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.22);
+  animation: tapPulse 2.2s ease-in-out infinite;
+}
+@keyframes tapPulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 1;   }
+}
+
 /* ── START GATE (user gesture unlock) ── */
 #start-gate {
   position: fixed; inset: 0;
@@ -240,6 +268,11 @@
 <!-- ── BACK BUTTON + SESSION ── -->
 <a id="back-btn" href="/">← Return to archive</a>
 <div id="session-id"></div>
+
+<!-- ── TAP PROMPT — shown after neural loader; unlocks audio before the play button ── -->
+<div id="tap-prompt">
+  <div class="tap-label">· tap to enter ·</div>
+</div>
 
 <!-- ── START GATE ── -->
 <div id="start-gate">
@@ -566,27 +599,27 @@ window.addEventListener('load', function() {
     { pct: 90,  msg: 'Pattern confirmed.' },
     { pct: 100, msg: 'Signal acquired.' },
   ], function() {
-    // Show organism + start gate — click provides the user gesture for audio
     glOrgOpacityTarget = 1.0;
     glOrgSettleTarget  = 0.5;
-    const gate    = document.getElementById('start-gate');
-    const gateBtn = document.getElementById('gate-btn');
-    gate.classList.add('vis');
 
-    gateBtn.addEventListener('click', function() {
-      gate.classList.remove('vis');
+    const tapPrompt = document.getElementById('tap-prompt');
+    const gate      = document.getElementById('start-gate');
+    const gateBtn   = document.getElementById('gate-btn');
 
-      // iOS: call play() synchronously inside the gesture handler. The browser
-      // queues the request even before HLS metadata is loaded — calling it via
-      // an async callback (whenHlsReady) breaks this on slow mobile networks.
-      // DS_AUDIO.resume() is synchronous inside the gesture — this is what
-      // unlocks the shared AudioContext so SFX and beds play on iOS Safari.
+    // ── STEP 1: tap-to-enter prompt ──────────────────────────────────────────
+    // Shown after the neural loader. The tap is the first gesture on this page
+    // so DS_AUDIO can be unlocked HERE — before the play-button screen appears.
+    // Bed fades up during the tap→play gap so the ▶ page is never silent.
+    tapPrompt.classList.add('vis');
+
+    tapPrompt.addEventListener('pointerdown', function() {
+      tapPrompt.classList.remove('vis');
+
+      // Unlock shared AudioContext synchronously (iOS Safari requirement).
       if (window.DS_AUDIO) DS_AUDIO.resume();
       resumeAmbientContext();
 
-      // ── BRIDGE BED: pick one random bed, start crossfade with menu music ──
-      // The bed masks the Virta→film seam. Menu music (Signal Dreams / Virta)
-      // fades softly down to menuUnderVol; bed fades up simultaneously.
+      // ── BED: starts here so it's already audible when ▶ appears ──
       if (window.DS_AUDIO) {
         var _bedUrl = AUDIO_MODEL.bedUrls[Math.floor(Math.random() * AUDIO_MODEL.bedUrls.length)];
         DS_AUDIO.bus('beds', 0);
@@ -598,8 +631,19 @@ window.addEventListener('load', function() {
           .catch(function() {});
       }
 
+      // Queue an early video play/pause so the browser grants media permissions
+      // before we need it (especially on slow-loading iOS networks).
       vid.play().then(() => vid.pause()).catch(() => {});
 
+      // Show ▶ gate after a brief fade (bed is already starting)
+      setTimeout(function() { gate.classList.add('vis'); }, 350);
+    }, { once: true });
+
+    // ── STEP 2: play button ──────────────────────────────────────────────────
+    // Bed is already running. Just start the protocol sequence.
+    gateBtn.addEventListener('click', function() {
+      gate.classList.remove('vis');
+      resumeAmbientContext(); // safety for iOS on slow devices
       setTimeout(function() {
         runPhase1(function() {
           runPhase2(function() {
