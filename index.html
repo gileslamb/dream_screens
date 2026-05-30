@@ -940,7 +940,15 @@
   #gate-confirm.vis { opacity: 1; }
 
   /* ── IN-PAGE VIDEO PROTOCOL OVERLAYS ── */
-  /* HUD sits above the in-page video when a protocol is active */
+  /* During a video protocol: organism rises above the film so intrusions
+     glow additively via screen blend (dark pixels → transparent).
+     HUD sits above the organism; protocol-player (stop btn) at same z-level
+     but later in DOM so it renders on top. */
+  body.vp-active #gl {
+    z-index: 25 !important;
+    mix-blend-mode: screen !important;
+    background: transparent !important;
+  }
   body.vp-active #ds-hud { z-index: 26 !important; }
 
   /* org-pulse: subtle radial flash on organism beats */
