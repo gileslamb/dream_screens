@@ -333,9 +333,9 @@ const AUDIO_MODEL = {
   ],
   bedVolume:    0.14,   // bed target volume during bridge/film
   bedFadeInTC:  2.5,    // time constant: bed fades IN over ~10s
-  menuFadeTC:   1.5,    // time constant: Virta fades OUT over ~6s
-  bedHoldS:     30,     // seconds bed holds AFTER film audio starts
-  bedFadeOutTC: 8.0,    // time constant: bed fades OUT under film over ~30s
+  videoFadeInMs: 3500,  // ms to ramp video.volume 0 → 1 when film starts
+  bedHoldS:     30,     // seconds bed holds after film audio starts
+  bedFadeOutTC: 8.0,    // time constant: bed fades OUT over ~30s
 };
 
 // Pre-load beds at page init so buffers are cached by the time gate is clicked
@@ -429,15 +429,25 @@ function runPhase1(onDone) {
     }, delay);
   });
 
-  // At 6.5s: start film. DS-02 audio is baked in.
-  // Menu music (Virta) is already fading from the gate handler.
+  // At 6.5s: start film. DS-02 audio is baked in — fade video volume 0→1
+  // over videoFadeInMs so the soundtrack rises without a jump.
   // Bridge bed continues alongside the film for bedHoldS, then fades out,
   // leaving the film's own soundtrack as the sole audio source.
   setTimeout(() => {
+    vid.volume = 0;
     vid.currentTime = 0;
     vid.play().catch(e => console.warn('Video play:', e));
     phaseVideo.classList.add('vis');
-    if (ambientUrl) fadeAmbientTo(0, 1.2); // finish Virta fade in case it's still going
+    // Fade video volume 0 → 1 over videoFadeInMs
+    (function fadeVidIn() {
+      var t0 = Date.now(), dur = AUDIO_MODEL.videoFadeInMs;
+      function step() {
+        var p = Math.min(1, (Date.now() - t0) / dur);
+        vid.volume = p * p; // ease-in
+        if (p < 1) requestAnimationFrame(step); else vid.volume = 1;
+      }
+      requestAnimationFrame(step);
+    })();
     // Schedule bed fade-out after hold period
     if (window.DS_AUDIO) {
       setTimeout(function() {
@@ -615,8 +625,6 @@ window.addEventListener('load', function() {
             DS_AUDIO.ramp('beds', AUDIO_MODEL.bedVolume, AUDIO_MODEL.bedFadeInTC);
           })
           .catch(function() {});
-        // Fade menu music (Virta) out as bed comes in
-        setTimeout(function() { fadeAmbientTo(0, AUDIO_MODEL.menuFadeTC); }, 800);
       }
 
       vid.play().then(() => vid.pause()).catch(() => {});

@@ -330,12 +330,10 @@ const AUDIO_MODEL = {
     'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/space.wav',
     'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/forest.wav',
   ],
-  bedVolume:    0.13,   // bed target volume (under menu music, not over it)
+  bedVolume:    0.13,   // bed target volume
   bedFadeInTC:  2.5,    // time constant: bed fades IN over ~10s
-  menuFadeTC:   2.0,    // time constant: Virta fades DOWN to menuUnderVol
-  menuUnderVol: 0.18,   // DS-01 keeps menu music soft under film (not faded to 0)
-  bedHoldS:     30,     // seconds bed holds after film starts
-  bedFadeOutTC: 8.0,    // time constant: bed fades OUT under film over ~30s
+  bedHoldS:     30,     // seconds bed holds after video starts
+  bedFadeOutTC: 8.0,    // time constant: bed fades OUT over ~30s
 };
 
 // Pre-load beds at page init so buffers are cached by the time the gate is clicked
@@ -447,15 +445,12 @@ function runPhase1(onDone) {
     }, delay);
   });
 
-  // At 6.5s: start video. DS-01 has no baked-in audio — menu music (Signal
-  // Dreams / Virta) remains as a soft underlay at menuUnderVol. The bridge bed
-  // continues alongside it for bedHoldS then fades, leaving menu music alone.
+  // At 6.5s: start video. DS-01 has no baked-in audio — bed is the bridge.
+  // Bed fades out after bedHoldS so the film's visual silence is intentional.
   setTimeout(() => {
     vid.currentTime = 0;
     vid.play().catch(e => console.warn('Video play:', e));
     phaseVideo.classList.add('vis');
-    // Keep ambient soft (not 0) — it IS the film music for DS-01
-    fadeAmbientTo(AUDIO_MODEL.menuUnderVol, 3.0);
     // Schedule bed fade-out after hold period
     if (window.DS_AUDIO) {
       setTimeout(function() {
@@ -537,9 +532,6 @@ function runPhase3() {
   complete.classList.add('vis');
   glOrgSettleTarget = 1.0;
 
-  // Fade ambient music back in — audio continuum restored
-  fadeAmbientTo(0.5, 3.0);
-
   const cues = [0, 1500, 3000];
   cues.forEach((delay, i) => {
     setTimeout(() => glitchIn(lines[i]), delay);
@@ -604,8 +596,6 @@ window.addEventListener('load', function() {
             DS_AUDIO.ramp('beds', AUDIO_MODEL.bedVolume, AUDIO_MODEL.bedFadeInTC);
           })
           .catch(function() {});
-        // Fade menu music down (not to zero — it stays as soft DS-01 underlay)
-        setTimeout(function() { fadeAmbientTo(AUDIO_MODEL.menuUnderVol, AUDIO_MODEL.menuFadeTC); }, 600);
       }
 
       vid.play().then(() => vid.pause()).catch(() => {});
