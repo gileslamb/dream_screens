@@ -468,8 +468,8 @@
     _sfxReady = true;
   }
 
-  // _playSfx is now only used for uiTick (chart events).
-  // feedTick is played per-character via _playSfxChar — no throttle here.
+  // _playSfx is used for uiTick (chart events — echo resolve, Lissajous stabilise).
+  // feedTick is driven by _startTypingTexture / _stopTick, not by _playSfx.
   function _playSfx(key) {
     var buf = _sfxBufs[key];
     if (buf && window.DS_AUDIO) {
