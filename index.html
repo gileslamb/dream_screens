@@ -1288,8 +1288,8 @@ const CONFIG = {
     fadeInTC:  3.5,    // time constant: fade up on menu load
     fadeOutTC: 0.8,    // time constant: fade down when protocol plays (≈2.5s)
     restoreTC: 3.0,    // time constant: fade back up when returning to menu
-    filmHoldMs: 30000, // ms of film audio before bed fades out under it
-    filmFadeTC: 8.0,   // time constant: bed fades out under film (≈30s)
+    crossfadeTC: 2.0,  // time constant: bed fades out as film rises (~6s to silence)
+    filmFadeTC: 8.0,   // kept for reference; crossfadeTC now used at film-start
   },
   // SFX
   sfx: {
@@ -1839,22 +1839,26 @@ async function startBed() {
 }
 
 // Overrides the stub from commit #1.
-// Called ~filmHoldMs after the film audio starts; slowly removes bed under film.
-function bedFadeOut() {
+// tc: optional time constant. Defaults to crossfadeTC (fast, for film-start).
+function bedFadeOut(tc) {
   if (!bedGain) return;
   const ctx = getCtx();
-  bedGain.gain.setTargetAtTime(0, ctx.currentTime, CONFIG.bed.filmFadeTC);
+  bedGain.gain.cancelScheduledValues(ctx.currentTime);
+  bedGain.gain.setTargetAtTime(0, ctx.currentTime, tc != null ? tc : CONFIG.bed.crossfadeTC);
 }
 
 function bedFadeDown() {
   if (!bedGain) return;
   const ctx = getCtx();
+  bedGain.gain.cancelScheduledValues(ctx.currentTime);
   bedGain.gain.setTargetAtTime(0, ctx.currentTime, CONFIG.bed.fadeOutTC);
 }
 
 function bedFadeUp() {
   if (!bedGain) return;
   const ctx = getCtx();
+  // Cancel any in-progress fade-out so restore wins cleanly
+  bedGain.gain.cancelScheduledValues(ctx.currentTime);
   bedGain.gain.setTargetAtTime(CONFIG.bed.volume, ctx.currentTime, CONFIG.bed.restoreTC);
 }
 
@@ -2942,6 +2946,7 @@ function vpRunPhase1(ppVid, vpCfg, ovls, onDone) {
     ppVid.currentTime = 0;
     if (vpCfg.bakedAudio) {
       ppVid.volume = 0;
+      // DS-02: ramp video volume 0→1 over videoFadeInMs
       (function fadeVidIn() {
         var t0 = Date.now(), dur = vpCfg.videoFadeInMs || 3500;
         function step() {
@@ -2951,10 +2956,12 @@ function vpRunPhase1(ppVid, vpCfg, ovls, onDone) {
         }
         ppVidFadeRaf = requestAnimationFrame(step);
       })();
-      setTimeout(function() { bedFadeOut(); }, vpCfg.bedFadeAfterMs || CONFIG.bed.filmHoldMs);
     }
     ppVid.play().catch(function(e) { console.warn('Video play:', e); });
     ppVid.classList.add('vis');
+    // Crossfade: bed fades out as film comes in — both DS-01 and DS-02.
+    // crossfadeTC (~6s) completes before the film body, leaving it clean.
+    bedFadeOut(CONFIG.bed.crossfadeTC);
   }, 6500);
 
   // 7.5s: glitch out intro
