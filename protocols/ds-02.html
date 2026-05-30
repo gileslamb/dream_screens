@@ -281,10 +281,8 @@ const HLS_URL = 'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/0ad67553
 
 // DS-02 audio note:
 //   The film has its own music mix baked in.
-//   The <video> is NOT muted and no R2 ambient track is loaded.
-//   DS-01 by contrast carries a separate Signal Dreams.mp3 R2 ambient;
-//   if DS-01 is ever aligned to audio-from-film, remove its
-//   startAmbientAudio() call and the sessionStorage.dsMenuAudio pickup.
+//   The <video> is NOT muted — vid.volume is ramped 0→1 in Phase 1.
+//   DS-01 has no baked-in audio; the bridge bed is its only audio layer.
 
 initSessionId('DS-02', 'Feedback Memory', 'REM cycle 2 · echo pattern analysis');
 
@@ -613,9 +611,9 @@ window.addEventListener('load', function() {
       if (window.DS_AUDIO) DS_AUDIO.resume();
       resumeAmbientContext();
 
-      // ── BRIDGE BED: pick one random bed, crossfade from menu music ──
-      // Menu music (Virta / dsMenuAudio) fades out; bed fades in as the
-      // liminal layer covering the Virta→film seam.
+      // ── BRIDGE BED: pick one random bed, fade in over bedFadeInTC ──
+      // Virta was faded to silence before navigation — this page owns its audio.
+      // Bed fades in as the liminal layer before film audio starts.
       if (window.DS_AUDIO) {
         var _bedUrl = AUDIO_MODEL.bedUrls[Math.floor(Math.random() * AUDIO_MODEL.bedUrls.length)];
         DS_AUDIO.bus('beds', 0);
