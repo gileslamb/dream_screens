@@ -1178,6 +1178,20 @@ const CONFIG = {
     crossfadeMs: 30000
   },
   logLinePause: 550,
+  // Ambient bed — continuous substrate running under Virta from menu load
+  bed: {
+    urls: [
+      'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/rain.wav',
+      'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/space.wav',
+      'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/forest.wav',
+    ],
+    volume:    0.07,   // quiet atmosphere under Virta — never louder than this while Virta plays
+    fadeInTC:  3.5,    // time constant: fade up on menu load
+    fadeOutTC: 0.8,    // time constant: fade down when protocol plays (≈2.5s)
+    restoreTC: 3.0,    // time constant: fade back up when returning to menu
+    filmHoldMs: 30000, // ms of film audio before bed fades out under it
+    filmFadeTC: 8.0,   // time constant: bed fades out under film (≈30s)
+  },
   // Video protocols — play in-page, no navigation
   videoProtocols: {
     'DS-01': {
@@ -1615,6 +1629,64 @@ let currentGain = null;
 let currentBuffer = null;
 let currentTrackUrl = null;
 
+// ── CONTINUOUS BED SUBSTRATE ────────────────────────────────────────────────
+// Starts alongside Virta on the first gesture and NEVER stops.
+// Only its gain changes: quiet under Virta → fade down for protocol →
+// fade back up on return. A sound that is already playing cannot be late.
+let bedGain = null;
+let bedSrc  = null;
+let bedBuf  = null;  // cached buffer so restore is instant
+
+async function startBed() {
+  if (bedSrc) return;  // already running
+  const ctx = getCtx();
+  const urls = CONFIG.bed.urls;
+  const url  = urls[Math.floor(Math.random() * urls.length)];
+  try {
+    const res = await fetch(mediaFetchUrl(url));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    bedBuf = await ctx.decodeAudioData(await res.arrayBuffer());
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, ctx.currentTime);
+    g.gain.setTargetAtTime(CONFIG.bed.volume, ctx.currentTime, CONFIG.bed.fadeInTC);
+    g.connect(ctx.destination);
+    const s = ctx.createBufferSource();
+    s.buffer = bedBuf;
+    s.loop = true;
+    s.start(0, Math.random() * bedBuf.duration);
+    s.connect(g);
+    bedGain = g;
+    bedSrc  = s;
+  } catch(e) {
+    console.warn('Bed load failed:', url, e);
+  }
+}
+
+// Overrides the stub from commit #1.
+// Called ~filmHoldMs after the film audio starts; slowly removes bed under film.
+function bedFadeOut() {
+  if (!bedGain) return;
+  const ctx = getCtx();
+  bedGain.gain.setTargetAtTime(0, ctx.currentTime, CONFIG.bed.filmFadeTC);
+}
+
+function bedFadeDown() {
+  if (!bedGain) return;
+  const ctx = getCtx();
+  bedGain.gain.setTargetAtTime(0, ctx.currentTime, CONFIG.bed.fadeOutTC);
+}
+
+function bedFadeUp() {
+  if (!bedGain) return;
+  const ctx = getCtx();
+  bedGain.gain.setTargetAtTime(CONFIG.bed.volume, ctx.currentTime, CONFIG.bed.restoreTC);
+}
+
+// Overrides the stub from commit #1
+function bedRestoreAfterProtocol() {
+  bedFadeUp();
+}
+
 async function playTrack(path, opts) {
   const ctx = getCtx();
   if (ctx.state === 'suspended') await ctx.resume();
@@ -1712,6 +1784,9 @@ function startVirta() {
   const c = getCtx();
   if (c.state === 'suspended') void c.resume();
   playTrack(CONFIG.media(CONFIG.music.intro));
+  // Start the continuous bed substrate alongside Virta.
+  // It runs from here to end-of-session; only gain changes at transitions.
+  void startBed();
 }
 // Web Audio requires a real user gesture (click/touch/pointer). Mousemove is NOT
 // treated as activation in Chrome/Safari/Firefox — only Cursor's browser may allow it.
@@ -2464,7 +2539,8 @@ function playVideoProtocol(track) {
   const ctx = getCtx();
   if (ctx.state === 'suspended') ctx.resume();
 
-  // Fade menu audio (Virta) — commit #2 adds the bed which keeps playing under this
+  // Fade out Virta over the still-playing bed. Bed does NOT fade here —
+  // it keeps playing through the click, covering the transition.
   if (currentGain) {
     currentGain.gain.setTargetAtTime(0, ctx.currentTime, 0.7);
   }
@@ -2512,9 +2588,8 @@ function playVideoProtocol(track) {
       }
       ppVidFadeRaf = requestAnimationFrame(fadeVidIn);
 
-      // Bed (commit #2) fades out ~30s after film audio starts
-      // Placeholder hook — bedFadeOut() is a no-op until commit #2 adds the bed
-      setTimeout(function() { bedFadeOut(); }, vpCfg.bedFadeAfterMs || 30000);
+      // Bed fades out slowly ~30s after film audio starts
+      setTimeout(function() { bedFadeOut(); }, vpCfg.bedFadeAfterMs || CONFIG.bed.filmHoldMs);
     }
 
     setTimeout(() => titleEl.classList.add('vis'), 200);
@@ -2533,9 +2608,7 @@ function stopVideoProtocol() {
   returnToProtocols();
 }
 
-// Stubs — replaced in commit #2 when the continuous bed is wired up
-function bedFadeOut() {}
-function bedRestoreAfterProtocol() {}
+// bedFadeOut() and bedRestoreAfterProtocol() defined in the bed substrate block above
 
 function stopProtocol() {
   if (ppIsVideo) { stopVideoProtocol(); return; }
