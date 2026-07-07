@@ -219,6 +219,29 @@
   /* width set by JS; height attribute on element */
 }
 
+/* ── session arc (cfg.arc): green baseline → warn → alert → flicker ── */
+.hud-bracket, .hud-dot, .hud-status, .hud-mode { transition: border-color 1.2s ease, background 1.2s ease, color 1.2s ease; }
+
+#ds-hud.hud-arc-warn .hud-bracket { border-color: rgba(255,204,68,0.32); }
+#ds-hud.hud-arc-warn .hud-dot    { background: var(--hud-warn); }
+#ds-hud.hud-arc-warn .hud-status { color: rgba(255,204,68,0.52); }
+#ds-hud.hud-arc-warn .hud-mode   { color: rgba(255,204,68,0.34); }
+
+#ds-hud.hud-arc-alert .hud-bracket { border-color: rgba(255,58,45,0.45); }
+#ds-hud.hud-arc-alert .hud-dot    { background: var(--hud-accent); animation-duration: 0.9s; }
+#ds-hud.hud-arc-alert .hud-status { color: rgba(255,58,45,0.68); }
+#ds-hud.hud-arc-alert .hud-mode   { color: rgba(255,58,45,0.5); }
+#ds-hud.hud-arc-alert .hud-timer.live { color: rgba(255,58,45,0.6); }
+
+#ds-hud.hud-arc-flicker { animation: hud-flicker 0.32s linear infinite; }
+@keyframes hud-flicker {
+  0%   { opacity: 1; }
+  35%  { opacity: 0.45; }
+  55%  { opacity: 0.85; }
+  75%  { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
 /* ── responsive: hide right panels on narrow screens ── */
 @media (max-width: 600px) {
   .hud-panel-tr,

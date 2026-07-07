@@ -13,7 +13,14 @@
  * {
  *   id:    'DS-02',
  *   title: 'Feedback Memory',
- *   sub:   'REM cycle 2 · echo pattern analysis',
+ *   sub:   'reading pass 02 · echo pattern analysis',
+ *   mode:  'READING PASS 02 · ACTIVE',      // optional; top-left third line
+ *
+ *   // Optional session arc — seconds of video time. Drives the whole HUD
+ *   // green → warn (#ffcc44) → alert (#ff3a2d) → flicker into the cut.
+ *   // When set, the generic end-of-film feed fade / HUD dim are skipped
+ *   // (arc protocols end on a hard cut, not an organism dissolve).
+ *   arc: { warnT, alertT, flickerT },
  *
  *   // Feed lines — fraction-timed off vid.duration
  *   feed: [ { frac, ts, level:'ok'|'warn'|'', text } ],
@@ -56,6 +63,7 @@
   // Waveform strip
   let _stripCanvas = null, _stripCtx = null;
   let _stripSeed   = Math.random() * 1000;
+  let _stripColor  = 'rgba(0,255,136,0.15)';  // follows the session arc
 
   // Timer
   let _timerEl = null;
@@ -208,7 +216,7 @@
     tl.innerHTML =
       '<div class="hud-id">' + cfg.id + ' &middot; ' + cfg.title + '</div>'
     + '<div class="hud-subject">' + (cfg.sub || '') + '</div>'
-    + '<div class="hud-mode">NEURAL BRIDGE &middot; ACTIVE</div>';
+    + '<div class="hud-mode">' + (cfg.mode || 'NEURAL BRIDGE &middot; ACTIVE') + '</div>';
     root.appendChild(tl);
 
     // Top-right: status dot + live timer
@@ -408,7 +416,7 @@
         + amp * 0.17 * (_noisy(t * 0.75, _stripSeed) * 2 - 1);
       x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
-    ctx.strokeStyle = 'rgba(0,255,136,0.15)';
+    ctx.strokeStyle = _stripColor;
     ctx.lineWidth   = 1;
     ctx.stroke();
   }
@@ -538,16 +546,29 @@
         });
       }
 
+      // Session arc — recolours the whole HUD off video time, then flickers
+      // into the hard cut. Arc protocols skip the organism-dissolve end dim.
+      if (_cfg.arc && _root) {
+        var arc = _cfg.arc;
+        var alert = ct >= arc.alertT;
+        _root.classList.toggle('hud-arc-warn',    ct >= arc.warnT && !alert);
+        _root.classList.toggle('hud-arc-alert',   alert);
+        _root.classList.toggle('hud-arc-flicker', arc.flickerT != null && ct >= arc.flickerT);
+        _stripColor = alert ? 'rgba(255,58,45,0.22)'
+                    : ct >= arc.warnT ? 'rgba(255,204,68,0.18)'
+                    : 'rgba(0,255,136,0.15)';
+      }
+
       // Feed fades at dur-35 (matches organism ramp start)
       var endOrg = dur - 35;
-      if (ct >= endOrg && !_feedFading) {
+      if (!_cfg.arc && ct >= endOrg && !_feedFading) {
         _feedFading = true;
         var feedEl = document.getElementById('hud-feed');
         if (feedEl) { feedEl.style.transition = 'opacity 3s ease'; feedEl.style.opacity = '0'; }
       }
 
       // HUD dims at dur-15 (organism dominant)
-      if (ct >= dur - 15 && _root && !_root.classList.contains('hud-dim')) {
+      if (!_cfg.arc && ct >= dur - 15 && _root && !_root.classList.contains('hud-dim')) {
         _root.classList.add('hud-dim');
         _fadeBeds(0, 2.0);
       }
@@ -577,6 +598,7 @@
     _lastTickSrc  = null;
     _lastTickGain = null;
     _vid         = null;
+    _stripColor  = 'rgba(0,255,136,0.15)';
 
     _cfg  = cfg;
     _root = _buildDOM(cfg);

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DreamScreens — Memory Reconstruction</title>
+<title>DreamScreen — Resonance Grief Recovery</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400&display=swap');
 
@@ -1044,6 +1044,130 @@
   }
   #vp-return-link.vis { opacity: 1; pointer-events: all; }
   #vp-return-link:hover { color: rgba(255,255,255,0.75); }
+
+  /* ── DS-03: SCAN mode control (disguised audio/vfx switch) ── */
+  #vp-scan-control {
+    position: fixed; top: calc(5.5vh + 62px); right: 4.5vw; z-index: 27;
+    display: flex; align-items: center; gap: 6px; pointer-events: all;
+    font-family: var(--mono);
+  }
+  #vp-scan-control .scan-label {
+    font-size: 7px; letter-spacing: 0.45em; text-transform: uppercase;
+    color: rgba(255,255,255,0.18); margin-right: 2px;
+  }
+  #vp-scan-control .scan-opt {
+    font-family: var(--mono); font-size: 8px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: rgba(255,255,255,0.28);
+    background: none; border: 1px solid rgba(255,255,255,0.1);
+    padding: 5px 10px; cursor: pointer;
+    transition: color 0.25s, border-color 0.25s, background 0.25s;
+  }
+  #vp-scan-control .scan-opt:hover { color: rgba(255,255,255,0.6); }
+  #vp-scan-control .scan-opt.active {
+    color: rgba(0,255,136,0.75); border-color: rgba(0,255,136,0.3);
+    background: rgba(0,255,136,0.05);
+  }
+  #vp-scan-control .scan-opt[data-mode="RESONANCE"].active {
+    color: rgba(120,200,255,0.85); border-color: rgba(120,200,255,0.35);
+    background: rgba(120,200,255,0.06);
+  }
+  #vp-scan-hint {
+    position: fixed; top: calc(5.5vh + 92px); right: 4.5vw; z-index: 27;
+    font-family: var(--mono); font-size: 7px; letter-spacing: 0.3em;
+    text-transform: uppercase; color: rgba(120,200,255,0.45);
+    opacity: 0; transition: opacity 0.6s ease; pointer-events: none;
+  }
+  #vp-scan-hint.vis { opacity: 1; }
+
+  /* deep-scan: colder, more invasive read of the film */
+  #pp-vid.deep-scan {
+    filter: contrast(1.12) saturate(0.75) hue-rotate(-8deg) brightness(0.95);
+  }
+  #vp-deepscan {
+    position: fixed; inset: 0; z-index: 25; pointer-events: none;
+    opacity: 0; transition: opacity 0.6s ease;
+    background: repeating-linear-gradient(to bottom,
+      rgba(120,200,255,0.03) 0 1px, transparent 1px 3px);
+    mix-blend-mode: screen;
+  }
+  #vp-deepscan.vis { opacity: 1; }
+  #vp-deepscan::before {
+    content: ''; position: absolute; inset: 0;
+    box-shadow: inset 3px 0 8px rgba(255,0,60,0.06), inset -3px 0 8px rgba(0,160,255,0.09);
+  }
+  #vp-deepscan::after {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,10,20,0.5) 100%);
+    animation: vp-vignette-pulse 9s ease-in-out infinite;
+  }
+  @keyframes vp-vignette-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+
+  /* ── DS-03: terminal beat — cold hold over hard-cut black ── */
+  #vp-phase-complete.vp-terminal { transition: none; gap: 1rem; z-index: 30; }
+  .vp-terminal .vp-complete-line {
+    animation: none; transition: none;
+    color: rgba(255,255,255,0.85); letter-spacing: 0.5em;
+    font-size: clamp(10px, 1.1vw, 13px);
+  }
+  .vp-terminal .vp-complete-line + .vp-complete-line {
+    font-size: clamp(8px, 0.8vw, 10px);
+    color: rgba(255,255,255,0.38); letter-spacing: 0.3em;
+  }
+
+  /* ── DS-03: case file (gated) ── */
+  #vp-casefile-tab {
+    position: fixed; top: calc(5.5vh + 118px); right: 4.5vw; z-index: 27;
+    font-family: var(--mono); font-size: 7px; letter-spacing: 0.25em;
+    text-transform: uppercase; color: rgba(255,204,68,0.4);
+    background: none; border: 1px solid rgba(255,204,68,0.15);
+    padding: 5px 10px; cursor: pointer; pointer-events: all;
+    transition: color 0.25s, border-color 0.25s;
+  }
+  #vp-casefile-tab:hover { color: rgba(255,204,68,0.8); border-color: rgba(255,204,68,0.4); }
+  #vp-casefile-panel {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 31; width: min(92vw, 660px);
+    background: rgba(2,8,9,0.94); border: 1px solid rgba(255,204,68,0.2);
+    padding: 28px 30px; pointer-events: all; display: none;
+    font-family: var(--mono);
+  }
+  #vp-casefile-panel.open { display: block; }
+  .cf-head {
+    font-size: 9px; letter-spacing: 0.35em; text-transform: uppercase;
+    color: rgba(255,204,68,0.65); margin-bottom: 1.4rem; padding-right: 24px;
+  }
+  .cf-prompt { font-size: 10px; letter-spacing: 0.14em; color: rgba(255,255,255,0.5); margin-bottom: 0.9rem; }
+  .cf-input {
+    width: 100%; background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.9);
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.15em;
+    padding: 10px 12px; outline: none; margin-bottom: 0.7rem;
+  }
+  .cf-input:focus { border-color: rgba(255,204,68,0.35); }
+  .cf-submit {
+    background: none; border: 1px solid rgba(255,204,68,0.3);
+    color: rgba(255,204,68,0.8); font-family: var(--mono); font-size: 8px;
+    letter-spacing: 0.35em; text-transform: uppercase;
+    padding: 9px 14px; cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .cf-submit:hover { border-color: rgba(255,204,68,0.7); color: rgba(255,204,68,1); }
+  .cf-error {
+    font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(255,98,76,0.9); height: 12px; margin-top: 0.6rem;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .cf-error.vis { opacity: 1; }
+  .cf-dossier {
+    font-size: 10px; line-height: 2.1; letter-spacing: 0.06em;
+    color: rgba(200,200,192,0.85); white-space: pre; overflow-x: auto;
+  }
+  .cf-close {
+    position: absolute; top: 10px; right: 12px;
+    background: none; border: none; color: rgba(255,255,255,0.3);
+    font-family: var(--mono); font-size: 13px; cursor: pointer;
+  }
+  .cf-close:hover { color: rgba(255,255,255,0.7); }
 </style>
 <link rel="stylesheet" href="/assets/ds-hud.css"/>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -1053,7 +1177,7 @@
 <!-- ════ ACCESS GATE ════ -->
 <div id="access-gate">
   <div id="gate-logo">DreamScreens</div>
-  <div id="gate-strap">Neural Reconstruction Lab — Restricted Access</div>
+  <div id="gate-strap">Resonance Grief Recovery — Restricted Access</div>
 
   <div class="gate-block">
     <input class="gate-input" id="gate-pw" type="password"
@@ -1065,8 +1189,8 @@
   <div id="gate-rule"></div>
 
   <div id="gate-invite">
-    The first analysis protocols are opening soon.<br>
-    Be among the first subjects.
+    The first recovery programmes are opening soon.<br>
+    Be among the first clients.
   </div>
   <a id="gate-author" href="https://www.gileslamb.com" target="_blank">a project by giles lamb →</a>
 
@@ -1082,10 +1206,10 @@
   <canvas id="entry-gl"></canvas>
   <div id="entry-wordmark">
     <span class="ew-name">DreamScreens</span>
-    <span class="ew-strap">Reconstructing what the mind almost remembers.</span>
+    <span class="ew-strap">Resonance — grief, resolved.</span>
   </div>
   <div id="entry-centre">
-    <div id="entry-tagline">Neural analysis system — primed</div>
+    <div id="entry-tagline">Recovery programme — primed</div>
     <div id="entry-btn-wrap">
       <canvas id="entry-ring-canvas" width="110" height="110"></canvas>
       <div id="entry-btn">
@@ -1179,7 +1303,7 @@
 <!-- STAGE 0: Home screen -->
 <div class="screen" id="s0">
   <div class="s0-bottom">
-    <div class="wordmark">DS-NL · Neural Reconstruction Lab · v4.1</div>
+    <div class="wordmark">DreamScreen Corporation · Resonance — grief, resolved.</div>
     <button class="enter-btn" onclick="void onEnter()" aria-label="Enter onboarding">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
         <path d="M5 12h14M13 6l6 6-6 6" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1222,23 +1346,23 @@
 <!-- STAGE 5: Resolution organism + end card -->
 <div class="screen" id="s5">
   <div class="end-msg">
-    <div class="status">Analysis begins.</div>
-    <h2>This is your mind, reconstructed.</h2>
-    <div class="byline">Welcome to DreamScreens.</div>
-    <button class="restart" onclick="resetExperience()">Re-enter analysis ↺</button>
+    <div class="status">Recovery begins.</div>
+    <h2>This is your loss, resolved.</h2>
+    <div class="byline">Welcome to Resonance.</div>
+    <button class="restart" onclick="resetExperience()">Re-enter programme ↺</button>
   </div>
 </div>
 
 <!-- STAGE 6: Archive / Analysis Protocols -->
 <div class="screen" id="s6">
   <div class="archive-panel">
-    <div class="archive-header" id="archive-header">DREAMSCREENS — AVAILABLE ANALYSIS PROTOCOLS</div>
-    <div class="archive-framing-1" id="archiveFraming1">Each protocol is a complete neural reconstruction sequence.</div>
-    <div class="archive-framing-2" id="archiveFraming2">Select an analysis to begin dream reconstruction · DS-NL-2026</div>
+    <div class="archive-header" id="archive-header">DREAMSCREEN — RESONANCE RECOVERY PROGRAMME</div>
+    <div class="archive-framing-1" id="archiveFraming1">Recovery incomplete — resume your programme.</div>
+    <div class="archive-framing-2" id="archiveFraming2">Select a session to continue · DreamScreen Corporation · 2026</div>
     <div class="archive-list" id="archiveList"></div>
-    <div class="archive-hint" id="archiveHint">· click an available protocol to begin ·</div>
+    <div class="archive-hint" id="archiveHint">· click an available session to begin ·</div>
     <div class="archive-tagline" id="archiveTagline">Return to a moment you thought was lost.</div>
-    <div class="archive-byline" id="archiveByline">dreamscreens.io · Neural Reconstruction Lab</div>
+    <div class="archive-byline" id="archiveByline">dreamscreens.io · DreamScreen Corporation</div>
     <a href="whitepaper.html" target="_blank" class="archive-whitepaper" id="archiveWhitepaper">read the research document →</a>
     <br><button class="restart-archive" onclick="resetExperience()">return to system home ↺</button>
   </div>
@@ -1310,11 +1434,11 @@ const CONFIG = {
       hlsUrl: 'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/a131766743d10c8960911211b41e64c7/manifest/video.m3u8',
       bakedAudio: false,
       introLines: [
-        { text: 'DREAMSCREENS PROTOCOL DS-01', isTitle: false },
+        { text: 'DREAMSCREEN SESSION DS-01', isTitle: false },
         { text: 'Signal Dreams',                isTitle: true  },
-        { text: 'SUBJECT: NEURAL PATTERN ANALYSIS', isTitle: false },
-        { text: 'INITIATING MEMORY RECONSTRUCTION...', isTitle: false },
-        { text: 'PROTOCOL ACTIVE — STAND BY',    isTitle: false },
+        { text: 'SUBJECT: CORTICAL SIGNAL', isTitle: false },
+        { text: 'INITIATING READING PASS 01...', isTitle: false },
+        { text: 'SESSION ACTIVE — STAND BY',    isTitle: false },
       ],
       completionLines: ['DS-01 COMPLETE', 'MEMORY FRAGMENT ARCHIVED', 'PROTOCOL CLOSED'],
       overlays: [
@@ -1326,13 +1450,14 @@ const CONFIG = {
         { t: 270, text: 'MEMORY DEPTH: 84.3%'        },
         { t: 300, text: 'SIGNAL INTEGRITY OPTIMAL'   },
         { t: 375, text: 'MEMORY DISSOLUTION INITIATED' },
-        { t: 420, text: 'RECONSTRUCTION COMPLETE'    },
+        { t: 420, text: 'READING PASS COMPLETE'    },
       ],
       // 4 intrusions ~every 2 min — sparser than DS-02 (6 intrusions).
       // Adjust fracs here to tune timing against the actual film.
       intrusionFracs: [0.15, 0.38, 0.60, 0.82],
       hudConfig: {
-        id: 'DS-01', title: 'Signal Dreams', sub: 'REM cycle 1 · neural pattern analysis',
+        id: 'DS-01', title: 'Signal Dreams', sub: 'reading pass 01 · cortical signal',
+        mode: 'READING PASS 01 · ACTIVE',
         feed: [
           { frac:  5/480, ts: '00:00:05', level: '',   text: 'session 01 · signal dreams · initialised' },
           { frac: 25/480, ts: '00:00:25', level: '',   text: 'cortical baseline · capturing'            },
@@ -1359,17 +1484,18 @@ const CONFIG = {
       bedFadeAfterMs: 30000,
       bedFadeOutTC:   8.0,
       introLines: [
-        { text: 'DREAMSCREENS PROTOCOL DS-02',     isTitle: false },
+        { text: 'DREAMSCREEN SESSION DS-02',     isTitle: false },
         { text: 'Feedback Memory',                  isTitle: true  },
-        { text: 'SUBJECT: RECONSTRUCTED SUBSTRATES', isTitle: false },
-        { text: 'ECHO PATTERN ANALYSIS IN PROGRESS...', isTitle: false },
-        { text: 'PROTOCOL ACTIVE — STAND BY',       isTitle: false },
+        { text: 'SUBJECT: RECOVERED SUBSTRATES', isTitle: false },
+        { text: 'READING PASS 02 IN PROGRESS...', isTitle: false },
+        { text: 'SESSION ACTIVE — STAND BY',       isTitle: false },
       ],
       completionLines: ['DS-02 PROCEEDING', 'FEEDBACK LOOP — OPEN', 'PROTOCOL CONTINUES'],
       overlays: null,
       intrusionFracs: [0.117, 0.263, 0.468, 0.614, 0.760, 0.862],
       hudConfig: {
-        id: 'DS-02', title: 'Feedback Memory', sub: 'REM cycle 2 · echo pattern analysis',
+        id: 'DS-02', title: 'Feedback Memory', sub: 'reading pass 02 · echo pattern analysis',
+        mode: 'READING PASS 02 · ACTIVE',
         feed: [
           { frac:  2/342, ts: '00:00:02', level: '',     text: 'session 02 · feedback memory · initialised'           },
           { frac:  6/342, ts: '00:00:06', level: 'ok',   text: 'playback: reconstructed substrates — archived targets'},
@@ -1389,6 +1515,61 @@ const CONFIG = {
           feedTick: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/type-key-v2.wav',
           uiTick:   'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/type-key-v3.wav',
           sfxVolume: 0.22,
+        },
+      },
+    },
+    'DS-03': {
+      hlsUrl: 'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/644eb3c7bcb3201d4981f2925ead3875/manifest/video.m3u8',
+      // DS-03 diverges from DS-02: the Stream video is MUTED picture only.
+      // Sound lives in separate R2 tracks so the SCAN toggle can swap it
+      // mid-playback. Video is master clock; audio is drift-corrected to it.
+      bakedAudio: false,
+      externalAudio: {
+        MONITOR:   'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Brainwaves%20(grain%20Pysche).mp3',
+        RESONANCE: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/brainwaves%20spatial%20.mp3',
+      },
+      audioFadeInMs: 3500,
+      hardCutEnd: true,          // terminal beat: hard cut to black + silence
+      caseFile: true,            // gated dossier panel in the HUD
+      introLines: [
+        { text: 'DREAMSCREEN SESSION 03 · BRAINWAVES', isTitle: false },
+        { text: 'Brainwaves',                          isTitle: true  },
+        { text: 'We’ve read what you remember. Now we read how.', isTitle: false },
+        { text: 'This part is gentle. Most clients find it restful.',  isTitle: false },
+        { text: 'READING ACTIVE — BE STILL',           isTitle: false },
+      ],
+      completionLines: ['CAPTURE COMPLETE', 'Read complete. Thank you.'],
+      overlays: null,
+      // Measurement beat — sparse passes (DS-01 envelope), machine in control.
+      intrusionFracs: [0.16, 0.40, 0.63, 0.85],
+      intrusionOpacity: 0.18,
+      intrusionHoldMs: 3200,
+      hudConfig: {
+        id: 'DS-03', title: 'Brainwaves', sub: 'subject id DS-0001 · status: reading',
+        mode: 'RESONANCE · READING',
+        // Session arc off video time — final render ~4:23 (263s):
+        // green baseline → warn 2:00 → red alert 3:40 → flicker into the cut.
+        arc: { warnT: 120, alertT: 220, flickerT: 255 },
+        feed: [
+          { frac:   4/263, ts: '00:00:04', level: '',     text: 'session 03 · brainwaves · reading initialised' },
+          { frac:  22/263, ts: '00:00:22', level: '',     text: 'subject id DS-0001 · status: reading' },
+          { frac:  58/263, ts: '00:00:58', level: 'ok',   text: 'signal non-decayed · retention optimal' },
+          { frac:  95/263, ts: '00:01:35', level: 'ok',   text: '"I think it might rain later. Have you got your jacket?"' },
+          { frac: 101/263, ts: '00:01:41', level: '',     text: 'recovered fragment · reading pass 02' },
+          { frac: 128/263, ts: '00:02:08', level: 'warn', text: 'capture depth exceeding session parameters' },
+          { frac: 170/263, ts: '00:02:50', level: 'warn', text: 'subject believes he is composing' },
+          { frac: 212/263, ts: '00:03:32', level: 'warn', text: 'resonance saturation · 94%' },
+          { frac: 232/263, ts: '00:03:52', level: 'warn', text: 'proceed to capture —' },
+        ],
+        charts: {
+          signalOverlap: { label: 'CAPTURE DEPTH', peakFrac: 225/263, peakValue: 97, warnAt: 45, accentAt: 80 },
+          echoDuration:  { label: 'SIGNAL DECAY', resolveFrac: 58/263, text: 'NONE — RARE' },
+          feedbackLoop:  { label: 'RESONANCE LOCK', stabiliseFrac: 130/263 },
+        },
+        sfx: {
+          feedTick: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/type-key-v2.wav',
+          uiTick:   'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/type-key-v3.wav',
+          sfxVolume: 0.2,
         },
       },
     },
@@ -2172,8 +2353,8 @@ const LOG_LINES = [
   { ts:'00:00:02', cls:'', text:'WELCOME TO THE FUTURE OF MEMORY.' },
   { ts:'00:00:04', cls:'', text:'Using differential retina scanning and remote EEG signal analysis —' },
   { ts:'00:00:06', cls:'', text:'we isolate your neuro-cortical brain patterns in real time.' },
-  { ts:'00:00:08', cls:'', text:'We render your dreams.' },
-  { ts:'00:00:11', cls:'', text:'Our reverse-reconstruction technology re-engineers those dreams within your own experience.' },
+  { ts:'00:00:08', cls:'', text:'We read what grief has left behind.' },
+  { ts:'00:00:11', cls:'', text:'Our Resonance technology resolves it within your own experience.' },
   { ts:'00:00:13', cls:'', text:'Return to a moment you thought was lost.' },
   { ts:'00:00:16', cls:'', text:'Meet someone you\'ve been missing.' },
   ...(isIOS ? [{ ts:'00:00:18', cls:'', text:'Become the person you always believed you could be.' }] : []),
@@ -2199,14 +2380,14 @@ function runLogLines(callback) {
 // Canon 8-protocol listing.
 // `label` drives the status column — edit here to change per-protocol wording.
 const ARCHIVE_TRACKS = [
-  { idx: 'DS-01', title: 'Signal Dreams',   sub: 'REM cycle 1 · cortical signal',    status: 'available',  label: 'protocol available'          },
-  { idx: 'DS-02', title: 'Feedback Memory', sub: 'REM cycle 2 · echo pattern',        status: 'available',  label: 'protocol available'          },
-  { idx: 'DS-03', title: 'Brainwaves',      sub: 'REM cycle 3 · frequency analysis', status: 'scheduled',  label: 'scheduled · awaiting subject' },
-  { idx: 'DS-04', title: 'Module N5',       sub: 'REM cycle 4 · deep signal',         status: 'scheduled',  label: 'scheduled · awaiting subject' },
-  { idx: 'DS-05', title: 'Co-Dreaming',     sub: 'REM cycle 5 · dual-subject trace', status: 'scheduled',  label: 'scheduled · awaiting subject' },
-  { idx: 'DS-06', title: 'Module 3',        sub: 'REM cycle 6 · signal fragment',     status: 'scheduled',  label: 'scheduled · awaiting subject' },
-  { idx: 'DS-07', title: "Mum's Song",      sub: 'REM cycle 7 · familial trace',      status: 'scheduled',  label: 'scheduled · awaiting subject' },
-  { idx: 'DS-08', title: 'Virta',           sub: 'REM cycle 8 · origin unknown',      status: 'scheduled',  label: 'scheduled · awaiting subject' },
+  { idx: 'DS-01', title: 'Signal Dreams',   sub: 'reading pass 01 · cortical signal',   status: 'available',  label: 'session available'            },
+  { idx: 'DS-02', title: 'Feedback Memory', sub: 'reading pass 02 · echo pattern',       status: 'available',  label: 'session available'            },
+  { idx: 'DS-03', title: 'Brainwaves',      sub: 'reading pass 03 · brainwave capture', status: 'available',  label: 'session complete'             },
+  { idx: 'DS-04', title: 'Module N5',       sub: 'reading pass 04 · deep signal',        status: 'scheduled',  label: 'scheduled · awaiting subject' },
+  { idx: 'DS-05', title: 'Co-Dreaming',     sub: 'reading pass 05 · dual-subject trace', status: 'scheduled',  label: 'scheduled · awaiting subject' },
+  { idx: 'DS-06', title: 'Module 3',        sub: 'reading pass 06 · signal fragment',    status: 'scheduled',  label: 'scheduled · awaiting subject' },
+  { idx: 'DS-07', title: "Mum's Song",      sub: 'reading pass 07 · familial trace',     status: 'scheduled',  label: 'scheduled · awaiting subject' },
+  { idx: 'DS-08', title: 'Virta',           sub: 'reading pass 08 · origin unknown',     status: 'scheduled',  label: 'scheduled · awaiting subject' },
 ];
 
 function showArchiveOverlay() {
@@ -2235,22 +2416,22 @@ function showArchiveOverlay() {
 }
 
 const FRAGS = [
-  { text: 'Welcome to DreamScreens.',                                           attr: 'DreamScreens · Neural Reconstruction Lab' },
-  { text: 'You are about to undergo\nneural memory reconstruction.',             attr: '' },
+  { text: 'Welcome to DreamScreens.',                                           attr: 'DreamScreen Corporation · Resonance programme' },
+  { text: 'You are about to resume\nyour recovery programme.',                   attr: '' },
   { text: 'Our system maps your cortical signature\nacross 64 active channels.', attr: 'EEG analysis · diffusion model v4.1' },
-  { text: 'It isolates the REM-state pattern\nunique to your consciousness.',    attr: '' },
-  { text: 'And renders it at 61% visual confidence.',                           attr: 'DS-NL · subject GHL-7704' },
+  { text: 'It reads the pattern your loss has left\nin your consciousness.',     attr: '' },
+  { text: 'And matches it at 61% confidence.',                                  attr: 'DreamScreen Corporation · subject GHL-7704' },
   { text: 'Not retrieval.\n\nRemembering.',                                      attr: '' },
-  { text: 'The train moved\nand she was watching the cables.',                   attr: 'Memory fragment · REM cycle 3 · confidence 61%' },
+  { text: 'The train moved\nand she was watching the cables.',                   attr: 'recovered fragment · reading pass 03 · match 61%' },
   { text: 'The way they rose and fell\nlike breathing.',                         attr: '' },
   { text: 'He didn\'t want to look away.',                                       attr: '' },
-  { text: 'This is not a playlist.\nNot a video.',                              attr: 'Source · archived transmission · DreamScreens internal' },
+  { text: 'Not therapy.\nNot a recording.\n\nA guided recovery,\ncalibrated to your loss.', attr: 'DreamScreen Corporation · client onboarding' },
   { text: 'An experience that reshapes itself\nto fit the version of you\nthat\'s watching it.', attr: '' },
-  { text: 'The glitch isn\'t a failure.\nIt\'s the invitation.',                attr: 'Fragment 7 · partially recovered · origin unknown' },
-  { text: 'What follows has been classified\nas a remote conscious event.',      attr: 'DS-NL-2026 · classification: restricted' },
+  { text: 'Grief is not something to endure.\nIt is something we can resolve.',  attr: 'DreamScreen Corporation · Resonance programme' },
+  { text: 'What follows has been classified\nas a remote conscious event.',      attr: 'DreamScreen Corporation · classification: restricted' },
   { text: 'It can be stored.\nReplicated.\nReturned to.',                        attr: '' },
   { text: 'This is your mind.',                                                  attr: '' },
-  { text: 'Reconstructed.',                                                      attr: 'Analysis complete · session archived' },
+  { text: 'Recovered.',                                                          attr: 'Reading complete · session archived' },
 ];
 
 function showFrag(stageNum, idx) {
@@ -2319,8 +2500,8 @@ async function onEnter() {
     { pct: 18, msg: 'WELCOME TO THE FUTURE OF MEMORY.' },
     { pct: 35, msg: 'Using differential retina scanning and remote EEG signal analysis —' },
     { pct: 52, msg: 'we isolate your neuro-cortical brain patterns in real time.' },
-    { pct: 68, msg: 'We render your dreams.' },
-    { pct: 82, msg: 'Our reverse-reconstruction technology re-engineers those dreams within your own experience.' },
+    { pct: 68, msg: 'We read what grief has left behind.' },
+    { pct: 82, msg: 'Our Resonance technology resolves it within your own experience.' },
     { pct: 95, msg: 'Return to a moment you thought was lost.' },
     { pct: 100, msg: 'Meet someone you\'ve been missing.' },
   ], function() {
@@ -2585,8 +2766,8 @@ async function doEnterTransition() {
   const steps = [
     { pct: 0,   msg: 'Using differential retina scanning and remote EEG signal analysis —' },
     { pct: 15,  msg: 'we isolate your neuro-cortical brain patterns in real time.' },
-    { pct: 32,  msg: 'We render your dreams.' },
-    { pct: 55,  msg: 'Our reverse-reconstruction technology re-engineers those dreams within your own experience.' },
+    { pct: 32,  msg: 'We read what grief has left behind.' },
+    { pct: 55,  msg: 'Our Resonance technology resolves it within your own experience.' },
     { pct: 74,  msg: 'Return to a moment you thought was lost.' },
     { pct: 91,  msg: 'Meet someone you\'ve been missing.' },
     { pct: 100, msg: 'Become the person you always believed you could be.' },
@@ -2817,11 +2998,11 @@ function playProtocol(track) {
 
   // Run the neural loader progress sequence first (3.5s), then fade in title and start audio
   runNeuralLoader(document.getElementById('nl-ring-canvas'), 3500, [
-    { pct: 0,   msg: 'Initialising neural bridge...' },
-    { pct: 20,  msg: 'EEG sync — 64 channels active' },
-    { pct: 45,  msg: 'Loading analysis protocol...' },
+    { pct: 0,   msg: 'Matching your loss profile…' },
+    { pct: 20,  msg: 'Calibrating Resonance to subject…' },
+    { pct: 45,  msg: 'Loading recovery session…' },
     { pct: 70,  msg: 'Signal locked — ' + track.title },
-    { pct: 90,  msg: 'Rendering...' },
+    { pct: 90,  msg: 'Locating the gap…' },
     { pct: 100, msg: 'Signal acquired.' },
   ], function() {
     // Loader done — fade in track title slowly
@@ -2846,6 +3027,179 @@ function playProtocol(track) {
     }).catch(() => {
       // Audio unavailable — just show title and let user stop manually
     });
+  });
+}
+
+// ── DS-03 EXTERNAL SCAN AUDIO ───────────────────────────────────────────────
+// The DS-03 film is muted picture; its sound is one of two R2 tracks selected
+// by the SCAN control. Video is master clock — audio.currentTime is corrected
+// to video.currentTime whenever drift exceeds ~50ms.
+let scanAudio = { MONITOR: null, RESONANCE: null };
+let scanMode = 'MONITOR';       // default on every entry — never persisted
+let scanSyncHandler = null;
+const SCAN_AUDIO_VOL = 0.85;
+
+function scanAudioEl(mode, url) {
+  let a = scanAudio[mode];
+  if (!a) {
+    a = new Audio();
+    a.crossOrigin = 'anonymous';
+    a.preload = 'auto';
+    scanAudio[mode] = a;
+  }
+  if (a.src !== url) a.src = url;
+  return a;
+}
+
+// Smooth HTMLAudio volume ramp; pauses the element when faded to 0.
+function audioFade(a, target, ms) {
+  if (a._fadeRaf) cancelAnimationFrame(a._fadeRaf);
+  const from = a.volume, t0 = Date.now();
+  (function step() {
+    const p = Math.min(1, (Date.now() - t0) / ms);
+    const e = p * p * (3 - 2 * p);
+    a.volume = from + (target - from) * e;
+    if (p < 1) a._fadeRaf = requestAnimationFrame(step);
+    else { a._fadeRaf = null; if (target === 0) a.pause(); }
+  })();
+}
+
+function vpAttachScanSync(ppVid) {
+  if (scanSyncHandler) ppVid.removeEventListener('timeupdate', scanSyncHandler);
+  scanSyncHandler = function() {
+    const a = scanAudio[scanMode];
+    if (!a || a.paused || a.seeking || ppVid.paused) return;
+    if (Math.abs(a.currentTime - ppVid.currentTime) > 0.05) {
+      a.currentTime = ppVid.currentTime;
+    }
+  };
+  ppVid.addEventListener('timeupdate', scanSyncHandler);
+}
+
+// SCAN toggle — swap audio + apply/remove deep-scan look. No restart, no gap:
+// the incoming track picks up at video.currentTime and plays immediately.
+function setScanMode(mode) {
+  if (mode === scanMode) return;
+  const ppVid = document.getElementById('pp-vid');
+  const oldA = scanAudio[scanMode];
+  const newA = scanAudio[mode];
+  scanMode = mode;
+  if (newA) {
+    if (newA._fadeRaf) { cancelAnimationFrame(newA._fadeRaf); newA._fadeRaf = null; }
+    newA.currentTime = ppVid.currentTime || 0;
+    newA.muted = false;
+    if (!ppVid.paused && !ppVid.ended) {
+      // film running — pick up exactly where the picture is
+      newA.volume = SCAN_AUDIO_VOL;
+      newA.play().catch(function(){});
+    } else {
+      // toggled during the intro — phase 1 will start whichever mode is active
+      newA.volume = 0;
+    }
+  }
+  if (oldA) {
+    if (oldA._fadeRaf) { cancelAnimationFrame(oldA._fadeRaf); oldA._fadeRaf = null; }
+    oldA.pause(); oldA.muted = true;
+  }
+  ppVid.classList.toggle('deep-scan', mode === 'RESONANCE');
+  const ds = document.getElementById('vp-deepscan');
+  if (ds) ds.classList.toggle('vis', mode === 'RESONANCE');
+  const hint = document.getElementById('vp-scan-hint');
+  if (hint) hint.classList.toggle('vis', mode === 'RESONANCE');
+  document.querySelectorAll('#vp-scan-control .scan-opt').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.mode === scanMode);
+  });
+}
+
+function _vpBuildScanControl() {
+  scanMode = 'MONITOR';
+  const ctl = document.createElement('div');
+  ctl.id = 'vp-scan-control';
+  ctl.innerHTML =
+      '<span class="scan-label">SCAN</span>'
+    + '<button class="scan-opt active" data-mode="MONITOR">Monitor</button>'
+    + '<button class="scan-opt" data-mode="RESONANCE">Resonance</button>';
+  ctl.querySelectorAll('.scan-opt').forEach(function(btn) {
+    btn.addEventListener('click', function() { setScanMode(btn.dataset.mode); });
+  });
+  document.body.appendChild(ctl);
+
+  const hint = document.createElement('div');
+  hint.id = 'vp-scan-hint';
+  hint.textContent = 'binaural capture · headphones advised';
+  document.body.appendChild(hint);
+
+  const ds = document.createElement('div');
+  ds.id = 'vp-deepscan';
+  document.body.appendChild(ds);
+}
+
+// ── DS-03 CASE FILE — gated dossier ─────────────────────────────────────────
+// Unlock key is seeded in the HUD feed ("…Have you got your jacket?").
+// Per-session only, matching the access-gate model.
+const CF_DOSSIER =
+    'NAME:      Elias ██████\n'
+  + 'AGE:       54\n'
+  + 'INTAKE:    prolonged grief response (maternal · deceased 30+ yrs)\n'
+  + 'SIGNAL:    non-decayed — rare. retain.\n'
+  + 'PROGRAMME: Resonance · reading phase\n'
+  + 'PROGNOSIS: full resolution\n'
+  + 'NOTE:      subject believes he is composing. recommend proceed to capture.';
+
+function _vpBuildCaseFile() {
+  const tab = document.createElement('button');
+  tab.id = 'vp-casefile-tab';
+  tab.textContent = 'Case file — subject DS-0001 · [access restricted]';
+  document.body.appendChild(tab);
+
+  const panel = document.createElement('div');
+  panel.id = 'vp-casefile-panel';
+  document.body.appendChild(panel);
+
+  function render() {
+    if (sessionStorage.getItem('ds_casefile_unlocked') === '1') {
+      panel.innerHTML =
+          '<button class="cf-close" aria-label="Close">×</button>'
+        + '<div class="cf-head">CASE FILE — SUBJECT DS-0001</div>'
+        + '<div class="cf-dossier"></div>';
+      panel.querySelector('.cf-dossier').textContent = CF_DOSSIER;
+      tab.textContent = 'Case file — subject DS-0001 · [unlocked]';
+    } else {
+      panel.innerHTML =
+          '<button class="cf-close" aria-label="Close">×</button>'
+        + '<div class="cf-head">CASE FILE — SUBJECT DS-0001 · [ACCESS RESTRICTED]</div>'
+        + '<div class="cf-prompt">recovery key — the last word she said to you</div>'
+        + '<input class="cf-input" type="text" autocomplete="off" spellcheck="false"/>'
+        + '<button class="cf-submit">Unlock →</button>'
+        + '<div class="cf-error">access denied · key rejected</div>';
+      const input  = panel.querySelector('.cf-input');
+      const err    = panel.querySelector('.cf-error');
+      function tryUnlock() {
+        if (input.value.trim().toLowerCase() === 'jacket') {
+          sessionStorage.setItem('ds_casefile_unlocked', '1');
+          render();
+        } else {
+          err.classList.add('vis');
+          input.value = '';
+          setTimeout(function() { err.classList.remove('vis'); }, 2200);
+        }
+      }
+      panel.querySelector('.cf-submit').addEventListener('click', tryUnlock);
+      input.addEventListener('keydown', function(e) { if (e.key === 'Enter') tryUnlock(); });
+    }
+    panel.querySelector('.cf-close').addEventListener('click', function() {
+      panel.classList.remove('open');
+    });
+  }
+
+  tab.addEventListener('click', function() {
+    const opening = !panel.classList.contains('open');
+    if (opening) render();
+    panel.classList.toggle('open', opening);
+    if (opening) {
+      const input = panel.querySelector('.cf-input');
+      if (input) input.focus();
+    }
   });
 }
 
@@ -2905,6 +3259,7 @@ function vpSetupOverlays(vpCfg) {
 
   const phaseComplete = document.createElement('div');
   phaseComplete.id = 'vp-phase-complete';
+  if (vpCfg.hardCutEnd) phaseComplete.classList.add('vp-terminal');
   const completeLines = (vpCfg.completionLines || []).map(function(text) {
     const el = document.createElement('div');
     el.className = 'vp-complete-line';
@@ -2923,6 +3278,10 @@ function vpSetupOverlays(vpCfg) {
   if (oldHud) oldHud.remove();
   if (window.DS_HUD && vpCfg.hudConfig) DS_HUD.init(vpCfg.hudConfig);
 
+  // DS-03 extras — SCAN control + gated case file
+  if (vpCfg.externalAudio) _vpBuildScanControl();
+  if (vpCfg.caseFile) _vpBuildCaseFile();
+
   document.body.classList.add('vp-active');
   return { orgPulse, fadeOverlay, phaseIntro, introLines, dataOverlay, phaseComplete, completeLines, returnLink };
 }
@@ -2931,10 +3290,23 @@ function vpCleanup() {
   if (_vpRafId) { cancelAnimationFrame(_vpRafId); _vpRafId = null; }
   if (_vpIntrusionTimer) { clearTimeout(_vpIntrusionTimer); _vpIntrusionTimer = null; }
   if (window.DS_HUD) try { DS_HUD.stop(); } catch(e) {}
-  ['vp-org-pulse','vp-fade-overlay','vp-phase-intro','vp-data-overlay','vp-phase-complete'].forEach(function(id) {
+  ['vp-org-pulse','vp-fade-overlay','vp-phase-intro','vp-data-overlay','vp-phase-complete',
+   'vp-scan-control','vp-scan-hint','vp-deepscan','vp-casefile-tab','vp-casefile-panel'].forEach(function(id) {
     const el = document.getElementById(id); if (el) el.remove();
   });
   const hudEl = document.getElementById('ds-hud'); if (hudEl) hudEl.remove();
+  // DS-03 scan-audio teardown — fade out whichever track is live
+  const ppVidEl = document.getElementById('pp-vid');
+  if (scanSyncHandler && ppVidEl) {
+    ppVidEl.removeEventListener('timeupdate', scanSyncHandler);
+    scanSyncHandler = null;
+  }
+  if (ppVidEl) ppVidEl.classList.remove('deep-scan');
+  ['MONITOR','RESONANCE'].forEach(function(m) {
+    const a = scanAudio[m];
+    if (a && !a.paused) audioFade(a, 0, 900);
+  });
+  scanMode = 'MONITOR';
   document.body.classList.remove('vp-active');
   glOrgOpacityTarget = 1.0; glOrgSettleTarget = 1.0;
   _vpOvls = null;
@@ -2955,7 +3327,28 @@ function vpRunPhase1(ppVid, vpCfg, ovls, onDone) {
   // 6.5s: start film
   setTimeout(function() {
     ppVid.currentTime = 0;
-    if (vpCfg.bakedAudio) {
+    if (vpCfg.externalAudio) {
+      // DS-03: muted picture — the ACTIVE scan track carries the film audio.
+      // Both start at 0; the timeupdate sync keeps them locked thereafter.
+      var extA = scanAudio[scanMode];
+      if (extA) {
+        extA.currentTime = 0;
+        extA.volume = 0;
+        extA.muted = false;
+        extA.play().catch(function(){});
+        (function fadeAudIn() {
+          var t0 = Date.now(), dur = vpCfg.audioFadeInMs || 3500;
+          function step() {
+            var p = Math.min(1, (Date.now() - t0) / dur);
+            if (!extA.paused) extA.volume = p * p * SCAN_AUDIO_VOL;
+            if (p < 1) ppVidFadeRaf = requestAnimationFrame(step);
+            else if (!extA.paused) extA.volume = SCAN_AUDIO_VOL;
+          }
+          ppVidFadeRaf = requestAnimationFrame(step);
+        })();
+      }
+      vpAttachScanSync(ppVid);
+    } else if (vpCfg.bakedAudio) {
       ppVid.volume = 0;
       // DS-02: ramp video volume 0→1 over videoFadeInMs
       (function fadeVidIn() {
@@ -3040,14 +3433,17 @@ function vpRunPhase2(ppVid, vpCfg, ovls, onDone) {
         }
       }
 
-      // Intrusions — both DS-01 and DS-02, suppressed during DS-02's end sequence
+      // Intrusions — all video protocols, suppressed during DS-02's end
+      // sequence. DS-03 runs a sparser, dimmer envelope (measurement passes).
       if (!inEndSeq && !intrusionActive && nextIntrusionIdx < intrFracs.length) {
         if (ct >= intrFracs[nextIntrusionIdx] * dur) {
-          intrusionActive = true; glOrgOpacityTarget = 0.22; _vpPulse();
+          intrusionActive = true;
+          glOrgOpacityTarget = vpCfg.intrusionOpacity || 0.22;
+          _vpPulse();
           _vpIntrusionTimer = setTimeout(function() {
             glOrgOpacityTarget = 0.0; intrusionActive = false;
             nextIntrusionIdx++; _vpIntrusionTimer = null;
-          }, 4000);
+          }, vpCfg.intrusionHoldMs || 4000);
         }
       }
     }
@@ -3061,7 +3457,21 @@ function vpRunPhase2(ppVid, vpCfg, ovls, onDone) {
     if (_vpIntrusionTimer) { clearTimeout(_vpIntrusionTimer); _vpIntrusionTimer = null; }
     if (window.DS_HUD) try { DS_HUD.stop(); } catch(e) {}
 
-    if (!vpCfg.bakedAudio) {
+    if (vpCfg.hardCutEnd) {
+      // DS-03 terminal beat: hard cut to black + silence — no easing anywhere.
+      const extA = scanAudio[scanMode];
+      if (extA) { try { extA.pause(); } catch(e) {} }
+      ovls.fadeOverlay.style.transition = 'none';
+      ovls.fadeOverlay.classList.add('vis');
+      ppVid.classList.remove('vis');
+      const hudEl = document.getElementById('ds-hud');
+      if (hudEl) hudEl.remove();
+      ['vp-scan-control','vp-scan-hint','vp-deepscan'].forEach(function(id) {
+        const el = document.getElementById(id); if (el) el.remove();
+      });
+      glOrgOpacityTarget = 0.0; // hold black — the machine has what it came for
+      onDone && onDone();
+    } else if (!vpCfg.bakedAudio) {
       // DS-01: black fade before completion screen
       ovls.fadeOverlay.classList.add('vis');
       setTimeout(function() {
@@ -3081,6 +3491,24 @@ function vpRunPhase2(ppVid, vpCfg, ovls, onDone) {
 
 function vpRunPhase3(vpCfg, ovls, stopFn) {
   ovls.phaseComplete.classList.add('vis');
+
+  if (vpCfg.hardCutEnd) {
+    // DS-03 terminal beat — cold hold over black. Title lands immediately
+    // with no easing; sub-line follows at 1.5s; return link shortly after.
+    glOrgOpacityTarget = 0.0;
+    ovls.completeLines.forEach(function(el, i) {
+      if (i === 0) el.style.opacity = '1';
+      else setTimeout(function() { el.style.opacity = '1'; }, 1500 * i);
+    });
+    setTimeout(function() {
+      ovls.returnLink.classList.add('vis');
+      ovls.returnLink.addEventListener('click', function(e) {
+        e.preventDefault(); stopFn();
+      }, { once: true });
+    }, 3000);
+    return;
+  }
+
   glOrgOpacityTarget = 1.0;
   glOrgSettleTarget  = vpCfg.bakedAudio ? 0.45 : 1.0;
 
@@ -3119,6 +3547,22 @@ function playVideoProtocol(track) {
   if (ctx.state === 'suspended') ctx.resume();
   ppVid.play().then(function() { ppVid.pause(); }).catch(function() {});
 
+  // DS-03: the film is muted picture; sound comes from the scan tracks.
+  // Prime BOTH R2 audio elements on this same gesture so iOS lets them
+  // play later (protocol start and mid-playback toggle).
+  ppVid.muted = !!vpCfg.externalAudio;
+  if (vpCfg.externalAudio) {
+    scanMode = 'MONITOR';
+    Object.keys(vpCfg.externalAudio).forEach(function(mode) {
+      const a = scanAudioEl(mode, vpCfg.externalAudio[mode]);
+      if (a._fadeRaf) { cancelAnimationFrame(a._fadeRaf); a._fadeRaf = null; }
+      a.pause();
+      a.volume = 0;
+      a.muted = false;
+      a.play().then(function() { a.pause(); a.currentTime = 0; }).catch(function() {});
+    });
+  }
+
   // Fade out Virta; bed keeps playing through the click (no gap)
   if (currentGain) {
     currentGain.gain.setTargetAtTime(0, ctx.currentTime, 0.7);
@@ -3145,10 +3589,10 @@ function playVideoProtocol(track) {
   }
 
   runNeuralLoader(document.getElementById('nl-ring-canvas'), 3500, [
-    { pct: 0,   msg: 'Initialising neural bridge...' },
-    { pct: 20,  msg: 'EEG sync — 64 channels active' },
-    { pct: 45,  msg: 'Loading ' + track.title + '...' },
-    { pct: 70,  msg: 'HLS stream locked — buffering...' },
+    { pct: 0,   msg: 'Matching your loss profile…' },
+    { pct: 20,  msg: 'Calibrating Resonance to subject…' },
+    { pct: 45,  msg: 'Loading ' + track.title + '…' },
+    { pct: 70,  msg: 'Locating the gap…' },
     { pct: 90,  msg: 'Signal confirmed.' },
     { pct: 100, msg: 'Signal acquired.' },
   ], function() {
