@@ -874,7 +874,36 @@
     font-family: var(--sans); font-size: 11px;
     font-weight: 300; font-style: italic;
     color: rgba(255,255,255,0.5);
-    margin-bottom: 3.5rem;
+    margin-bottom: 2.5rem;
+  }
+  /* Confidentiality clause — accepted by the existing enter action */
+  #gate-conf {
+    max-width: 40ch;
+    text-align: center;
+    margin-bottom: 1.75rem;
+  }
+  #gate-conf-head {
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.4em; text-transform: uppercase;
+    color: rgba(240,208,128,0.6);
+    margin-bottom: 1rem;
+  }
+  #gate-conf-body {
+    font-family: var(--sans); font-size: 12px;
+    font-weight: 300; line-height: 1.8;
+    color: rgba(255,255,255,0.62);
+    margin-bottom: 1rem;
+  }
+  #gate-conf-cond {
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+  }
+  #gate-conf-attr {
+    font-family: var(--mono); font-size: 8px;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    color: rgba(255,255,255,0.22);
+    margin-top: 0.9rem;
   }
   .gate-block {
     display: flex; flex-direction: column;
@@ -1179,12 +1208,23 @@
   <div id="gate-logo">DreamScreens</div>
   <div id="gate-strap">Resonance Grief Recovery — Restricted Access</div>
 
+  <div id="gate-conf">
+    <div id="gate-conf-head">Clearance · Confidentiality</div>
+    <div id="gate-conf-body">
+      This programme is proprietary, unreleased, and provided under clearance.
+      By proceeding you agree to hold its contents in confidence — not to record,
+      screenshot, reproduce, or share any part of it.
+    </div>
+    <div id="gate-conf-cond">Access is granted on this condition.</div>
+  </div>
+
   <div class="gate-block">
     <input class="gate-input" id="gate-pw" type="password"
       placeholder="ACCESS CODE" autocomplete="off" spellcheck="false"/>
-    <button id="gate-submit" onclick="gateSubmit()">Enter System →</button>
+    <button id="gate-submit" onclick="gateSubmit()">I accept — Enter →</button>
     <div id="gate-error">access denied · signal rejected</div>
   </div>
+  <div id="gate-conf-attr">— DreamScreen Corporation</div>
 
   <div id="gate-rule"></div>
 
@@ -3669,6 +3709,9 @@ function gateSubmit() {
   if (val === GATE_PW) {
     err.classList.remove('vis');
     sessionStorage.setItem('ds_authed', '1'); // persists for session so returns skip the gate
+    // Same action doubles as confidentiality acceptance — one flag, same
+    // session pattern as ds_authed. Client-side only; nothing is recorded.
+    sessionStorage.setItem('ds_conf_accepted', '1');
     const gate = document.getElementById('access-gate');
     gate.classList.add('gone');
     setTimeout(() => { gate.style.display = 'none'; }, 1300);
