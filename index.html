@@ -1878,6 +1878,15 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
 // ════════════════════════════════════════
 // CONFIG
 // ════════════════════════════════════════
+// The bed is the first thing a visitor hears, on their first gesture, before
+// anything else. At this level the forest reads as birdsong rather than as
+// substrate under a track.
+const BED_VOLUME = 0.18;
+
+// Rain and space are held back so the bed is one identifiable place. Set true
+// to put all three back in the rotation.
+const BED_EXTRA_LAYERS = false;
+
 const CONFIG = {
   // Set to your CDN URL when hosting media separately (e.g. 'https://your-bucket.r2.dev/')
   mediaBaseUrl: '',
@@ -1888,13 +1897,15 @@ const CONFIG = {
     'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/aedc5ba75b991b5b687f45f8db3b1da9/manifest/video.m3u8',
   ],
   videoSeek: 30,
+  // Onboarding score. Deliberately holds no Act One track, so the walkthrough
+  // never pre-plays the record.
   music: {
     intro:  'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Virta.mp3',
-    stage1: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Signal%20Dreams.mp3',
-    stage2: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Feedback%20Memory.(Minus%20197).mp3',
-    stage3: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Nature%20module%201.mp3',
-    stage4: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Brainwaves%20(grain%20Pysche).mp3',
-    stage5: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Module%20n5%20v2.mp3',
+    stage1: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Nature%20module%201.mp3',
+    stage2: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Module%20n5%20v2.mp3',
+    stage3: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/The%20Dream%20Architect.mp3',
+    stage4: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Free%20Will.mp3',
+    stage5: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/wind%20and%20water%20v1.mp3',
   },
   timing: {
     stage1Duration: 18000,
@@ -1908,12 +1919,14 @@ const CONFIG = {
   logLinePause: 550,
   // Ambient bed — continuous substrate running under Virta from menu load
   bed: {
-    urls: [
-      'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/rain.wav',
-      'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/space.wav',
-      'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/forest.wav',
-    ],
-    volume:    0.07,   // quiet atmosphere under Virta — never louder than this while Virta plays
+    urls: BED_EXTRA_LAYERS
+      ? [
+          'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/rain.wav',
+          'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/space.wav',
+          'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/forest.wav',
+        ]
+      : ['https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/SFX/forest.wav'],
+    volume:    BED_VOLUME,
     fadeInTC:  3.5,    // time constant: fade up on menu load
     fadeOutTC: 0.8,    // time constant: fade down when protocol plays (≈2.5s)
     restoreTC: 3.0,    // time constant: fade back up when returning to menu
@@ -2849,29 +2862,45 @@ function beep(freq, dur) {
   osc.stop(ctx.currentTime + dur / 1000);
 }
 
+// Virta belongs to the programme, not to the front door. It waits for onEnter.
 let virtaStarted = false;
-function startVirta(e) {
-  // The Act One control is not the gesture that starts the in-fiction bed.
-  // This listener is {once:true}, so pressing play consumes it — which is
-  // what we want: the visitor has chosen the record as the soundtrack.
-  if (e && e.target && e.target.closest && e.target.closest('#entry-cover, #entry-signup')) return;
-  if (actOneEngaged) return;
+function startVirta() {
   if (virtaStarted) return;
   virtaStarted = true;
   const c = getCtx();
   if (c.state === 'suspended') void c.resume();
   playTrack(CONFIG.media(CONFIG.music.intro));
-  // Start the continuous bed substrate alongside Virta.
-  // It runs from here to end-of-session; only gain changes at transitions.
+}
+
+// The first real gesture on the entry screen brings up the bed alone. It runs
+// from here to end of session; only its gain changes at transitions.
+let bedStarted = false;
+function startBedOnFirstGesture(e) {
+  // The Act One control keeps its own gesture: choosing the record means the
+  // record is the soundtrack.
+  if (e && e.target && e.target.closest && e.target.closest('#entry-cover, #entry-signup')) return;
+  if (actOneEngaged) return;
+  if (bedStarted) return;
+  bedStarted = true;
+  releaseFirstGesture();
+  const c = getCtx();
+  if (c.state === 'suspended') void c.resume();
   void startBed();
 }
 // Web Audio requires a real user gesture (click/touch/pointer). Mousemove is NOT
 // treated as activation in Chrome/Safari/Firefox — only Cursor's browser may allow it.
+// These are not {once:true}: a gesture that bypasses the bed must leave the
+// listener armed for the next one, or the bed would never arrive at all.
+function releaseFirstGesture() {
+  document.removeEventListener('touchstart', startBedOnFirstGesture, { passive: true });
+  document.removeEventListener('pointerdown', startBedOnFirstGesture, { capture: true });
+  document.removeEventListener('click', startBedOnFirstGesture, { capture: true });
+}
 if (isIOS) {
-  document.addEventListener('touchstart', startVirta, { once: true, passive: true });
+  document.addEventListener('touchstart', startBedOnFirstGesture, { passive: true });
 } else {
-  document.addEventListener('pointerdown', startVirta, { once: true, capture: true });
-  document.addEventListener('click', startVirta, { once: true, capture: true });
+  document.addEventListener('pointerdown', startBedOnFirstGesture, { capture: true });
+  document.addEventListener('click', startBedOnFirstGesture, { capture: true });
 }
 
 function pulseOrganism() {
@@ -3135,7 +3164,8 @@ function enterVideoStage(stageNum, fragIdxs, onAdvance) {
 async function onEnter() {
   const ctx = getCtx();
   if (ctx.state === 'suspended') await ctx.resume();
-  if (!virtaStarted) startVirta();
+  if (!virtaStarted) startVirta();   // the programme's own music begins here
+  void startBed();                   // no-op if the first gesture already brought it up
   document.getElementById('stage0Links').classList.remove('visible');
   document.getElementById('home-nav').classList.remove('vis');
 
@@ -3386,8 +3416,6 @@ async function doEnterTransition() {
     const ac = getCtx();
     if (ac.state === 'suspended') await ac.resume();
   } catch (e) {}
-  if (typeof startVirta === 'function') startVirta();
-
   const sEntry = document.getElementById('s-entry');
   if (sEntry) sEntry.classList.add('engaged');   // album chrome steps aside
 
