@@ -2420,12 +2420,16 @@ const tex2 = createVideoTexture();
 const tex3 = createVideoTexture();
 
 function loadHLS(videoEl, url) {
-  if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-    videoEl.src = url;
-  } else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+  // hls.js first. Chromium returns "maybe" for the HLS MIME type but cannot
+  // actually decode it, so trusting canPlayType leaves the element at
+  // readyState 0 with no error raised. Native playback is the fallback, for
+  // Safari and iOS where hls.js is not supported.
+  if (typeof Hls !== 'undefined' && Hls.isSupported()) {
     const hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 60 });
     hls.loadSource(url);
     hls.attachMedia(videoEl);
+  } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+    videoEl.src = url;
   }
 }
 
@@ -4241,13 +4245,14 @@ function playVideoProtocol(track) {
   ppVid.pause(); ppVid.src = '';
   ppVid.volume = 1; // phase 1 manages the DS-02 ramp itself
 
-  // Load HLS while the neural loader spins
-  if (ppVid.canPlayType('application/vnd.apple.mpegurl')) {
-    ppVid.src = vpCfg.hlsUrl;
-  } else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+  // Load HLS while the neural loader spins. hls.js first, for the same reason
+  // as loadHLS above: Chromium claims native HLS support it does not have.
+  if (typeof Hls !== 'undefined' && Hls.isSupported()) {
     ppHls = new Hls({ startLevel: -1, maxBufferLength: 30, maxMaxBufferLength: 60 });
     ppHls.loadSource(vpCfg.hlsUrl);
     ppHls.attachMedia(ppVid);
+  } else if (ppVid.canPlayType('application/vnd.apple.mpegurl')) {
+    ppVid.src = vpCfg.hlsUrl;
   }
 
   runNeuralLoader(document.getElementById('nl-ring-canvas'), 3500, [
