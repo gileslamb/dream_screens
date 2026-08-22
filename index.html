@@ -855,6 +855,328 @@
     transition: opacity 2.5s ease;
   }
   #pp-vid.vis { opacity: 1; }
+  /* ════════════════════════════════════════════════════════════════════
+     ALBUM FRONT DOOR
+     Out-of-fiction record sleeve. Sits above every in-fiction layer
+     (access gate is z-500) and is the first thing a visitor meets.
+     Same palette and type as the terminal, but set as a sleeve: sans
+     prose, mono only for labels, generous rule work, no HUD chrome.
+     ════════════════════════════════════════════════════════════════════ */
+  #album {
+    position: fixed; inset: 0; z-index: 600;
+    background: #050706;
+    overflow-y: auto; overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    opacity: 1;
+    transition: opacity 1.1s ease;
+  }
+  #album.gone { opacity: 0; pointer-events: none; }
+
+  /* The terminal hides the OS cursor and draws its own dot. The sleeve is
+     a document with links and a form, so it gets a real cursor back. */
+  body.album-open { cursor: auto; }
+  body.album-open #cursor { display: none; }
+  #album, #album * { cursor: auto; }
+  #album a, #album button, #album .al-row.is-playable, #album .al-scrub { cursor: pointer; }
+
+  .al-wrap {
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 14vh 28px 18vh;
+  }
+
+  .al-rule {
+    height: 1px;
+    background: rgba(255,255,255,0.09);
+    margin: 4.5rem 0;
+  }
+
+  .al-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    color: rgba(0,255,136,0.55);
+    margin-bottom: 1.6rem;
+  }
+
+  /* ── 1. Statement of intent ── */
+  .al-mark {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.55em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 3.5rem;
+  }
+  .al-lede {
+    font-family: var(--sans);
+    font-weight: 300;
+    font-size: clamp(19px, 3.4vw, 25px);
+    line-height: 1.62;
+    color: #e6e6e0;
+    letter-spacing: 0.005em;
+  }
+  .al-lede .al-em { color: #fff; }
+  .al-lede-sub {
+    font-family: var(--sans);
+    font-weight: 300;
+    font-size: clamp(15px, 2.4vw, 17px);
+    line-height: 1.75;
+    color: rgba(230,230,224,0.62);
+    margin-top: 1.15rem;
+  }
+
+  /* ── Player ── */
+  .al-player { margin-top: 3.2rem; }
+  .al-transport {
+    display: flex; align-items: center; gap: 18px;
+  }
+  .al-play {
+    flex: 0 0 auto;
+    width: 58px; height: 58px;
+    border-radius: 50%;
+    background: none;
+    border: 1px solid rgba(0,255,136,0.45);
+    color: var(--green);
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.25s, background 0.25s, transform 0.25s;
+    padding: 0;
+  }
+  .al-play:hover { border-color: rgba(0,255,136,0.95); background: rgba(0,255,136,0.06); }
+  .al-play:active { transform: scale(0.96); }
+  .al-play svg { width: 17px; height: 17px; fill: currentColor; }
+  .al-play .al-ico-pause { display: none; }
+  .al-play.is-playing .al-ico-play { display: none; }
+  .al-play.is-playing .al-ico-pause { display: block; }
+
+  .al-now { flex: 1 1 auto; min-width: 0; }
+  .al-now-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.34);
+    margin-bottom: 6px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .al-now-title {
+    font-family: var(--sans);
+    font-weight: 300;
+    font-size: 15px;
+    color: rgba(230,230,224,0.9);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .al-scrub {
+    margin-top: 1.5rem;
+    height: 20px;
+    display: flex; align-items: center;
+  }
+  .al-scrub-track {
+    width: 100%; height: 1px;
+    background: rgba(255,255,255,0.13);
+    position: relative;
+  }
+  .al-scrub-fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 0%;
+    background: rgba(0,255,136,0.7);
+  }
+  .al-scrub-fill::after {
+    content: '';
+    position: absolute; right: -3px; top: -2.5px;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .al-scrub:hover .al-scrub-fill::after { opacity: 1; }
+  .al-times {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.18em;
+    color: rgba(255,255,255,0.28);
+    margin-top: 7px;
+  }
+  .al-note {
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(255,98,76,0.75);
+    margin-top: 10px; min-height: 12px;
+    opacity: 0; transition: opacity 0.4s;
+  }
+  .al-note.vis { opacity: 1; }
+
+  /* ── Track / chapter rows (shared) ── */
+  .al-row {
+    display: flex; align-items: baseline; gap: 14px;
+    padding: 13px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.055);
+    transition: color 0.2s;
+  }
+  .al-row .al-no {
+    flex: 0 0 auto;
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.2em;
+    color: rgba(255,255,255,0.3);
+  }
+  .al-row .al-title {
+    flex: 1 1 auto;
+    font-family: var(--sans); font-weight: 300; font-size: 16px;
+    color: rgba(230,230,224,0.85);
+  }
+  .al-row .al-meta {
+    flex: 0 0 auto;
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+  }
+  .al-row.is-playable:hover .al-title { color: #fff; }
+  .al-row.is-playable:hover .al-no { color: var(--green); }
+  .al-row.is-current .al-no { color: var(--green); }
+  .al-row.is-current .al-title { color: #fff; }
+
+  .al-tracklist { margin-top: 2.6rem; }
+
+  /* ── 2. Chapter index ── */
+  .al-chapter { padding: 2.4rem 0; border-bottom: 1px solid rgba(255,255,255,0.055); }
+  .al-chapter:first-of-type { padding-top: 0; }
+  .al-chapter-head {
+    display: flex; align-items: baseline; gap: 14px;
+    margin-bottom: 1.3rem;
+  }
+  .al-chapter-no {
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.2em; color: rgba(0,255,136,0.6);
+  }
+  .al-chapter-title {
+    font-family: var(--sans); font-weight: 300; font-size: 18px;
+    color: #e6e6e0;
+  }
+  /* Video slot: replace the inner placeholder with a YouTube iframe when
+     the film is public. Keep the .al-video wrapper, it holds the 16:9 box. */
+  .al-video {
+    position: relative;
+    width: 100%; aspect-ratio: 16 / 9;
+    border: 1px dashed rgba(0,255,136,0.22);
+    background: rgba(0,255,136,0.015);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .al-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .al-video-slot {
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    color: rgba(0,255,136,0.4);
+    text-align: center; line-height: 2;
+    padding: 0 1rem;
+  }
+  .al-video-slot span { display: block; color: rgba(255,255,255,0.22); letter-spacing: 0.22em; }
+
+  .al-unrecovered { margin-top: 2.6rem; }
+  .al-row.is-lost { opacity: 0.34; }
+  .al-row.is-lost .al-title { font-family: var(--mono); font-size: 13px; letter-spacing: 0.06em; }
+
+  /* ── 3. Liner notes ── */
+  .al-liner {
+    font-family: var(--sans); font-weight: 300;
+    font-size: 16px; line-height: 1.85;
+    color: rgba(230,230,224,0.72);
+  }
+  .al-liner-links {
+    display: flex; flex-wrap: wrap; gap: 26px;
+    margin-top: 2.2rem;
+  }
+  .al-liner-links a {
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    padding-bottom: 4px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .al-liner-links a:hover { color: var(--green); border-color: rgba(0,255,136,0.5); }
+
+  /* ── 4. Second door ── */
+  .al-door { text-align: center; }
+  #al-enter {
+    background: none;
+    border: 1px solid rgba(0,255,136,0.4);
+    color: rgba(0,255,136,0.85);
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.42em; text-transform: uppercase;
+    padding: 16px 30px;
+    transition: border-color 0.25s, color 0.25s, background 0.25s;
+  }
+  #al-enter:hover {
+    border-color: rgba(0,255,136,0.9);
+    color: var(--green);
+    background: rgba(0,255,136,0.05);
+  }
+  .al-door-sub {
+    font-family: var(--sans); font-weight: 300; font-style: italic;
+    font-size: 13px; color: rgba(255,255,255,0.4);
+    margin-top: 1.2rem;
+  }
+
+  /* ── 5. Signup ── */
+  .al-signup-copy {
+    font-family: var(--sans); font-weight: 300; font-size: 16px;
+    color: rgba(230,230,224,0.8);
+    margin-bottom: 1.5rem;
+  }
+  #al-kit-form { display: flex; gap: 10px; flex-wrap: wrap; }
+  #al-kit-email {
+    flex: 1 1 220px; min-width: 0;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.9);
+    font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 13px 14px; outline: none;
+    transition: border-color 0.2s;
+  }
+  #al-kit-email::placeholder { color: rgba(255,255,255,0.3); letter-spacing: 0.1em; }
+  #al-kit-email:focus { border-color: rgba(0,255,136,0.45); }
+  #al-kit-submit {
+    flex: 0 0 auto;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.16);
+    color: rgba(255,255,255,0.7);
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    padding: 13px 22px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  #al-kit-submit:hover { border-color: rgba(0,255,136,0.5); color: var(--green); }
+  #al-kit-msg {
+    width: 100%;
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(0,255,136,0.8);
+    opacity: 0; transition: opacity 0.4s; min-height: 12px;
+    margin-top: 4px;
+  }
+  #al-kit-msg.vis { opacity: 1; }
+
+  /* ── Colophon ── */
+  .al-colophon {
+    margin-top: 5rem;
+    display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: rgba(255,255,255,0.24);
+  }
+  .al-colophon a { color: rgba(255,255,255,0.4); text-decoration: none; transition: color 0.2s; }
+  .al-colophon a:hover { color: var(--green); }
+
+  @media (max-width: 560px) {
+    .al-wrap { padding: 9vh 20px 14vh; }
+    .al-rule { margin: 3.2rem 0; }
+    .al-row .al-meta { display: none; }
+    .al-transport { gap: 14px; }
+  }
+
   /* ── ACCESS GATE ── */
   #access-gate {
     position: fixed; inset: 0; z-index: 500;
@@ -944,13 +1266,6 @@
     background: rgba(255,255,255,0.07);
     margin: 2rem 0;
   }
-  #gate-invite {
-    font-family: var(--sans); font-size: 12px;
-    font-weight: 300; font-style: italic;
-    color: rgba(255,255,255,0.58);
-    text-align: center; line-height: 1.7;
-    margin-bottom: 0.5rem; max-width: 28ch;
-  }
   #gate-author {
     font-family: var(--mono); font-size: 9px;
     letter-spacing: 0.28em; text-transform: uppercase;
@@ -959,23 +1274,6 @@
     transition: color 0.2s; margin-bottom: 0.75rem;
   }
   #gate-author:hover { color: rgba(255,255,255,0.9); }
-  #gate-email-submit {
-    width: 100%; background: none;
-    border: 1px solid rgba(255,255,255,0.1);
-    color: rgba(255,255,255,0.62);
-    font-family: var(--mono); font-size: 9px;
-    letter-spacing: 0.32em; text-transform: uppercase;
-    padding: 11px 14px; cursor: pointer;
-    transition: border-color 0.2s, color 0.2s;
-  }
-  #gate-email-submit:hover { border-color: rgba(255,255,255,0.48); color: rgba(255,255,255,0.9); }
-  #gate-confirm {
-    font-family: var(--mono); font-size: 9px;
-    letter-spacing: 0.22em; text-transform: uppercase;
-    color: rgba(0,255,136,0.78);
-    opacity: 0; transition: opacity 0.5s; height: 13px; text-align: center;
-  }
-  #gate-confirm.vis { opacity: 1; }
 
   /* ── IN-PAGE VIDEO PROTOCOL OVERLAYS ── */
   /* During a video protocol: organism rises above the film so intrusions
@@ -1203,6 +1501,96 @@
 <script src="/assets/ds-hud.js" defer></script>
 </head>
 <body>
+<!-- ════════════════════════════════════════════════════════════════════
+     ALBUM FRONT DOOR
+     The out-of-fiction sleeve. Everything in here is Giles Lamb speaking
+     plainly. The in-fiction Corporation starts at #access-gate, behind
+     the "Enter the programme" button below.
+     ════════════════════════════════════════════════════════════════════ -->
+<div id="album">
+  <div class="al-wrap">
+
+    <!-- 1 ── STATEMENT + PLAYER ─────────────────────────────────── -->
+    <div class="al-mark">Dream Screens</div>
+
+    <p class="al-lede">
+      <span class="al-em">Dream Screens</span> is a narrative concept album by Giles Lamb.
+    </p>
+    <p class="al-lede-sub">
+      A story about grief sold as a cure. Ten tracks. Three chapters on film.
+    </p>
+
+    <div class="al-player">
+      <div class="al-transport">
+        <button class="al-play" id="al-play" type="button" aria-label="Play Act One">
+          <svg class="al-ico-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5 L14 8 L3 14.5 Z"/></svg>
+          <svg class="al-ico-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5h4v13H3z M9 1.5h4v13H9z"/></svg>
+        </button>
+        <div class="al-now">
+          <div class="al-now-label" id="al-now-label">Act One</div>
+          <div class="al-now-title" id="al-now-title">Signal Dreams</div>
+        </div>
+      </div>
+
+      <div class="al-scrub" id="al-scrub" role="slider" aria-label="Seek" tabindex="0"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="al-scrub-track"><div class="al-scrub-fill" id="al-scrub-fill"></div></div>
+      </div>
+      <div class="al-times">
+        <span id="al-time">0:00</span>
+        <span id="al-dur">&nbsp;</span>
+      </div>
+      <div class="al-note" id="al-note"></div>
+
+      <div class="al-tracklist" id="al-tracklist"></div>
+    </div>
+
+    <div class="al-rule"></div>
+
+    <!-- 2 ── CHAPTER INDEX ──────────────────────────────────────── -->
+    <div class="al-label">Chapters on film</div>
+    <div id="al-chapters"></div>
+
+    <div class="al-unrecovered" id="al-unrecovered"></div>
+
+    <div class="al-rule"></div>
+
+    <!-- 3 ── LINER NOTES ────────────────────────────────────────── -->
+    <div class="al-label">Liner notes</div>
+    <!-- REPLACE: one short paragraph, Giles's copy. -->
+    <p class="al-liner" id="al-liner">liner notes here</p>
+    <div class="al-liner-links">
+      <a href="proposal.html">Artistic proposition</a>
+      <a href="whitepaper.html">Research overview</a>
+    </div>
+
+    <div class="al-rule"></div>
+
+    <!-- 4 ── SECOND DOOR ────────────────────────────────────────── -->
+    <div class="al-door">
+      <button id="al-enter" type="button">Enter the programme</button>
+      <div class="al-door-sub">The story, told from the inside.</div>
+    </div>
+
+    <div class="al-rule"></div>
+
+    <!-- 5 ── SIGNUP ─────────────────────────────────────────────── -->
+    <p class="al-signup-copy">Get each chapter by email.</p>
+    <form id="al-kit-form" novalidate>
+      <input id="al-kit-email" type="email" name="email_address"
+             placeholder="your@email.com" autocomplete="email" spellcheck="false" required/>
+      <button id="al-kit-submit" type="submit">Subscribe</button>
+      <div id="al-kit-msg"></div>
+    </form>
+
+    <div class="al-colophon">
+      <span>Dream Screens &middot; Giles Lamb</span>
+      <a href="https://www.gileslamb.com" target="_blank" rel="noopener">gileslamb.com</a>
+    </div>
+
+  </div>
+</div>
+
 <!-- ════ ACCESS GATE ════ -->
 <div id="access-gate">
   <div id="gate-logo">DreamScreens</div>
@@ -1228,17 +1616,7 @@
 
   <div id="gate-rule"></div>
 
-  <div id="gate-invite">
-    The first recovery programmes are opening soon.<br>
-    Be among the first clients.
-  </div>
   <a id="gate-author" href="https://www.gileslamb.com" target="_blank">a project by giles lamb →</a>
-
-  <div class="gate-block">
-    <input class="gate-input" id="gate-email" type="email" placeholder="your@email.com"/>
-    <button id="gate-email-submit" onclick="gateEmailSubmit()">Register for first access →</button>
-    <div id="gate-confirm">Signal received. Your session will be allocated.</div>
-  </div>
 </div>
 
 <!-- ════ ENTRY SCREEN ════ -->
@@ -2497,35 +2875,79 @@ function showFrag(stageNum, idx) {
   }
 }
 
-let videoStageFallbackTimer = null;
+// The intro text sections are read at the visitor's pace, not on a clock.
+// Each stage walks its own run of FRAGS on click/tap (or space/enter/arrow);
+// when the run is exhausted the same gesture moves to the next stage.
+// The only timer left is the one that fades in the "· next memory ·" hint.
+let videoStageFallbackTimer = null;   // holds the next-prompt fade-in timer
 let videoAdvanceClickHandler = null;
+let stageAdvanceKeyHandler = null;
 
-function enterVideoStage(stageNum, onAdvance) {
-  const ctx = getCtx();
-  if (ctx.state === 'suspended') ctx.resume();
-  [vid1, vid2, vid3].forEach(v => { if (v.readyState >= 2) v.play().catch(()=>{}); });
+const FRAG_FADE_MS   = 2800;   // showFrag's crossfade — swallow clicks inside it
+const FRAG_PROMPT_MS = 6000;   // how long a fragment sits before the hint appears
+
+function clearStageAdvance() {
   if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
+  videoStageFallbackTimer = null;
   if (videoAdvanceClickHandler) {
     document.removeEventListener('click', videoAdvanceClickHandler);
     videoAdvanceClickHandler = null;
   }
+  if (stageAdvanceKeyHandler) {
+    document.removeEventListener('keydown', stageAdvanceKeyHandler);
+    stageAdvanceKeyHandler = null;
+  }
+}
+
+function enterVideoStage(stageNum, fragIdxs, onAdvance) {
+  const ctx = getCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  [vid1, vid2, vid3].forEach(v => { if (v.readyState >= 2) v.play().catch(()=>{}); });
+  clearStageAdvance();
+
   const nextPrompt = document.getElementById('next-prompt');
   nextPrompt.classList.remove('visible');
-  const advance = () => {
+
+  let i = 0;
+  let shownAt = 0;
+
+  const armPrompt = () => {
+    shownAt = Date.now();
+    if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
+    videoStageFallbackTimer = setTimeout(() => nextPrompt.classList.add('visible'), FRAG_PROMPT_MS);
+  };
+
+  const step = () => {
+    if (Date.now() - shownAt < FRAG_FADE_MS) return;   // mid-crossfade, ignore
     if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
     videoStageFallbackTimer = null;
-    if (videoAdvanceClickHandler) {
-      document.removeEventListener('click', videoAdvanceClickHandler);
-      videoAdvanceClickHandler = null;
-    }
     nextPrompt.classList.remove('visible');
-    onAdvance();
+    i++;
+    if (i < fragIdxs.length) {
+      showFrag(stageNum, fragIdxs[i]);
+      armPrompt();
+    } else {
+      clearStageAdvance();
+      onAdvance();
+    }
   };
-  const advanceOnClick = () => advance();
-  videoAdvanceClickHandler = advanceOnClick;
-  document.addEventListener('click', advanceOnClick, { once: true });
-  setTimeout(() => nextPrompt.classList.add('visible'), 15000);
-  videoStageFallbackTimer = setTimeout(advance, 45000);
+
+  videoAdvanceClickHandler = e => {
+    // Site chrome keeps its own clicks (skip button, nav links).
+    if (e.target && e.target.closest && e.target.closest('#home-nav, a, button')) return;
+    step();
+  };
+  stageAdvanceKeyHandler = e => {
+    if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      step();
+    }
+  };
+  document.addEventListener('click', videoAdvanceClickHandler);
+  document.addEventListener('keydown', stageAdvanceKeyHandler);
+
+  showFrag(stageNum, fragIdxs[0]);
+  armPrompt();
 }
 
 async function onEnter() {
@@ -2576,14 +2998,7 @@ async function onEnter() {
         glBlendTarget = isIOS ? 0.3 : 1.0;
         showStage(2);
         playTrack(CONFIG.media(CONFIG.music.stage2));
-        showFrag(2, 0);
-        const dwell = 14000;
-        setTimeout(() => showFrag(2, 1), dwell * 1);
-        setTimeout(() => showFrag(2, 2), dwell * 2);
-        setTimeout(() => showFrag(2, 3), dwell * 3);
-        setTimeout(() => showFrag(2, 4), dwell * 4);
-        setTimeout(() => showFrag(2, 5), dwell * 5);
-        enterVideoStage(2, () => {
+        enterVideoStage(2, [0, 1, 2, 3, 4, 5], () => {
           glBlendTarget = isIOS ? 0.3 : 1.0;
           stageTimer = setTimeout(() => {
             staticBurst(200);
@@ -2592,12 +3007,7 @@ async function onEnter() {
             glBlendTarget = isIOS ? 0.3 : 1.0;
             showStage(3);
             playTrack(CONFIG.media(CONFIG.music.stage3));
-            showFrag(3, 6);
-            setTimeout(() => showFrag(3, 7),  dwell * 1);
-            setTimeout(() => showFrag(3, 8),  dwell * 2);
-            setTimeout(() => showFrag(3, 9),  dwell * 3);
-            setTimeout(() => showFrag(3, 10), dwell * 4);
-            enterVideoStage(3, () => {
+            enterVideoStage(3, [6, 7, 8, 9, 10], () => {
               glBlendTarget = isIOS ? 0.3 : 1.0;
               stageTimer = setTimeout(() => {
                 staticBurst(200);
@@ -2606,12 +3016,7 @@ async function onEnter() {
                 glBlendTarget = isIOS ? 0.3 : 1.0;
                 showStage(4);
                 playTrack(CONFIG.media(CONFIG.music.stage4));
-                showFrag(4, 11);
-                setTimeout(() => showFrag(4, 12), dwell * 1);
-                setTimeout(() => showFrag(4, 13), dwell * 2);
-                setTimeout(() => showFrag(4, 14), dwell * 3);
-                setTimeout(() => showFrag(4, 15), dwell * 4);
-                enterVideoStage(4, () => {
+                enterVideoStage(4, [11, 12, 13, 14, 15], () => {
                   glBlendTarget = isIOS ? 0.3 : 1.0;
                   stageTimer = setTimeout(() => {
                     staticBurst(200);
@@ -2640,12 +3045,7 @@ async function onEnter() {
 
 function resetExperience() {
   clearTimeout(stageTimer);
-  if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
-  videoStageFallbackTimer = null;
-  if (videoAdvanceClickHandler) {
-    document.removeEventListener('click', videoAdvanceClickHandler);
-    videoAdvanceClickHandler = null;
-  }
+  clearStageAdvance();
   document.getElementById('next-prompt').classList.remove('visible');
   stopAudio();
   virtaStarted = false;
@@ -2967,12 +3367,7 @@ function skipToProtocols() {
   try { const ac = getCtx(); if (ac.state === 'suspended') void ac.resume(); } catch(e) {}
   clearTimeout(stageTimer);
   stageTimer = null;
-  if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
-  videoStageFallbackTimer = null;
-  if (videoAdvanceClickHandler) {
-    document.removeEventListener('click', videoAdvanceClickHandler);
-    videoAdvanceClickHandler = null;
-  }
+  clearStageAdvance();
   document.getElementById('next-prompt').classList.remove('visible');
   document.getElementById('s-entry').classList.add('gone');
   document.getElementById('s0').classList.remove('active');
@@ -3700,8 +4095,6 @@ function returnToProtocols() {
 }
 // ── ACCESS GATE ──────────────────────
 const GATE_PW = 'signal';
-const KIT_API_KEY = 'Y37b5a8d043f45319cbb3f1977ada5475';
-const KIT_FORM_ID = '7186ece150';
 
 function gateSubmit() {
   const val = document.getElementById('gate-pw').value.trim().toLowerCase();
@@ -3726,23 +4119,256 @@ document.getElementById('gate-pw').addEventListener('keydown', e => {
   if (e.key === 'Enter') gateSubmit();
 });
 
-document.getElementById('gate-email').addEventListener('keydown', e => {
-  if (e.key === 'Enter') gateEmailSubmit();
-});
 
-function gateEmailSubmit() {
-  const email = document.getElementById('gate-email').value.trim();
-  if (!email || !email.includes('@')) return;
-  fetch('https://api.convertkit.com/v3/forms/' + KIT_FORM_ID + '/subscribe', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json; charset=utf-8' },
-    body: JSON.stringify({ api_key: KIT_API_KEY, email: email })
-  }).catch(() => {});
-  document.getElementById('gate-email').value = '';
-  document.getElementById('gate-email-submit').style.opacity = '0.25';
-  document.getElementById('gate-email-submit').style.pointerEvents = 'none';
-  document.getElementById('gate-confirm').classList.add('vis');
-}
+// ════════════════════════════════════════════════════════════════════════
+// ALBUM FRONT DOOR
+// The out-of-fiction sleeve: Act One player, chapter index, liner notes,
+// the door into the programme, and the Kit signup. Self-contained — it
+// uses a plain <audio> element rather than the WebAudio graph the
+// in-fiction experience runs on, so the two never contend for a context.
+// ════════════════════════════════════════════════════════════════════════
+(function albumFrontDoor() {
+
+  // ── FILL IN ──────────────────────────────────────────────────────────
+  // Kit (ConvertKit) account. Both values are public-safe: the v3 api_key
+  // is the publishable key, not the secret.
+  const KIT_FORM_ID = '7186ece150';   // <-- Kit form ID
+  const KIT_API_KEY = 'Y37b5a8d043f45319cbb3f1977ada5475';   // <-- Kit v3 api_key
+  // ─────────────────────────────────────────────────────────────────────
+
+  const R2 = 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/';
+
+  // Act One, in order. Swap the `src` values when masters are replaced.
+  const ACT_ONE = [
+    { no: '01', id: 'DS-01', title: 'Signal Dreams',   src: R2 + 'Signal%20Dreams.mp3' },
+    { no: '02', id: 'DS-02', title: 'Feedback Memory', src: R2 + 'Feedback%20Memory.(Minus%20197).mp3' },
+    { no: '03', id: 'DS-03', title: 'Brainwaves',      src: R2 + 'Brainwaves%20(grain%20Pysche).mp3' },
+  ];
+
+  // Three chapters on film. When a film goes public, paste its YouTube
+  // embed id into `youtube` and the slot renders the iframe instead of
+  // the placeholder.
+  const CHAPTERS = [
+    { id: 'DS-01', title: 'Signal Dreams',   youtube: '' },   // <-- YouTube video id
+    { id: 'DS-02', title: 'Feedback Memory', youtube: '' },   // <-- YouTube video id
+    { id: 'DS-03', title: 'Brainwaves',      youtube: '' },   // <-- YouTube video id
+  ];
+
+  // Shown in-fiction. No dates, no promises.
+  const UNRECOVERED = [
+    { id: 'DS-04', title: 'Module N5'   },
+    { id: 'DS-05', title: 'Co-Dreaming' },
+    { id: 'DS-06', title: 'Module 3'    },
+    { id: 'DS-07', title: "Mum's Song"  },
+    { id: 'DS-08', title: 'Virta'       },
+  ];
+
+  const album = document.getElementById('album');
+  if (!album) return;
+
+  // Returning inside a live session (e.g. back from a protocol page): the
+  // visitor has already been through the sleeve and the gate. Skip straight
+  // to where bootstrapSession is putting them.
+  if (sessionStorage.getItem('ds_authed') === '1') {
+    album.classList.add('gone');
+    album.style.display = 'none';
+    return;
+  }
+
+  document.body.classList.add('album-open');
+
+  // ── Act One player ───────────────────────────────────────────────────
+  const audio = new Audio();
+  audio.preload = 'metadata';
+  audio.crossOrigin = 'anonymous';
+
+  const playBtn   = document.getElementById('al-play');
+  const nowLabel  = document.getElementById('al-now-label');
+  const nowTitle  = document.getElementById('al-now-title');
+  const scrub     = document.getElementById('al-scrub');
+  const scrubFill = document.getElementById('al-scrub-fill');
+  const timeEl    = document.getElementById('al-time');
+  const durEl     = document.getElementById('al-dur');
+  const noteEl    = document.getElementById('al-note');
+  const listEl    = document.getElementById('al-tracklist');
+
+  let current = 0;
+  let loaded  = false;
+
+  function fmt(sec) {
+    if (!isFinite(sec) || sec < 0) return '0:00';
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function note(msg) {
+    noteEl.textContent = msg || '';
+    noteEl.classList.toggle('vis', !!msg);
+  }
+
+  // Track list
+  ACT_ONE.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.className = 'al-row is-playable';
+    row.innerHTML =
+      '<span class="al-no">' + t.no + '</span>' +
+      '<span class="al-title"></span>' +
+      '<span class="al-meta">' + t.id + '</span>';
+    row.querySelector('.al-title').textContent = t.title;
+    row.addEventListener('click', () => select(i, true));
+    listEl.appendChild(row);
+  });
+  const rows = Array.from(listEl.children);
+
+  function paintCurrent() {
+    rows.forEach((r, i) => r.classList.toggle('is-current', i === current));
+    nowTitle.textContent = ACT_ONE[current].title;
+    nowLabel.textContent = 'Act One · Track ' + ACT_ONE[current].no + ' of ' + ACT_ONE.length;
+  }
+
+  function select(i, autoplay) {
+    current = i;
+    loaded = false;
+    audio.src = ACT_ONE[i].src;
+    audio.load();
+    paintCurrent();
+    scrubFill.style.width = '0%';
+    timeEl.textContent = '0:00';
+    durEl.innerHTML = '&nbsp;';
+    note('');
+    if (autoplay) play();
+  }
+
+  function play() {
+    const p = audio.play();
+    if (p && p.catch) p.catch(err => {
+      // Autoplay refusal or a bad fetch: say so rather than sitting silent.
+      note(err && err.name === 'NotAllowedError' ? 'press play to start' : 'track unavailable');
+      playBtn.classList.remove('is-playing');
+    });
+  }
+
+  playBtn.addEventListener('click', () => {
+    if (!loaded && !audio.src) select(0, false);
+    if (audio.paused) play(); else audio.pause();
+  });
+
+  audio.addEventListener('play',  () => { playBtn.classList.add('is-playing'); playBtn.setAttribute('aria-label', 'Pause'); note(''); });
+  audio.addEventListener('pause', () => { playBtn.classList.remove('is-playing'); playBtn.setAttribute('aria-label', 'Play Act One'); });
+  audio.addEventListener('error', () => note('track unavailable'));
+
+  audio.addEventListener('loadedmetadata', () => {
+    loaded = true;
+    durEl.textContent = fmt(audio.duration);
+  });
+
+  audio.addEventListener('timeupdate', () => {
+    const d = audio.duration;
+    if (!isFinite(d) || d <= 0) return;
+    const pct = (audio.currentTime / d) * 100;
+    scrubFill.style.width = pct + '%';
+    scrub.setAttribute('aria-valuenow', Math.round(pct));
+    timeEl.textContent = fmt(audio.currentTime);
+  });
+
+  // Act One runs end to end without another click.
+  audio.addEventListener('ended', () => {
+    if (current < ACT_ONE.length - 1) select(current + 1, true);
+    else { playBtn.classList.remove('is-playing'); scrubFill.style.width = '0%'; }
+  });
+
+  function seekTo(clientX) {
+    const r = scrub.getBoundingClientRect();
+    const frac = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
+    if (isFinite(audio.duration) && audio.duration > 0) audio.currentTime = frac * audio.duration;
+  }
+  scrub.addEventListener('click', e => seekTo(e.clientX));
+  scrub.addEventListener('keydown', e => {
+    if (!isFinite(audio.duration)) return;
+    if (e.key === 'ArrowRight') { audio.currentTime = Math.min(audio.duration, audio.currentTime + 5); e.preventDefault(); }
+    if (e.key === 'ArrowLeft')  { audio.currentTime = Math.max(0, audio.currentTime - 5); e.preventDefault(); }
+  });
+
+  select(0, false);
+
+  // ── Chapter index ────────────────────────────────────────────────────
+  const chaptersEl = document.getElementById('al-chapters');
+  CHAPTERS.forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'al-chapter';
+    const slot = c.youtube
+      ? '<iframe src="https://www.youtube-nocookie.com/embed/' + c.youtube + '" title="' + c.id + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'
+      : '<div class="al-video-slot">YouTube embed slot<span>' + c.id + ' film not yet public</span></div>';
+    el.innerHTML =
+      '<div class="al-chapter-head">' +
+        '<span class="al-chapter-no">' + c.id + '</span>' +
+        '<span class="al-chapter-title"></span>' +
+      '</div>' +
+      '<div class="al-video">' + slot + '</div>';
+    el.querySelector('.al-chapter-title').textContent = c.title;
+    chaptersEl.appendChild(el);
+  });
+
+  const lostEl = document.getElementById('al-unrecovered');
+  UNRECOVERED.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'al-row is-lost';
+    row.innerHTML =
+      '<span class="al-no">' + t.id + '</span>' +
+      '<span class="al-title"></span>' +
+      '<span class="al-meta">not yet recovered</span>';
+    row.querySelector('.al-title').textContent = t.title;
+    lostEl.appendChild(row);
+  });
+
+  // ── Second door ──────────────────────────────────────────────────────
+  // Hands off to the existing Clearance / Confidentiality gate untouched.
+  // The sleeve's audio stops first so nothing bleeds into the programme.
+  document.getElementById('al-enter').addEventListener('click', () => {
+    try { audio.pause(); audio.currentTime = 0; } catch (e) {}
+    document.body.classList.remove('album-open');
+    album.classList.add('gone');
+    setTimeout(() => { album.style.display = 'none'; }, 1200);
+    const pw = document.getElementById('gate-pw');
+    if (pw) setTimeout(() => pw.focus(), 300);
+  });
+
+  // ── Kit signup ───────────────────────────────────────────────────────
+  const kitForm  = document.getElementById('al-kit-form');
+  const kitEmail = document.getElementById('al-kit-email');
+  const kitMsg   = document.getElementById('al-kit-msg');
+
+  kitForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const email = kitEmail.value.trim();
+    if (!email || email.indexOf('@') < 1) {
+      kitMsg.style.color = 'rgba(255,98,76,0.85)';
+      kitMsg.textContent = 'enter a valid email address';
+      kitMsg.classList.add('vis');
+      return;
+    }
+    kitMsg.classList.remove('vis');
+    fetch('https://api.convertkit.com/v3/forms/' + KIT_FORM_ID + '/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify({ api_key: KIT_API_KEY, email: email })
+    }).then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      kitMsg.style.color = 'rgba(0,255,136,0.8)';
+      kitMsg.textContent = 'subscribed. check your inbox to confirm.';
+      kitMsg.classList.add('vis');
+      kitEmail.value = '';
+      kitEmail.disabled = true;
+      document.getElementById('al-kit-submit').disabled = true;
+    }).catch(() => {
+      kitMsg.style.color = 'rgba(255,98,76,0.85)';
+      kitMsg.textContent = 'could not subscribe. please try again.';
+      kitMsg.classList.add('vis');
+    });
+  });
+
+})();
 </script>
 </body>
 </html>
