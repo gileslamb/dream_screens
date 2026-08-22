@@ -1904,11 +1904,12 @@ const CONFIG = {
     stage1: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Nature%20module%201.mp3',
     stage2: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Module%20n5%20v2.mp3',
     stage3: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/The%20Dream%20Architect.mp3',
-    stage4: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Free%20Will.mp3',
+    // No stage4 entry: stage 3's track runs on through stage 4 rather than
+    // handing over, so it gets the whole of both.
     stage5: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/wind%20and%20water%20v1.mp3',
   },
   timing: {
-    stage1Duration: 18000,
+    stage1Duration: 34000,   // Nature module 1 gets a real run, not a sting
     stage2Duration: 25000,
     stage3Duration: 25000,
     stage4Duration: 25000,
@@ -3101,7 +3102,8 @@ let stageAdvanceKeyHandler = null;
 
 const FRAG_FADE_MS   = 2800;   // showFrag's crossfade — swallow clicks inside it
 const FRAG_PROMPT_MS = 6000;   // how long a fragment sits before the hint appears
-const FRAG_DWELL_MS  = 14000;  // and how long before it carries itself, untouched
+const FRAG_DWELL_MS  = 18000;  // and how long before it carries itself, untouched
+const STAGE5_HOLD_MS = 66000;  // how long wind and water holds before the archive
 
 function clearStageAdvance() {
   if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
@@ -3244,7 +3246,7 @@ async function onEnter() {
                 glBlend = 0.0;
                 glBlendTarget = isIOS ? 0.3 : 1.0;
                 showStage(4);
-                playTrack(CONFIG.media(CONFIG.music.stage4));
+                // The Dream Architect is still playing; let it run.
                 enterVideoStage(4, [11, 12, 13, 14, 15], () => {
                   glBlendTarget = isIOS ? 0.3 : 1.0;
                   stageTimer = setTimeout(() => {
@@ -3252,14 +3254,11 @@ async function onEnter() {
                     glStageTarget = 5.0;
                     glOrgOpacityTarget = 1.0;
                     showStage(5);
-                    playTrack(CONFIG.media(CONFIG.music.stage4));
-                    setTimeout(() => {
-                      playTrack(CONFIG.media(CONFIG.music.stage5), { fadeInTimeConstant: 15.0 });
-                    }, 20000);
+                    playTrack(CONFIG.media(CONFIG.music.stage5), { fadeInTimeConstant: 15.0 });
                     stageTimer = setTimeout(() => {
                       glArchiveModeTarget = 1.0;
                       showArchiveOverlay();
-                    }, 30000);
+                    }, STAGE5_HOLD_MS);
                   }, CONFIG.timing.transitionMs);
                 });
               }, CONFIG.timing.transitionMs);
