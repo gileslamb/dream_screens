@@ -569,50 +569,30 @@
     color: rgba(255,255,255,0.6);
     margin-bottom: 1.1rem;
   }
-  /* Album mark: one still frame of the entry organism at stage 5. It sits
-     beside the wordmark, centred on it, at 0.8 of its height. Screen blend
-     drops the near-black ground out so it reads as a glyph, not a tile. */
-  #ec-mark {
-    height: calc(clamp(44px, 5.6vw, 96px) * 0.8);
-    width: calc(clamp(44px, 5.6vw, 96px) * 0.8);
-    flex: 0 0 auto;
-    align-self: center;
-    mix-blend-mode: screen;
-    -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 52%, transparent 76%);
-    mask-image: radial-gradient(circle at 50% 50%, #000 52%, transparent 76%);
-  }
 
-  /* The wordmark carries the title now. Height drives the scale; width
-     follows the artwork's own aspect. */
-  #ec-titlewrap {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    margin-bottom: 0.85rem;
-  }
+  /* The hero title wears the in-experience HUD logo treatment: the same
+     mark, the same mono caps at 0.4em, scaled up to cover size. The SVG is
+     sized in em so its circle tracks the cap height at every viewport. */
   #ec-title {
-    margin: 0;
-    font-size: clamp(44px, 5.6vw, 96px);   /* still the scale reference */
-    line-height: 1.0;
+    margin: 0 0 0.85rem;
     display: flex;
     align-items: center;
+    gap: 0.6em;
+    font-family: var(--mono);
+    font-size: clamp(28px, 3.6vw, 60px);
+    font-weight: 400;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: #f2f2ec;
+    line-height: 1;
   }
-  #ec-wordmark {
-    height: clamp(44px, 5.6vw, 96px);
-    width: auto;
-    max-width: 100%;
+  #ec-title svg {
+    /* The circle spans 27.5 of the 44 unit box, so 1.12em puts its outer
+       edge on the cap height of the mono face at any size. */
+    width: 1.12em; height: 1.12em;
+    flex: 0 0 auto;
     display: block;
   }
-  /* Shown only if the wordmark file is not in place yet. */
-  #ec-title-fallback {
-    font-family: var(--sans);
-    font-weight: 300;
-    letter-spacing: 0.01em;
-    color: #f2f2ec;
-    display: none;
-  }
-  #ec-title.no-art #ec-wordmark { display: none; }
-  #ec-title.no-art #ec-title-fallback { display: block; }
 
   /* Three equal-weight controls, same family and scale as the orb label. */
   #ec-actions {
@@ -1633,14 +1613,20 @@
   <div id="entry-cover">
     <div id="ec-artist">Giles Lamb</div>
 
-    <div id="ec-titlewrap">
-      <h1 id="ec-title">
-        <!-- WORDMARK: drop the artwork in at this path. -->
-        <img id="ec-wordmark" src="/assets/dreamscreens-wordmark.png" alt="Dream Screens"/>
-        <span id="ec-title-fallback" aria-hidden="true">Dream Screens</span>
-      </h1>
-      <img id="ec-mark" src="/assets/organism-mark.svg" alt="" aria-hidden="true"/>
-    </div>
+    <h1 id="ec-title">
+      <!-- The home-nav logo mark, same geometry and gradient, own gradient id. -->
+      <svg viewBox="0 0 44 44" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="lg-title" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#bbb" stop-opacity="0.7"/>
+            <stop offset="100%" stop-color="#888" stop-opacity="0.5"/>
+          </linearGradient>
+        </defs>
+        <circle cx="20" cy="20" r="13" stroke="url(#lg-title)" stroke-width="1.5" fill="none"/>
+        <line x1="30" y1="30" x2="37" y2="37" stroke="url(#lg-title)" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span>DREAMSCREENS</span>
+    </h1>
     <div id="ec-sub">a narrative concept album</div>
 
     <div id="ec-actions">
@@ -4380,15 +4366,6 @@ document.getElementById('gate-pw').addEventListener('keydown', e => {
   }
   wireKit('es-form', 'es-email', 'es-submit', 'es-msg');
   wireKit('af-form', 'af-email', 'af-submit', 'af-msg');
-
-  // The wordmark is artwork. Until the file is dropped in, fall back to text
-  // so the cover is never a broken image.
-  const wordmark = document.getElementById('ec-wordmark');
-  if (wordmark) {
-    const useText = () => document.getElementById('ec-title').classList.add('no-art');
-    if (wordmark.complete && wordmark.naturalWidth === 0) useText();
-    wordmark.addEventListener('error', useText);
-  }
 
   const listen = document.getElementById('ec-listen');
   if (!listen) return;
