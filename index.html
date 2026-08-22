@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DreamScreen — Resonance Grief Recovery</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400&family=Cormorant+Garamond:wght@300&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400&display=swap');
 
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -561,9 +561,6 @@
     max-width: min(72vw, 780px);
   }
   #ec-artist {
-    display: flex;
-    align-items: center;
-    gap: 14px;
     font-family: var(--mono);
     font-size: var(--ec-body);
     font-weight: 400;
@@ -572,56 +569,50 @@
     color: rgba(255,255,255,0.6);
     margin-bottom: 1.1rem;
   }
-  /* Album mark: one still frame of the entry organism. Screen blend drops its
-     near-black ground out, so it sits on the shader as a glyph, not a tile. */
+  /* Album mark: one still frame of the entry organism at stage 5. It sits
+     beside the wordmark, centred on it, at 0.8 of its height. Screen blend
+     drops the near-black ground out so it reads as a glyph, not a tile. */
   #ec-mark {
-    width: 56px; height: 56px;
+    height: calc(clamp(44px, 5.6vw, 96px) * 0.8);
+    width: calc(clamp(44px, 5.6vw, 96px) * 0.8);
     flex: 0 0 auto;
+    align-self: center;
     mix-blend-mode: screen;
-    /* Feather the frame edge so the still reads as a mark, not a tile. */
     -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 52%, transparent 76%);
     mask-image: radial-gradient(circle at 50% 50%, #000 52%, transparent 76%);
   }
 
-  #ec-title {
-    font-size: clamp(44px, 5.6vw, 96px);
-    line-height: 1.0;
+  /* The wordmark carries the title now. Height drives the scale; width
+     follows the artwork's own aspect. */
+  #ec-titlewrap {
+    display: flex;
+    align-items: center;
+    gap: 18px;
     margin-bottom: 0.85rem;
-    color: #f2f2ec;
   }
-  /* (a) Cormorant Garamond, light. */
-  #ec-title.face-serif {
-    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  #ec-title {
+    margin: 0;
+    font-size: clamp(44px, 5.6vw, 96px);   /* still the scale reference */
+    line-height: 1.0;
+    display: flex;
+    align-items: center;
+  }
+  #ec-wordmark {
+    height: clamp(44px, 5.6vw, 96px);
+    width: auto;
+    max-width: 100%;
+    display: block;
+  }
+  /* Shown only if the wordmark file is not in place yet. */
+  #ec-title-fallback {
+    font-family: var(--sans);
     font-weight: 300;
     letter-spacing: 0.01em;
+    color: #f2f2ec;
+    display: none;
   }
-  /* The damage filter is attached from JS so DAMAGE_AMOUNT can drive it, and
-     so a value of 0 leaves the glyphs completely untouched. */
-  #ec-damage-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
-  /* (b) The page grotesk, tracked tight, with the scanline pattern masked
-     through the letterforms rather than laid over them. */
-  #ec-title.face-grotesk-scan {
-    font-family: var(--sans);
-    font-weight: 300;
-    letter-spacing: -0.045em;
-    color: transparent;
-    background-image: repeating-linear-gradient(
-      to bottom,
-      #f2f2ec 0px,
-      #f2f2ec 3px,
-      rgba(96,116,110,0.55) 3px,
-      rgba(96,116,110,0.55) 4px
-    );
-    -webkit-background-clip: text;
-    background-clip: text;
-  }
-  #ec-sub {
-    font-family: var(--sans);
-    font-size: clamp(17px, 1.6vw, 21px);
-    font-weight: 300;
-    font-style: italic;
-    color: rgba(255,255,255,0.5);
-  }
+  #ec-title.no-art #ec-wordmark { display: none; }
+  #ec-title.no-art #ec-title-fallback { display: block; }
 
   /* Three equal-weight controls, same family and scale as the orb label. */
   #ec-actions {
@@ -1640,11 +1631,16 @@
 
   <!-- Band 1 · title + controls -->
   <div id="entry-cover">
-    <div id="ec-artist">
-      <img id="ec-mark" src="/assets/organism-mark.svg" alt="" aria-hidden="true" width="56" height="56"/>
-      <span>Giles Lamb</span>
+    <div id="ec-artist">Giles Lamb</div>
+
+    <div id="ec-titlewrap">
+      <h1 id="ec-title">
+        <!-- WORDMARK: drop the artwork in at this path. -->
+        <img id="ec-wordmark" src="/assets/dreamscreens-wordmark.png" alt="Dream Screens"/>
+        <span id="ec-title-fallback" aria-hidden="true">Dream Screens</span>
+      </h1>
+      <img id="ec-mark" src="/assets/organism-mark.svg" alt="" aria-hidden="true"/>
     </div>
-    <h1 id="ec-title">Dream Screens</h1>
     <div id="ec-sub">a narrative concept album</div>
 
     <div id="ec-actions">
@@ -1656,7 +1652,7 @@
         <button class="ec-btn" id="ec-listen" type="button" aria-expanded="false">
           <svg class="ec-ico-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5 L14 8 L3 14.5 Z"/></svg>
           <svg class="ec-ico-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5h4v13H3z M9 1.5h4v13H9z"/></svg>
-          <span id="ec-listen-label">Listen to Act One</span>
+          <span id="ec-listen-label">Listen</span>
         </button>
       </div>
 
@@ -2099,16 +2095,6 @@ const KIT_API_KEY = 'Y37b5a8d043f45319cbb3f1977ada5475';   // <-- Kit v3 api_key
 // Where the record can be bought. The same filled control appears first in
 // the button row and again at the foot of the player panel.
 const BANDCAMP_URL = '';           // <-- Bandcamp album URL
-
-// Which face carries the title. 'serif' = Cormorant Garamond 300.
-// 'grotesk-scan' = the page grotesk at tight tracking with the scanline
-// pattern masked through the letterforms.
-const TITLE_FACE = 'serif';        // 'serif' | 'grotesk-scan'
-
-// How worn the title is. 0 leaves the glyphs untouched and attaches no filter.
-// 1 is the full tear. Drives both the horizontal displacement and how much of
-// the glyph the dropped hairlines take out.
-const DAMAGE_AMOUNT = 0.35;        // 0 to 1
 
 // The three chapters as a playlist. Empty leaves the control dimmed rather
 // than offering a dead link.
@@ -4395,65 +4381,13 @@ document.getElementById('gate-pw').addEventListener('keydown', e => {
   wireKit('es-form', 'es-email', 'es-submit', 'es-msg');
   wireKit('af-form', 'af-email', 'af-submit', 'af-msg');
 
-  // Title face, per TITLE_FACE.
-  const titleEl = document.getElementById('ec-title');
-  if (titleEl) titleEl.classList.add('face-' + (TITLE_FACE === 'grotesk-scan' ? 'grotesk-scan' : 'serif'));
-
-  // ── Title damage. Static, no animation. Two parts, both driven by
-  //    DAMAGE_AMOUNT: a horizontal tear confined to three narrow bands, and
-  //    fine hairlines dropped out of the glyph. At 0 no filter is attached.
-  if (titleEl && DAMAGE_AMOUNT > 0) {
-    const d = Math.min(1, Math.max(0, DAMAGE_AMOUNT));
-    const scale = (d * 11).toFixed(2);            // 0.35 lands at ~3.9px of tear
-
-    // Three narrow bands out of twenty buckets of the band noise.
-    const bands = Array.from({ length: 20 }, (_, i) => ([6, 10, 14].indexOf(i) >= 0 ? 1 : 0)).join(' ');
-
-    // Hairline dropout. Each zeroed bucket of the line noise removes roughly
-    // 8 percent of the glyph area, measured against the undamaged title, so
-    // the default of 0.35 takes out one bucket and lands on target.
-    const HOLE_BUCKETS = 45;
-    const zeros = Math.round(d * 2.9);
-    const from = Math.round(HOLE_BUCKETS / 2 - zeros / 2);
-    const holes = Array.from({ length: HOLE_BUCKETS }, (_, i) =>
-      (zeros > 0 && i >= from && i < from + zeros) ? 0 : 1).join(' ');
-
-    const ns = 'http://www.w3.org/2000/svg';
-    const svg = document.createElementNS(ns, 'svg');
-    svg.id = 'ec-damage-defs';
-    svg.setAttribute('aria-hidden', 'true');
-    svg.innerHTML =
-      '<defs>' +
-      '<filter id="ec-title-damage" x="-6%" y="-16%" width="112%" height="132%" color-interpolation-filters="sRGB">' +
-        // Coherent low-frequency noise, then amplified about 0.5, so a band
-        // slips sideways as a slab instead of fraying pixel by pixel.
-        '<feTurbulence type="fractalNoise" baseFrequency="0.006 0.05" numOctaves="1" seed="7" result="tearRaw"/>' +
-        '<feComponentTransfer in="tearRaw" result="tear">' +
-          '<feFuncR type="linear" slope="6" intercept="-2.5"/>' +
-        '</feComponentTransfer>' +
-        '<feTurbulence type="fractalNoise" baseFrequency="0.0008 0.055" numOctaves="1" seed="19" result="bandNoise"/>' +
-        '<feComponentTransfer in="bandNoise" result="bandMask">' +
-          '<feFuncR type="discrete" tableValues="' + bands + '"/>' +
-          '<feFuncG type="discrete" tableValues="' + bands + '"/>' +
-          '<feFuncB type="discrete" tableValues="' + bands + '"/>' +
-          '<feFuncA type="discrete" tableValues="' + bands + '"/>' +
-        '</feComponentTransfer>' +
-        // noise inside a band, a flat 0.5 (no shift) everywhere else
-        '<feComposite in="tear" in2="bandMask" operator="arithmetic" k1="1" k2="0" k3="-0.5" k4="0.5" result="bandedRaw"/>' +
-        // pin the channel that drives y so the tear stays horizontal
-        '<feComponentTransfer in="bandedRaw" result="dmap">' +
-          '<feFuncG type="linear" slope="0" intercept="0.5"/>' +
-          '<feFuncA type="linear" slope="0" intercept="1"/>' +
-        '</feComponentTransfer>' +
-        '<feDisplacementMap in="SourceGraphic" in2="dmap" scale="' + scale + '" xChannelSelector="R" yChannelSelector="G" result="torn"/>' +
-        '<feTurbulence type="fractalNoise" baseFrequency="0.0009 1.1" numOctaves="1" seed="31" result="lineNoise"/>' +
-        '<feComponentTransfer in="lineNoise" result="holes">' +
-          '<feFuncA type="discrete" tableValues="' + holes + '"/>' +
-        '</feComponentTransfer>' +
-        '<feComposite in="torn" in2="holes" operator="in"/>' +
-      '</filter></defs>';
-    document.body.appendChild(svg);
-    titleEl.style.filter = 'url(#ec-title-damage)';
+  // The wordmark is artwork. Until the file is dropped in, fall back to text
+  // so the cover is never a broken image.
+  const wordmark = document.getElementById('ec-wordmark');
+  if (wordmark) {
+    const useText = () => document.getElementById('ec-title').classList.add('no-art');
+    if (wordmark.complete && wordmark.naturalWidth === 0) useText();
+    wordmark.addEventListener('error', useText);
   }
 
   const listen = document.getElementById('ec-listen');
@@ -4524,7 +4458,7 @@ document.getElementById('gate-pw').addEventListener('keydown', e => {
     const t = ACT_ONE[actOneIdx];
     nowEl.textContent = 'Act One · ' + t.no + ' · ' + t.title;
     rows.forEach((r, i) => { if (r) r.classList.toggle('is-current', i === actOneIdx); });
-    label.textContent = audio.paused ? 'Listen to Act One' : 'Pause Act One';
+    label.textContent = audio.paused ? 'Listen' : 'Pause';
     listen.classList.toggle('is-playing', !audio.paused);
   }
 
