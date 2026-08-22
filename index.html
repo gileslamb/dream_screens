@@ -520,6 +520,16 @@
     transition: opacity 1.2s ease;
   }
   #s-entry.gone { opacity: 0; pointer-events: none; }
+  /* ── ENTRY SCREEN · the shader is the album cover ──────────────────
+     Three bands in one grid rather than absolute overlays, so the title,
+     the orb and the signup can never collide at any viewport.
+     One type hierarchy, nothing parked in a corner.                   */
+  #s-entry {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: 5vh 4vw;
+    gap: 3vh;
+  }
   #entry-gl {
     position: absolute;
     inset: 0;
@@ -527,106 +537,172 @@
     display: block;
     pointer-events: none;
   }
-  #entry-wordmark {
-    position: absolute;
-    top: 4vh; left: 4vw;
-    pointer-events: none;
+
+  /* Shared scale. --ec-body is the floor for everything on this screen. */
+  #s-entry {
+    --ec-body: 16px;
+    --ec-ctrl: clamp(16px, 1.25vw, 19px);
   }
-  #entry-wordmark .ew-name {
+
+  /* The album chrome stands aside once the programme is entered. */
+  #entry-cover, #entry-signup {
+    transition: opacity 0.8s ease;
+  }
+  #s-entry.engaged #entry-cover,
+  #s-entry.engaged #entry-signup { opacity: 0; pointer-events: none; }
+
+  /* ── Band 1 · title + controls ── */
+  #entry-cover {
+    position: relative; z-index: 2;
+    justify-self: start;
+    max-width: min(72vw, 780px);
+  }
+  #ec-artist {
     font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.55em;
+    font-size: var(--ec-body);
+    font-weight: 400;
+    letter-spacing: 0.42em;
     text-transform: uppercase;
-    color: rgba(255,255,255,0.55);
-    display: block;
-    margin-bottom: 6px;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 1.1rem;
   }
-  #entry-wordmark .ew-strap {
+  #ec-title {
     font-family: var(--sans);
-    font-size: 11px;
+    font-size: clamp(44px, 5.6vw, 96px);
+    font-weight: 300;
+    letter-spacing: -0.015em;
+    line-height: 1.0;
+    color: #f2f2ec;
+    margin-bottom: 0.85rem;
+  }
+  #ec-sub {
+    font-family: var(--sans);
+    font-size: clamp(17px, 1.6vw, 21px);
     font-weight: 300;
     font-style: italic;
-    color: rgba(255,255,255,0.22);
-    display: block;
+    color: rgba(255,255,255,0.5);
   }
-  #entry-centre {
-    position: absolute;
-    left: 50%; top: 50%;
-    transform: translate(-50%, -50%);
+
+  /* Three equal-weight controls, same family and scale as the orb label. */
+  #ec-actions {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0;
-    text-align: center;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px;
+    margin-top: 2.6rem;
   }
-  #entry-tagline {
-    font-family: var(--sans);
-    font-size: clamp(11px, 1.1vw, 14px);
-    font-weight: 300;
-    letter-spacing: 0.12em;
-    color: rgba(255,255,255,0.18);
-    margin-bottom: 2.8rem;
-    pointer-events: none;
-  }
-  /* ── ACT ONE · out-of-fiction credit on the shader ── */
-  #entry-album {
-    position: absolute;
-    bottom: 4vh; left: 4vw;
-    z-index: 2;
-    max-width: 46ch;
-    opacity: 0;
-    animation: eaIn 2.2s ease 1.2s forwards;
-  }
-  @keyframes eaIn { to { opacity: 1; } }
-  #ea-line {
-    font-family: var(--sans);
-    font-size: 12px;
-    font-weight: 300;
-    letter-spacing: 0.02em;
-    line-height: 1.6;
-    color: rgba(255,255,255,0.42);
-    margin-bottom: 0.9rem;
-  }
-  #ea-play {
+  .ec-action { display: flex; flex-direction: column; gap: 8px; }
+  .ec-btn {
     display: inline-flex;
     align-items: center;
     gap: 10px;
     background: none;
-    border: 1px solid rgba(0,255,136,0.28);
-    padding: 8px 14px 8px 11px;
-    cursor: pointer;
-    transition: border-color 0.25s, background 0.25s;
-  }
-  #ea-play:hover { border-color: rgba(0,255,136,0.7); background: rgba(0,255,136,0.05); }
-  #ea-play svg { width: 9px; height: 9px; fill: var(--green); flex: 0 0 auto; }
-  #ea-play .ea-ico-pause { display: none; }
-  #ea-play.is-playing .ea-ico-play { display: none; }
-  #ea-play.is-playing .ea-ico-pause { display: block; }
-  #ea-label {
+    border: 1px solid rgba(255,255,255,0.22);
+    color: rgba(255,255,255,0.88);
     font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: 0.32em;
-    text-transform: uppercase;
-    color: rgba(0,255,136,0.7);
+    font-size: var(--ec-ctrl);
+    letter-spacing: 0.03em;
+    padding: 14px 20px;
+    text-decoration: none;
     white-space: nowrap;
+    cursor: pointer;
+    backdrop-filter: blur(2px);
+    background-color: rgba(2,13,14,0.35);
+    transition: border-color 0.25s, color 0.25s, background 0.25s;
   }
-  #ea-now {
+  .ec-btn:hover {
+    border-color: rgba(0,255,136,0.65);
+    color: #fff;
+    background: rgba(0,255,136,0.05);
+  }
+  .ec-btn svg { width: 11px; height: 11px; fill: currentColor; flex: 0 0 auto; }
+  .ec-btn .ec-ico-pause { display: none; }
+  .ec-btn.is-playing .ec-ico-play { display: none; }
+  .ec-btn.is-playing .ec-ico-pause { display: block; }
+  .ec-btn.is-pending {
+    opacity: 0.4;
+    pointer-events: none;
+    border-style: dashed;
+  }
+  .ec-alt {
     font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.28);
-    margin-top: 0.75rem;
-    min-height: 12px;
-    opacity: 0;
-    transition: opacity 0.6s ease;
+    font-size: var(--ec-body);
+    color: rgba(255,255,255,0.42);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255,255,255,0.14);
+    padding-bottom: 2px;
+    align-self: flex-start;
+    transition: color 0.2s, border-color 0.2s;
   }
-  #ea-now.vis { opacity: 1; }
-  @media (max-width: 600px) {
-    #entry-album { right: 4vw; max-width: none; bottom: 3vh; }
-    #ea-line { font-size: 11px; }
-  }
+  .ec-alt:hover { color: var(--green); border-color: rgba(0,255,136,0.5); }
 
+  /* ── Act One player, opened by the Listen control ── */
+  #ec-player {
+    max-width: 420px;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.55s ease, opacity 0.45s ease, margin-top 0.45s ease;
+  }
+  #ec-player.open { max-height: 360px; opacity: 1; margin-top: 2rem; }
+  #ec-player-inner {
+    /* The shader is brightest behind this column; give the player a ground. */
+    background: rgba(2,13,14,0.55);
+    backdrop-filter: blur(3px);
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 18px 20px 8px;
+  }
+  #ec-now {
+    font-family: var(--mono);
+    font-size: var(--ec-body);
+    color: rgba(255,255,255,0.75);
+    margin-bottom: 12px;
+  }
+  #ec-scrub { height: 18px; display: flex; align-items: center; cursor: pointer; }
+  #ec-scrub-track { width: 100%; height: 1px; background: rgba(255,255,255,0.16); position: relative; }
+  #ec-scrub-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: rgba(0,255,136,0.75); }
+  #ec-times {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: var(--ec-body);
+    color: rgba(255,255,255,0.35);
+    margin-top: 6px;
+  }
+  #ec-tracks { margin-top: 1.2rem; }
+  .ec-track {
+    display: flex; align-items: baseline; gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    font-family: var(--mono);
+    font-size: var(--ec-body);
+    color: rgba(255,255,255,0.6);
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .ec-track:hover { color: #fff; }
+  .ec-track .ect-no { color: rgba(255,255,255,0.3); flex: 0 0 auto; }
+  .ec-track.is-current { color: #fff; }
+  .ec-track.is-current .ect-no { color: var(--green); }
+
+  /* ── Band 2 · the orb ── */
+  #entry-centre {
+    position: relative; z-index: 2;
+    align-self: center;
+    justify-self: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  #entry-tagline {
+    font-family: var(--sans);
+    font-size: clamp(17px, 1.5vw, 22px);
+    font-weight: 300;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.72);
+    text-shadow: 0 1px 14px rgba(0,0,0,0.85), 0 0 3px rgba(0,0,0,0.9);
+    margin-bottom: 2.4rem;
+    pointer-events: none;
+  }
   /* The button + ring container */
   #entry-btn-wrap {
     display: flex;
@@ -647,7 +723,7 @@
   }
   #entry-ring-canvas.vis { opacity: 1; }
   #entry-btn {
-    width: 64px; height: 64px;
+    width: 96px; height: 96px;
     border-radius: 50%;
     border: 1px solid transparent;
     background:
@@ -664,12 +740,86 @@
   #entry-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
   #entry-btn-label {
     font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: 0.45em;
-    text-transform: uppercase;
-    color: rgba(240,208,128,0.5);
+    font-size: var(--ec-ctrl);
+    letter-spacing: 0.06em;
+    color: rgba(240,208,128,0.95);
+    text-shadow: 0 1px 14px rgba(0,0,0,0.85), 0 0 3px rgba(0,0,0,0.9);
     pointer-events: none;
     transition: opacity 0.3s ease;
+  }
+
+  /* ── Band 3 · signup, one line ── */
+  #entry-signup {
+    position: relative; z-index: 2;
+    justify-self: start;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  #es-label {
+    font-family: var(--sans);
+    font-size: var(--ec-body);
+    font-weight: 300;
+    color: rgba(255,255,255,0.6);
+  }
+  #es-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  #es-email {
+    width: 230px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.16);
+    color: rgba(255,255,255,0.9);
+    font-family: var(--mono);
+    font-size: var(--ec-body);
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #es-email::placeholder { color: rgba(255,255,255,0.28); }
+  #es-email:focus { border-color: rgba(0,255,136,0.5); }
+  #es-submit {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.75);
+    font-family: var(--mono);
+    font-size: var(--ec-body);
+    letter-spacing: 0.03em;
+    padding: 12px 18px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  #es-submit:hover { border-color: rgba(0,255,136,0.55); color: var(--green); }
+  #es-msg {
+    font-family: var(--mono);
+    font-size: var(--ec-body);
+    color: rgba(0,255,136,0.8);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  #es-msg.vis { opacity: 1; }
+
+  @media (max-width: 820px) {
+    #s-entry {
+      --ec-body: 15px;
+      padding: 4vh 6vw;
+      gap: 2vh;
+    }
+    #entry-cover { max-width: none; }
+    #ec-actions { flex-direction: column; align-items: stretch; margin-top: 2rem; }
+    .ec-action { width: 100%; }
+    .ec-btn { justify-content: center; width: 100%; }
+    #ec-player { max-width: none; }
+    #ec-player.open { max-height: 300px; }
+    #entry-btn { width: 76px; height: 76px; }
+    #entry-tagline { margin-bottom: 1.6rem; }
+    #entry-signup { flex-direction: column; align-items: stretch; gap: 10px; }
+    #es-form { width: 100%; flex-wrap: nowrap; }
+    #es-email { flex: 1 1 0; min-width: 0; width: auto; }
+    #es-submit { flex: 0 0 auto; }
+    /* Opening the player pushes past the fold on a phone — let it scroll
+       rather than clipping the signup. */
+    #s-entry { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    #s-entry.gone { overflow: hidden; }
   }
   /* Tech data panel — shown during load */
   #entry-data-panel {
@@ -1011,6 +1161,12 @@
     transition: opacity 1.2s ease;
   }
   #access-gate.gone { opacity: 0; pointer-events: none; }
+  #gate-corp-strap {
+    font-family: var(--sans); font-size: 13px;
+    font-weight: 300; font-style: italic;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 1.6rem;
+  }
   #gate-logo {
     font-family: var(--mono); font-size: 10px;
     letter-spacing: 0.55em; text-transform: uppercase;
@@ -1328,6 +1484,7 @@
 <body>
 <!-- ════ ACCESS GATE ════ -->
 <div id="access-gate" class="gone" style="display:none">
+  <div id="gate-corp-strap">Resonance — grief, resolved.</div>
   <div id="gate-logo">DreamScreens</div>
   <div id="gate-strap">Resonance Grief Recovery — Restricted Access</div>
 
@@ -1355,18 +1512,55 @@
 </div>
 
 <!-- ════ ENTRY SCREEN ════ -->
+<!-- The shader is the album cover. Out of fiction, ungated: the record,
+     what you can do with it, and the way in. -->
 <div id="s-entry">
   <canvas id="entry-gl"></canvas>
-  <div id="entry-wordmark">
-    <span class="ew-name">DreamScreens</span>
-    <span class="ew-strap">Resonance — grief, resolved.</span>
+
+  <!-- Band 1 · title + controls -->
+  <div id="entry-cover">
+    <div id="ec-artist">Giles Lamb</div>
+    <h1 id="ec-title">Dream Screens</h1>
+    <div id="ec-sub">a narrative concept album</div>
+
+    <div id="ec-actions">
+      <!-- Hidden until the preorder page exists — see SHOW_BUY. -->
+      <div class="ec-action" id="ec-buy-group" style="display:none">
+        <a class="ec-btn" id="ec-buy" href="#" target="_blank" rel="noopener">Buy the album</a>
+        <a class="ec-alt" id="ec-buy-alt" href="#" target="_blank" rel="noopener">or from gileslamb.com</a>
+      </div>
+
+      <div class="ec-action">
+        <button class="ec-btn" id="ec-listen" type="button" aria-expanded="false">
+          <svg class="ec-ico-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5 L14 8 L3 14.5 Z"/></svg>
+          <svg class="ec-ico-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5h4v13H3z M9 1.5h4v13H9z"/></svg>
+          <span id="ec-listen-label">Listen to Act One</span>
+        </button>
+      </div>
+
+      <div class="ec-action">
+        <a class="ec-btn" id="ec-watch" href="#" target="_blank" rel="noopener">Watch on YouTube</a>
+      </div>
+    </div>
+
+    <div id="ec-player"><div id="ec-player-inner">
+      <div id="ec-now">Act One</div>
+      <div id="ec-scrub" role="slider" aria-label="Seek" tabindex="0"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div id="ec-scrub-track"><div id="ec-scrub-fill"></div></div>
+      </div>
+      <div id="ec-times"><span id="ec-time">0:00</span><span id="ec-dur">&nbsp;</span></div>
+      <div id="ec-tracks"></div>
+    </div></div>
   </div>
+
+  <!-- Band 2 · the way in -->
   <div id="entry-centre">
-    <div id="entry-tagline">Recovery programme — primed</div>
+    <div id="entry-tagline">Recovery programme primed</div>
     <div id="entry-btn-wrap">
-      <canvas id="entry-ring-canvas" width="110" height="110"></canvas>
+      <canvas id="entry-ring-canvas" width="170" height="170"></canvas>
       <div id="entry-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
           <defs>
             <linearGradient id="egrad" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stop-color="#b8960c"/>
@@ -1376,9 +1570,21 @@
           <path d="M8 16L16 8M16 8H9M16 8V15" stroke="url(#egrad)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
-      <span id="entry-btn-label">ENTER</span>
+      <span id="entry-btn-label">Enter the experience</span>
     </div>
   </div>
+
+  <!-- Band 3 · signup -->
+  <div id="entry-signup">
+    <span id="es-label">Get each chapter by email</span>
+    <form id="es-form" novalidate>
+      <input id="es-email" type="email" name="email_address" placeholder="your@email.com"
+             autocomplete="email" spellcheck="false" required/>
+      <button id="es-submit" type="submit">Subscribe</button>
+    </form>
+    <div id="es-msg"></div>
+  </div>
+
   <div id="entry-data-panel">
     <div id="entry-pct">0%</div>
     <div id="entry-msg">initialising</div>
@@ -1388,16 +1594,6 @@
       <span id="em-diff">DIFF — —</span>
       <span id="em-rem">REM — —</span>
     </div>
-  </div>
-  <!-- Out of fiction: the record, and its first act, before any gate. -->
-  <div id="entry-album">
-    <div id="ea-line">Dream Screens, a narrative concept album by Giles Lamb.</div>
-    <button id="ea-play" type="button" aria-label="Play Act One">
-      <svg class="ea-ico-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5 L14 8 L3 14.5 Z"/></svg>
-      <svg class="ea-ico-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5h4v13H3z M9 1.5h4v13H9z"/></svg>
-      <span id="ea-label">Play Act One</span>
-    </button>
-    <div id="ea-now"></div>
   </div>
 </div>
 
@@ -1764,6 +1960,16 @@ const CONFIG = {
 const KIT_FORM_ID = '7186ece150';   // <-- Kit form ID
 const KIT_API_KEY = 'Y37b5a8d043f45319cbb3f1977ada5475';   // <-- Kit v3 api_key
 
+// Where the record can be bought. SHOW_BUY hides the whole control until the
+// preorder page exists — flip it to true once BANDCAMP_URL resolves.
+const SHOW_BUY = false;
+const BANDCAMP_URL = '';           // <-- Bandcamp album URL
+const SITE_STORE_URL = '';         // <-- gileslamb.com store URL
+
+// The three chapters as a playlist. Empty leaves the control dimmed rather
+// than offering a dead link.
+const YOUTUBE_PLAYLIST_URL = '';   // <-- YouTube playlist URL
+
 // YouTube ids for the three chapters on film. Empty string renders the
 // placeholder slot; paste an id and the row embeds it inline.
 const CHAPTER_FILMS = {
@@ -1799,7 +2005,7 @@ function stopActOne() {
     a.volume = from * (1 - k);
     if (k >= 1) { clearInterval(fade); try { a.pause(); } catch (e) {} a.volume = from; }
   }, 40);
-  const btn = document.getElementById('ea-play');
+  const btn = document.getElementById('ec-listen');
   if (btn) btn.classList.remove('is-playing');
 }
 
@@ -2520,7 +2726,7 @@ function startVirta(e) {
   // The Act One control is not the gesture that starts the in-fiction bed.
   // This listener is {once:true}, so pressing play consumes it — which is
   // what we want: the visitor has chosen the record as the soundtrack.
-  if (e && e.target && e.target.closest && e.target.closest('#entry-album')) return;
+  if (e && e.target && e.target.closest && e.target.closest('#entry-cover, #entry-signup')) return;
   if (actOneEngaged) return;
   if (virtaStarted) return;
   virtaStarted = true;
@@ -3053,6 +3259,9 @@ async function doEnterTransition() {
     if (ac.state === 'suspended') await ac.resume();
   } catch (e) {}
   if (typeof startVirta === 'function') startVirta();
+
+  const sEntry = document.getElementById('s-entry');
+  if (sEntry) sEntry.classList.add('engaged');   // album chrome steps aside
 
   const ringCanvas = document.getElementById('entry-ring-canvas');
   const dataPanel = document.getElementById('entry-data-panel');
@@ -3999,18 +4208,14 @@ document.getElementById('gate-pw').addEventListener('keydown', e => {
 // ════════════════════════════════════════════════════════════════════════
 
 (function actOne() {
-  const wrap  = document.getElementById('entry-album');
-  const btn   = document.getElementById('ea-play');
-  const label = document.getElementById('ea-label');
-  const now   = document.getElementById('ea-now');
-
-  // ── Kit signup at the foot of the archive ──────────────────────────
-  const form = document.getElementById('af-form');
-  if (form) {
-    const email = document.getElementById('af-email');
-    const msg   = document.getElementById('af-msg');
+  // ── Kit signup: the entry-screen line and the archive foot share one handler.
+  function wireKit(formId, emailId, submitId, msgId) {
+    const form = document.getElementById(formId);
+    if (!form) return;
+    const email = document.getElementById(emailId);
+    const msg   = document.getElementById(msgId);
     const say = (text, ok) => {
-      msg.style.color = ok ? 'rgba(0,255,136,0.75)' : 'rgba(255,98,76,0.85)';
+      msg.style.color = ok ? 'rgba(0,255,136,0.8)' : 'rgba(255,98,76,0.85)';
       msg.textContent = text;
       msg.classList.add('vis');
     };
@@ -4027,31 +4232,79 @@ document.getElementById('gate-pw').addEventListener('keydown', e => {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         say('subscribed. check your inbox to confirm.', true);
         email.value = ''; email.disabled = true;
-        document.getElementById('af-submit').disabled = true;
+        document.getElementById(submitId).disabled = true;
       }).catch(() => say('could not subscribe. please try again.', false));
     });
   }
+  wireKit('es-form', 'es-email', 'es-submit', 'es-msg');
+  wireKit('af-form', 'af-email', 'af-submit', 'af-msg');
 
-  if (!wrap || !btn) return;
+  const listen = document.getElementById('ec-listen');
+  if (!listen) return;
+
+  // ── Buy: one control, hidden entirely until there is somewhere to send people.
+  if (SHOW_BUY && BANDCAMP_URL) {
+    const group = document.getElementById('ec-buy-group');
+    group.style.display = '';
+    document.getElementById('ec-buy').href = BANDCAMP_URL;
+    const alt = document.getElementById('ec-buy-alt');
+    if (SITE_STORE_URL) alt.href = SITE_STORE_URL; else alt.style.display = 'none';
+  }
+
+  // ── Watch: dimmed rather than dead while the playlist is unlisted.
+  const watch = document.getElementById('ec-watch');
+  if (YOUTUBE_PLAYLIST_URL) watch.href = YOUTUBE_PLAYLIST_URL;
+  else { watch.classList.add('is-pending'); watch.removeAttribute('href'); watch.setAttribute('aria-disabled', 'true'); }
+
+  // ── Listen: the inline Act One player.
+  const panel  = document.getElementById('ec-player');
+  const label  = document.getElementById('ec-listen-label');
+  const nowEl  = document.getElementById('ec-now');
+  const scrub  = document.getElementById('ec-scrub');
+  const fill   = document.getElementById('ec-scrub-fill');
+  const timeEl = document.getElementById('ec-time');
+  const durEl  = document.getElementById('ec-dur');
+  const listEl = document.getElementById('ec-tracks');
 
   // Returning inside a live session: the shader is being skipped, so is this.
-  if (sessionStorage.getItem('ds_return_to_archive') === '1') { wrap.style.display = 'none'; return; }
+  if (sessionStorage.getItem('ds_return_to_archive') === '1') return;
 
   const audio = new Audio();
   audio.preload = 'none';
   actOneAudio = audio;
 
+  const fmt = sec => {
+    if (!isFinite(sec) || sec < 0) return '0:00';
+    const m = Math.floor(sec / 60), x = Math.floor(sec % 60);
+    return m + ':' + (x < 10 ? '0' : '') + x;
+  };
+
+  ACT_ONE.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.className = 'ec-track';
+    row.innerHTML = '<span class="ect-no"></span><span class="ect-title"></span>';
+    row.querySelector('.ect-no').textContent = t.no;
+    row.querySelector('.ect-title').textContent = t.title;
+    row.addEventListener('click', () => { actOneEngaged = true; load(i, true); });
+    listEl.appendChild(row);
+  });
+  const rows = Array.from(listEl.children);
+
   function paint() {
     const t = ACT_ONE[actOneIdx];
-    now.textContent = 'Act One · ' + t.no + ' · ' + t.title;
-    now.classList.add('vis');
-    label.textContent = audio.paused ? 'Play Act One' : 'Pause';
+    nowEl.textContent = 'Act One · ' + t.no + ' · ' + t.title;
+    rows.forEach((r, i) => r.classList.toggle('is-current', i === actOneIdx));
+    label.textContent = audio.paused ? 'Listen to Act One' : 'Pause Act One';
+    listen.classList.toggle('is-playing', !audio.paused);
   }
 
   function load(i, autoplay) {
     actOneIdx = i;
     audio.src = ACT_ONE[i].src;
     audio.load();
+    fill.style.width = '0%';
+    timeEl.textContent = '0:00';
+    durEl.innerHTML = '&nbsp;';
     if (autoplay) start();
     paint();
   }
@@ -4060,16 +4313,19 @@ document.getElementById('gate-pw').addEventListener('keydown', e => {
     const p = audio.play();
     if (p && p.catch) p.catch(() => {
       actOneEngaged = false;
-      btn.classList.remove('is-playing');
-      now.textContent = 'audio unavailable';
-      now.classList.add('vis');
+      nowEl.textContent = 'audio unavailable';
+      paint();
     });
   }
 
-  btn.addEventListener('click', e => {
+  listen.addEventListener('click', e => {
     e.stopPropagation();   // never counts as the ENTER gesture
+    if (!panel.classList.contains('open')) {
+      panel.classList.add('open');
+      listen.setAttribute('aria-expanded', 'true');
+    }
     if (audio.paused) {
-      actOneEngaged = true;              // latch before anything else can hear the click
+      actOneEngaged = true;              // latch before anything else hears the click
       if (!audio.src) load(0, true); else start();
     } else {
       audio.pause();
@@ -4077,16 +4333,39 @@ document.getElementById('gate-pw').addEventListener('keydown', e => {
     }
   });
 
-  audio.addEventListener('play',  () => { btn.classList.add('is-playing'); paint(); });
-  audio.addEventListener('pause', () => { btn.classList.remove('is-playing'); paint(); });
-  audio.addEventListener('error', () => { now.textContent = 'audio unavailable'; now.classList.add('vis'); });
+  audio.addEventListener('play',  paint);
+  audio.addEventListener('pause', paint);
+  audio.addEventListener('error', () => { nowEl.textContent = 'audio unavailable'; });
+  audio.addEventListener('loadedmetadata', () => { durEl.textContent = fmt(audio.duration); });
+  audio.addEventListener('timeupdate', () => {
+    const d = audio.duration;
+    if (!isFinite(d) || d <= 0) return;
+    const pct = (audio.currentTime / d) * 100;
+    fill.style.width = pct + '%';
+    scrub.setAttribute('aria-valuenow', Math.round(pct));
+    timeEl.textContent = fmt(audio.currentTime);
+  });
 
   // Act One plays through. When it runs out the in-fiction score resumes at
   // the next stage transition.
   audio.addEventListener('ended', () => {
     if (actOneIdx < ACT_ONE.length - 1) load(actOneIdx + 1, true);
-    else { actOneEngaged = false; btn.classList.remove('is-playing'); now.textContent = 'Act One complete'; }
+    else { actOneEngaged = false; nowEl.textContent = 'Act One complete'; paint(); }
   });
+
+  function seek(clientX) {
+    const r = scrub.getBoundingClientRect();
+    const frac = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
+    if (isFinite(audio.duration) && audio.duration > 0) audio.currentTime = frac * audio.duration;
+  }
+  scrub.addEventListener('click', e => { e.stopPropagation(); seek(e.clientX); });
+  scrub.addEventListener('keydown', e => {
+    if (!isFinite(audio.duration)) return;
+    if (e.key === 'ArrowRight') { audio.currentTime = Math.min(audio.duration, audio.currentTime + 5); e.preventDefault(); }
+    if (e.key === 'ArrowLeft')  { audio.currentTime = Math.max(0, audio.currentTime - 5); e.preventDefault(); }
+  });
+
+  paint();
 })();
 </script>
 </body>
