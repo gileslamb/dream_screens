@@ -3095,15 +3095,19 @@ function showFrag(stageNum, idx) {
 // when the run is exhausted the same gesture moves to the next stage.
 // The only timer left is the one that fades in the "· next memory ·" hint.
 let videoStageFallbackTimer = null;   // holds the next-prompt fade-in timer
+let stageDwellTimer = null;           // holds the unattended auto-advance
 let videoAdvanceClickHandler = null;
 let stageAdvanceKeyHandler = null;
 
 const FRAG_FADE_MS   = 2800;   // showFrag's crossfade — swallow clicks inside it
 const FRAG_PROMPT_MS = 6000;   // how long a fragment sits before the hint appears
+const FRAG_DWELL_MS  = 14000;  // and how long before it carries itself, untouched
 
 function clearStageAdvance() {
   if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
   videoStageFallbackTimer = null;
+  if (stageDwellTimer) clearTimeout(stageDwellTimer);
+  stageDwellTimer = null;
   if (videoAdvanceClickHandler) {
     document.removeEventListener('click', videoAdvanceClickHandler);
     videoAdvanceClickHandler = null;
@@ -3130,12 +3134,18 @@ function enterVideoStage(stageNum, fragIdxs, onAdvance) {
     shownAt = Date.now();
     if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
     videoStageFallbackTimer = setTimeout(() => nextPrompt.classList.add('visible'), FRAG_PROMPT_MS);
+    // Read it at your own pace, but never stall: if nobody touches it the
+    // montage carries itself at the same dwell the timed version used.
+    if (stageDwellTimer) clearTimeout(stageDwellTimer);
+    stageDwellTimer = setTimeout(() => step(true), FRAG_DWELL_MS);
   };
 
-  const step = () => {
-    if (Date.now() - shownAt < FRAG_FADE_MS) return;   // mid-crossfade, ignore
+  const step = (auto) => {
+    if (!auto && Date.now() - shownAt < FRAG_FADE_MS) return;   // mid-crossfade, ignore
     if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
     videoStageFallbackTimer = null;
+    if (stageDwellTimer) clearTimeout(stageDwellTimer);
+    stageDwellTimer = null;
     nextPrompt.classList.remove('visible');
     i++;
     if (i < fragIdxs.length) {
@@ -3150,12 +3160,12 @@ function enterVideoStage(stageNum, fragIdxs, onAdvance) {
   videoAdvanceClickHandler = e => {
     // Site chrome keeps its own clicks (skip button, nav links).
     if (e.target && e.target.closest && e.target.closest('#home-nav, a, button')) return;
-    step();
+    step(false);
   };
   stageAdvanceKeyHandler = e => {
     if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight' || e.key === 'ArrowDown') {
       e.preventDefault();
-      step();
+      step(false);
     }
   };
   document.addEventListener('click', videoAdvanceClickHandler);
@@ -3168,6 +3178,9 @@ function enterVideoStage(stageNum, fragIdxs, onAdvance) {
 async function onEnter() {
   const ctx = getCtx();
   if (ctx.state === 'suspended') await ctx.resume();
+  // The record has carried the cover and the gate. From here the programme
+  // has its own score, so Act One stands down and the stage tracks take over.
+  stopActOne();
   if (!virtaStarted) startVirta();   // the programme's own music begins here
   void startBed();                   // no-op if the first gesture already brought it up
   document.getElementById('stage0Links').classList.remove('visible');
