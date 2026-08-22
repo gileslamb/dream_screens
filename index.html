@@ -1907,13 +1907,18 @@ const CONFIG = {
     intro:  'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Virta.mp3',
     stage1: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Nature%20module%201.mp3',
     stage2: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Module%20n5%20v2.mp3',
-    stage3: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/The%20Dream%20Architect.mp3',
+    stage3: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/module%203.mp3',
     // No stage4 entry: stage 3's track runs on through stage 4 rather than
     // handing over, so it gets the whole of both.
-    stage5: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/wind%20and%20water%20v1.mp3',
+    // Virta returns to close the onboarding, the same file as intro.
+    stage5: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Virta.mp3',
   },
   timing: {
-    stage1Duration: 86000,   // + the 4s pre-roll = 90s of Nature module 1
+    // Nature module 1 is cut to fit the visual sequence rather than the other
+    // way round. At 90s the completed log screen sat unchanged for 82s. This
+    // is the pre-extension value, so the hold is the original one it was
+    // designed around and the track runs about 25s.
+    stage1Duration: 18000,
     stage2Duration: 25000,
     stage3Duration: 25000,
     stage4Duration: 25000,
