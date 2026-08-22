@@ -1887,6 +1887,10 @@ const BED_VOLUME = 0.18;
 // to put all three back in the rotation.
 const BED_EXTRA_LAYERS = false;
 
+// Time constant, in seconds, for the birds leaving as onboarding begins.
+// Around 20s to effective silence, so it reads as a departure not a cut.
+const BED_ONBOARD_FADE_TC = 6.0;
+
 const CONFIG = {
   // Set to your CDN URL when hosting media separately (e.g. 'https://your-bucket.r2.dev/')
   mediaBaseUrl: '',
@@ -1909,7 +1913,7 @@ const CONFIG = {
     stage5: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/wind%20and%20water%20v1.mp3',
   },
   timing: {
-    stage1Duration: 34000,   // Nature module 1 gets a real run, not a sting
+    stage1Duration: 86000,   // + the 4s pre-roll = 90s of Nature module 1
     stage2Duration: 25000,
     stage3Duration: 25000,
     stage4Duration: 25000,
@@ -2781,6 +2785,10 @@ async function playTrack(path, opts) {
   const ctx = getCtx();
   if (ctx.state === 'suspended') await ctx.resume();
   const fadeInTC = (opts && opts.fadeInTimeConstant) || 10.0;
+  // longFade: time constant, in seconds, for a genuine two-way crossfade.
+  // Both sides use setTargetAtTime, so the tracks sit over each other for
+  // roughly 3x this before either is dominant.
+  const longFade = opts && opts.longFade;
   const url = mediaFetchUrl(path);
   try {
     const res = await fetch(url);
@@ -2799,12 +2807,15 @@ async function playTrack(path, opts) {
     src.start(0);
     const ramp = Math.min(0.35, Math.max(0.12, fadeInTC * 0.08));
     if (currentGain) {
-      currentGain.gain.setTargetAtTime(0, now, 4.0);
-      gain.gain.linearRampToValueAtTime(0.75, now + ramp);
+      currentGain.gain.setTargetAtTime(0, now, longFade || 4.0);
+      if (longFade) gain.gain.setTargetAtTime(0.75, now, longFade);
+      else gain.gain.linearRampToValueAtTime(0.75, now + ramp);
       const oldSrc = currentBuffer;
-      setTimeout(() => { try { if (oldSrc) oldSrc.stop(); } catch(e){} }, 45000);
+      setTimeout(() => { try { if (oldSrc) oldSrc.stop(); } catch(e){} },
+                 longFade ? Math.max(45000, longFade * 6000) : 45000);
     } else {
-      gain.gain.linearRampToValueAtTime(0.75, now + ramp);
+      if (longFade) gain.gain.setTargetAtTime(0.75, now, longFade);
+      else gain.gain.linearRampToValueAtTime(0.75, now + ramp);
     }
     currentGain = gain;
     currentBuffer = src;
@@ -3102,8 +3113,11 @@ let stageAdvanceKeyHandler = null;
 
 const FRAG_FADE_MS   = 2800;   // showFrag's crossfade — swallow clicks inside it
 const FRAG_PROMPT_MS = 6000;   // how long a fragment sits before the hint appears
-const FRAG_DWELL_MS  = 18000;  // and how long before it carries itself, untouched
+const FRAG_DWELL_MS  = 15000;  // and how long before it carries itself, untouched
+                               // 6 fragments of it = 90s of Module n5 v2 in stage 2
 const STAGE5_HOLD_MS = 66000;  // how long wind and water holds before the archive
+const WIND_CROSSFADE_TC = 14.0; // seconds: wind and water takes about 40s to
+                                // take over from The Dream Architect
 
 function clearStageAdvance() {
   if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
@@ -3183,8 +3197,8 @@ async function onEnter() {
   // The record has carried the cover and the gate. From here the programme
   // has its own score, so Act One stands down and the stage tracks take over.
   stopActOne();
-  if (!virtaStarted) startVirta();   // the programme's own music begins here
-  void startBed();                   // no-op if the first gesture already brought it up
+  if (!virtaStarted) startVirta();   // if the record was holding the room, Virta starts here
+  bedFadeOut(BED_ONBOARD_FADE_TC);   // the birds belong to the front door, not the programme
   document.getElementById('stage0Links').classList.remove('visible');
   document.getElementById('home-nav').classList.remove('vis');
 
@@ -3246,7 +3260,9 @@ async function onEnter() {
                 glBlend = 0.0;
                 glBlendTarget = isIOS ? 0.3 : 1.0;
                 showStage(4);
-                // The Dream Architect is still playing; let it run.
+                // wind and water comes in here, not at stage 5, and rises very
+                // slowly so it and The Dream Architect share the whole stage.
+                playTrack(CONFIG.media(CONFIG.music.stage5), { longFade: WIND_CROSSFADE_TC });
                 enterVideoStage(4, [11, 12, 13, 14, 15], () => {
                   glBlendTarget = isIOS ? 0.3 : 1.0;
                   stageTimer = setTimeout(() => {
@@ -3254,7 +3270,7 @@ async function onEnter() {
                     glStageTarget = 5.0;
                     glOrgOpacityTarget = 1.0;
                     showStage(5);
-                    playTrack(CONFIG.media(CONFIG.music.stage5), { fadeInTimeConstant: 15.0 });
+                    // wind and water has been up since stage 4; leave it alone.
                     stageTimer = setTimeout(() => {
                       glArchiveModeTarget = 1.0;
                       showArchiveOverlay();
@@ -3416,6 +3432,10 @@ void main(){
 // The shader's ENTER: raise the Clearance gate, unless this session already
 // accepted it. doEnterTransition() then runs on the far side of the gate.
 function enterFromShader() {
+  // Virta starts here, on the click itself, and runs until stage 1 takes over.
+  // If the record is holding the room it keeps it, and Virta waits for onEnter,
+  // where stopActOne hands over.
+  if (!actOneEngaged) startVirta();
   if (sessionStorage.getItem('ds_authed') === '1') { void doEnterTransition(); return; }
   const gate = document.getElementById('access-gate');
   if (!gate) { void doEnterTransition(); return; }
