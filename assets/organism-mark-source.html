@@ -1,0 +1,185 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+html,body{margin:0;background:transparent}
+canvas{display:block;width:1024px;height:1024px}
+</style></head><body>
+<canvas id="c" width="1024" height="1024"></canvas>
+<script>
+// ── The organism block, lifted verbatim from index.html's FS, with the
+//    uniforms pinned: u_stage=5, u_orgSettle=1, u_orgOpacity=1, u_archiveMode=0.
+//    Only difference: the scene base colour is dropped and alpha comes from
+//    the accumulated glow, so the mark exports on transparent. The bokeh
+//    speckle (random single pixels) is left out of a logo.
+const FS_REFERENCE = `
+precision highp float;
+uniform float u_t;
+uniform vec2 u_res;
+
+#define N 150.0
+#define GOLDEN 2.399963
+
+float hash(vec2 p) {
+  p = fract(p * vec2(234.34, 435.345));
+  p += dot(p, p + 34.23);
+  return fract(p.x * p.y);
+}
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i), hash(i + vec2(1,0)), f.x),
+    mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x), f.y);
+}
+float fbm(vec2 p) {
+  float v = 0.0, amp = 0.5, freq = 1.0;
+  for (int i = 0; i < 5; i++) {
+    v += noise(p * freq) * amp;
+    freq *= 2.0; amp *= 0.5;
+  }
+  return v;
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_res;
+  vec2 ndc = uv * 2.0 - 1.0;
+  ndc.x *= u_res.x / u_res.y;
+  vec3 col = vec3(0.0);
+
+  float rotY = u_t * 0.314 * 0.5;                        // isOrg5 halves it
+  float amp = 0.38 + 0.08 * sin(u_t * 0.4);              // stableAmp, settled
+  float scale = 0.6 + 0.03 * sin(u_t * 0.25);            // settled scale
+  vec3 baseColor = vec3(1.0, 0.75, 0.4);                 // warm palette
+
+  for (float i = 0.0; i < N; i += 1.0) {
+    float theta = i * GOLDEN;
+    float phi = acos(1.0 - 2.0 * (i + 0.5) / N);
+    vec3 pos = vec3(sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi));
+    pos += fbm(pos.xy * 3.0 + u_t * 0.2) * amp * vec3(1,1,1);
+    float c = cos(rotY), s = sin(rotY);
+    pos.xz = vec2(pos.x * c - pos.z * s, pos.x * s + pos.z * c);
+    pos *= scale;
+    vec2 proj = pos.xy / (1.0 - pos.z * 0.3);
+    proj.x /= u_res.x / u_res.y;
+    float d = length(ndc - proj);
+    float contrib = 0.0006;
+    col += baseColor * contrib / (d * d + 0.0005);
+  }
+
+  float a = clamp(max(col.r, max(col.g, col.b)), 0.0, 1.0);
+  gl_FragColor = vec4(clamp(col, 0.0, 1.0), a);
+}`;
+
+const cv = document.getElementById('c');
+// ── The same maths in JS, float32-emulated, so the SVG uses the same N
+//    points and the same projection as the raster.
+const fr = Math.fround;
+const fract = x => fr(x - Math.floor(x));
+function hash(px, py){
+  let x = fract(fr(px * 234.34)), y = fract(fr(py * 435.345));
+  const d = fr(fr(x * fr(x + 34.23)) + fr(y * fr(y + 34.23)));
+  x = fr(x + d); y = fr(y + d);
+  return fract(fr(x * y));
+}
+function noise(px, py){
+  const ix = Math.floor(px), iy = Math.floor(py);
+  let fx = fr(px - ix), fy = fr(py - iy);
+  fx = fr(fr(fx * fx) * fr(3.0 - fr(2.0 * fx)));
+  fy = fr(fr(fy * fy) * fr(3.0 - fr(2.0 * fy)));
+  const a = hash(ix, iy), b = hash(ix + 1, iy), c = hash(ix, iy + 1), d = hash(ix + 1, iy + 1);
+  const m1 = fr(a + fr(fx * fr(b - a)));
+  const m2 = fr(c + fr(fx * fr(d - c)));
+  return fr(m1 + fr(fy * fr(m2 - m1)));
+}
+function fbm(px, py){
+  let v = 0, amp = 0.5, freq = 1.0;
+  for (let i = 0; i < 5; i++){
+    v = fr(v + fr(noise(fr(px * freq), fr(py * freq)) * amp));
+    freq = fr(freq * 2.0); amp = fr(amp * 0.5);
+  }
+  return v;
+}
+
+window.pointsAt = function(t){
+  const N = 150, GOLDEN = 2.399963;
+  const rotY  = fr(fr(t * 0.314) * 0.5);
+  const amp   = fr(0.38 + fr(0.08 * Math.sin(fr(t * 0.4))));
+  const scale = fr(0.6  + fr(0.03 * Math.sin(fr(t * 0.25))));
+  const c = Math.cos(rotY), s = Math.sin(rotY);
+  const out = [];
+  for (let i = 0; i < N; i++){
+    const theta = fr(i * GOLDEN);
+    const phi = Math.acos(fr(1.0 - fr(2.0 * fr((i + 0.5) / N))));
+    let x = fr(Math.sin(phi) * Math.cos(theta));
+    let y = fr(Math.sin(phi) * Math.sin(theta));
+    let z = fr(Math.cos(phi));
+    const d = fr(fbm(fr(fr(x * 3.0) + fr(t * 0.2)), fr(fr(y * 3.0) + fr(t * 0.2))) * amp);
+    x = fr(x + d); y = fr(y + d); z = fr(z + d);
+    const nx = fr(fr(x * c) - fr(z * s)), nz = fr(fr(x * s) + fr(z * c));
+    x = fr(nx * scale); y = fr(y * scale); z = fr(nz * scale);
+    const w = fr(1.0 - fr(z * 0.3));
+    out.push({ x: fr(x / w), y: fr(y / w), z: z, w: w });
+  }
+  return out;
+};
+</script></body></html>
+<script>
+// ── Raster: the same per-pixel accumulation the fragment shader does,
+//    0.0006 / (d*d + 0.0005) per point, warm palette, alpha from the glow.
+window.renderAt = function(t, size){
+  size = size || 1024;
+  cv.width = size; cv.height = size;
+  const pts = window.pointsAt(t);
+  const ctx = cv.getContext('2d');
+  const img = ctx.createImageData(size, size);
+  const data = img.data;
+  const acc = new Float32Array(size * size);      // scalar glow; colour applied after
+  const half = size / 2;
+  // Contribution drops below 1/255 past this radius in NDC.
+  const RMAX = 0.42, rpx = Math.ceil(RMAX * half);
+  for (const q of pts) {
+    const cx = (q.x + 1) * half, cy = (1 - q.y) * half;   // NDC to pixels, y down
+    const x0 = Math.max(0, Math.floor(cx - rpx)), x1 = Math.min(size - 1, Math.ceil(cx + rpx));
+    const y0 = Math.max(0, Math.floor(cy - rpx)), y1 = Math.min(size - 1, Math.ceil(cy + rpx));
+    for (let py = y0; py <= y1; py++) {
+      const dy = (py + 0.5 - cy) / half;
+      for (let px = x0; px <= x1; px++) {
+        const dx = (px + 0.5 - cx) / half;
+        const d2 = dx * dx + dy * dy;
+        acc[py * size + px] += 0.0006 / (d2 + 0.0005);
+      }
+    }
+  }
+  const R = 1.0, G = 0.75, B = 0.4;               // warm palette
+  for (let i = 0, j = 0; i < acc.length; i++, j += 4) {
+    const v = acc[i];
+    const r = Math.min(1, v * R), g = Math.min(1, v * G), bl = Math.min(1, v * B);
+    const a = Math.min(1, Math.max(r, Math.max(g, bl)));
+    data[j]     = Math.round(r * 255);
+    data[j + 1] = Math.round(g * 255);
+    data[j + 2] = Math.round(bl * 255);
+    data[j + 3] = Math.round(a * 255);
+  }
+  ctx.putImageData(img, 0, 0);
+  return cv.toDataURL('image/png');
+};
+
+// ── SVG: the same points, same projection, circles sized by depth.
+window.svgAt = function(t, size, colour){
+  size = size || 1024; colour = colour || '#FFBF66';
+  const pts = window.pointsAt(t);
+  const half = size / 2;
+  const R0 = size * (window.__R0 || 0.026);
+  const body = pts
+    .slice()
+    .sort((a, b) => a.z - b.z)                  // far points first
+    .map(q => {
+      const cx = (q.x + 1) * half, cy = (1 - q.y) * half;
+      // Same perspective term the projection uses: nearer points draw larger.
+      const r = R0 / q.w;
+      return '<circle cx="' + cx.toFixed(2) + '" cy="' + cy.toFixed(2) + '" r="' + r.toFixed(2) + '"/>';
+    }).join('');
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size +
+         '" width="' + size + '" height="' + size + '" role="img" aria-label="Dream Screens">' +
+         '<g fill="' + colour + '">' + body + '</g></svg>';
+};
+</script>
