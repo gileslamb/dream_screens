@@ -529,7 +529,10 @@
     grid-template-rows: auto 1fr auto;
     padding: 5vh 4vw;
     gap: 3vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
+  #s-entry.gone { overflow: hidden; }
   #entry-gl {
     position: absolute;
     inset: 0;
@@ -558,6 +561,9 @@
     max-width: min(72vw, 780px);
   }
   #ec-artist {
+    display: flex;
+    align-items: center;
+    gap: 14px;
     font-family: var(--mono);
     font-size: var(--ec-body);
     font-weight: 400;
@@ -566,14 +572,46 @@
     color: rgba(255,255,255,0.6);
     margin-bottom: 1.1rem;
   }
+  /* Album mark: one still frame of the entry organism. Screen blend drops its
+     near-black ground out, so it sits on the shader as a glyph, not a tile. */
+  #ec-mark {
+    width: 48px; height: 48px;
+    flex: 0 0 auto;
+    mix-blend-mode: screen;
+    /* Feather the frame edge so the still reads as a mark, not a tile. */
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 52%, transparent 76%);
+    mask-image: radial-gradient(circle at 50% 50%, #000 52%, transparent 76%);
+  }
+
   #ec-title {
-    font-family: var(--sans);
     font-size: clamp(44px, 5.6vw, 96px);
-    font-weight: 300;
-    letter-spacing: -0.015em;
     line-height: 1.0;
-    color: #f2f2ec;
     margin-bottom: 0.85rem;
+    color: #f2f2ec;
+  }
+  /* (a) High-contrast display serif, heavy. System faces only — Didot and
+     Bodoni are present on macOS, Georgia and Times carry the fallback. */
+  #ec-title.face-serif {
+    font-family: 'Didot', 'Bodoni 72', 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+  }
+  /* (b) The page grotesk, tracked tight, with the scanline pattern masked
+     through the letterforms rather than laid over them. */
+  #ec-title.face-grotesk-scan {
+    font-family: var(--sans);
+    font-weight: 300;
+    letter-spacing: -0.045em;
+    color: transparent;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      #f2f2ec 0px,
+      #f2f2ec 3px,
+      rgba(96,116,110,0.55) 3px,
+      rgba(96,116,110,0.55) 4px
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
   }
   #ec-sub {
     font-family: var(--sans);
@@ -636,52 +674,162 @@
   }
   .ec-alt:hover { color: var(--green); border-color: rgba(0,255,136,0.5); }
 
-  /* ── Act One player, opened by the Listen control ── */
+  /* ── Act One player · session manifest, HUD register ──────────────── */
   #ec-player {
-    max-width: 420px;
+    max-width: 480px;
     max-height: 0;
     overflow: hidden;
     opacity: 0;
-    transition: max-height 0.55s ease, opacity 0.45s ease, margin-top 0.45s ease;
+    transition: max-height 0.6s ease, opacity 0.45s ease, margin-top 0.45s ease;
   }
-  #ec-player.open { max-height: 360px; opacity: 1; margin-top: 2rem; }
+  #ec-player.open { max-height: min(600px, 58vh); opacity: 1; margin-top: 1.6rem; }
   #ec-player-inner {
-    /* The shader is brightest behind this column; give the player a ground. */
-    background: rgba(2,13,14,0.55);
+    position: relative;
+    background: rgba(2,13,14,0.72);
     backdrop-filter: blur(3px);
-    border: 1px solid rgba(255,255,255,0.08);
-    padding: 18px 20px 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 20px 22px 18px;
+  }
+  /* The page scanline treatment, carried into the panel. */
+  #ec-player-inner::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent, transparent 2px,
+      rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px
+    );
+    opacity: 0.55;
+    pointer-events: none;
+  }
+  #ec-player-inner > *:not(.ec-tick) { position: relative; z-index: 1; }
+  /* Corner ticks */
+  .ec-tick {
+    position: absolute;
+    width: 9px; height: 9px;
+    border: 0 solid rgba(0,255,136,0.5);
+    pointer-events: none;
+    z-index: 2;
+  }
+  .ec-tick.tl { top: -1px; left: -1px;  border-top-width: 1px; border-left-width: 1px; }
+  .ec-tick.tr { top: -1px; right: -1px; border-top-width: 1px; border-right-width: 1px; }
+  .ec-tick.bl { bottom: -1px; left: -1px;  border-bottom-width: 1px; border-left-width: 1px; }
+  .ec-tick.br { bottom: -1px; right: -1px; border-bottom-width: 1px; border-right-width: 1px; }
+
+  #ec-manifest-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: var(--mono);
+    font-size: var(--ec-body);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(0,255,136,0.6);
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.14);
+    gap: 12px;
+  }
+  #ec-manifest-head .ec-count {
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.1em;
+    font-size: calc(var(--ec-body) - 3px);
+    white-space: nowrap;
+  }
+
+  #ec-tracks {
+    margin-top: 4px;
+    max-height: min(252px, 27vh);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.18) transparent;
+  }
+  #ec-tracks::-webkit-scrollbar { width: 3px; }
+  #ec-tracks::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); }
+  #ec-tracks::-webkit-scrollbar-track { background: transparent; }
+  .ec-track {
+    display: grid;
+    grid-template-columns: 2.4em 1fr auto;
+    align-items: baseline;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-family: var(--mono);
+    font-size: var(--ec-body);
+    color: rgba(255,255,255,0.62);
+  }
+  .ec-track .ect-no { color: rgba(255,255,255,0.3); }
+  .ec-track .ect-dur { color: rgba(255,255,255,0.32); font-variant-numeric: tabular-nums; }
+  .ec-track.is-live { cursor: pointer; transition: color 0.2s; }
+  .ec-track.is-live:hover { color: #fff; }
+  .ec-track.is-live:hover .ect-no { color: var(--green); }
+  .ec-track.is-current { color: #fff; }
+  .ec-track.is-current .ect-no { color: var(--green); }
+  .ec-track.is-locked { opacity: 0.3; }
+  .ec-track.is-locked .ect-dur { visibility: hidden; }
+  .ec-track .ect-status {
+    grid-column: 2 / -1;
+    font-size: calc(var(--ec-body) - 2px);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.28);
+    margin-top: 3px;
+  }
+
+  /* Transport, shown against whichever live row is loaded. */
+  #ec-transport {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.14);
   }
   #ec-now {
     font-family: var(--mono);
     font-size: var(--ec-body);
+    letter-spacing: 0.08em;
     color: rgba(255,255,255,0.75);
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
-  #ec-scrub { height: 18px; display: flex; align-items: center; cursor: pointer; }
+  #ec-scrub { height: 16px; display: flex; align-items: center; cursor: pointer; }
   #ec-scrub-track { width: 100%; height: 1px; background: rgba(255,255,255,0.16); position: relative; }
-  #ec-scrub-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: rgba(0,255,136,0.75); }
+  #ec-scrub-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: rgba(0,255,136,0.8); }
   #ec-times {
     display: flex; justify-content: space-between;
     font-family: var(--mono); font-size: var(--ec-body);
     color: rgba(255,255,255,0.35);
-    margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+    margin-top: 4px;
   }
-  #ec-tracks { margin-top: 1.2rem; }
-  .ec-track {
-    display: flex; align-items: baseline; gap: 12px;
-    padding: 9px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.07);
+
+  /* Panel foot · preorder */
+  #ec-buy-group {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.14);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  #ec-buy {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    background: none;
+    border: 1px solid rgba(0,255,136,0.4);
+    color: rgba(255,255,255,0.9);
     font-family: var(--mono);
     font-size: var(--ec-body);
-    color: rgba(255,255,255,0.6);
-    cursor: pointer;
-    transition: color 0.2s;
+    letter-spacing: 0.03em;
+    padding: 12px 18px;
+    text-decoration: none;
+    transition: border-color 0.25s, color 0.25s, background 0.25s;
   }
-  .ec-track:hover { color: #fff; }
-  .ec-track .ect-no { color: rgba(255,255,255,0.3); flex: 0 0 auto; }
-  .ec-track.is-current { color: #fff; }
-  .ec-track.is-current .ect-no { color: var(--green); }
+  #ec-buy:hover { border-color: rgba(0,255,136,0.9); background: rgba(0,255,136,0.06); color: #fff; }
+  #ec-buy .ecb-when {
+    font-size: calc(var(--ec-body) - 2px);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(0,255,136,0.6);
+  }
+  #ec-buy.is-pending { opacity: 0.4; pointer-events: none; border-style: dashed; }
 
   /* ── Band 2 · the orb ── */
   #entry-centre {
@@ -816,10 +964,7 @@
     #es-form { width: 100%; flex-wrap: nowrap; }
     #es-email { flex: 1 1 0; min-width: 0; width: auto; }
     #es-submit { flex: 0 0 auto; }
-    /* Opening the player pushes past the fold on a phone — let it scroll
-       rather than clipping the signup. */
-    #s-entry { overflow-y: auto; -webkit-overflow-scrolling: touch; }
-    #s-entry.gone { overflow: hidden; }
+    #ec-tracks { max-height: 200px; }
   }
   /* Tech data panel — shown during load */
   #entry-data-panel {
@@ -1519,17 +1664,14 @@
 
   <!-- Band 1 · title + controls -->
   <div id="entry-cover">
-    <div id="ec-artist">Giles Lamb</div>
+    <div id="ec-artist">
+      <img id="ec-mark" src="/assets/organism-mark.png" alt="" aria-hidden="true" width="48" height="48"/>
+      <span>Giles Lamb</span>
+    </div>
     <h1 id="ec-title">Dream Screens</h1>
     <div id="ec-sub">a narrative concept album</div>
 
     <div id="ec-actions">
-      <!-- Hidden until the preorder page exists — see SHOW_BUY. -->
-      <div class="ec-action" id="ec-buy-group" style="display:none">
-        <a class="ec-btn" id="ec-buy" href="#" target="_blank" rel="noopener">Buy the album</a>
-        <a class="ec-alt" id="ec-buy-alt" href="#" target="_blank" rel="noopener">or from gileslamb.com</a>
-      </div>
-
       <div class="ec-action">
         <button class="ec-btn" id="ec-listen" type="button" aria-expanded="false">
           <svg class="ec-ico-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5 L14 8 L3 14.5 Z"/></svg>
@@ -1544,13 +1686,31 @@
     </div>
 
     <div id="ec-player"><div id="ec-player-inner">
-      <div id="ec-now">Act One</div>
-      <div id="ec-scrub" role="slider" aria-label="Seek" tabindex="0"
-           aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-        <div id="ec-scrub-track"><div id="ec-scrub-fill"></div></div>
+      <i class="ec-tick tl"></i><i class="ec-tick tr"></i><i class="ec-tick bl"></i><i class="ec-tick br"></i>
+
+      <div id="ec-manifest-head">
+        <span>Session manifest</span>
+        <span class="ec-count" id="ec-count"></span>
       </div>
-      <div id="ec-times"><span id="ec-time">0:00</span><span id="ec-dur">&nbsp;</span></div>
+
       <div id="ec-tracks"></div>
+
+      <div id="ec-transport">
+        <div id="ec-now">Act One</div>
+        <div id="ec-scrub" role="slider" aria-label="Seek" tabindex="0"
+             aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div id="ec-scrub-track"><div id="ec-scrub-fill"></div></div>
+        </div>
+        <div id="ec-times"><span id="ec-time">0:00</span><span id="ec-dur">&nbsp;</span></div>
+      </div>
+
+      <div id="ec-buy-group" style="display:none">
+        <a id="ec-buy" href="#" target="_blank" rel="noopener">
+          <span>Preorder the album</span>
+          <span class="ecb-when" id="ec-buy-when">from 9 October</span>
+        </a>
+        <a class="ec-alt" id="ec-buy-alt" href="#" target="_blank" rel="noopener">or from gileslamb.com</a>
+      </div>
     </div></div>
   </div>
 
@@ -1960,11 +2120,18 @@ const CONFIG = {
 const KIT_FORM_ID = '7186ece150';   // <-- Kit form ID
 const KIT_API_KEY = 'Y37b5a8d043f45319cbb3f1977ada5475';   // <-- Kit v3 api_key
 
-// Where the record can be bought. SHOW_BUY hides the whole control until the
-// preorder page exists — flip it to true once BANDCAMP_URL resolves.
-const SHOW_BUY = false;
-const BANDCAMP_URL = '';           // <-- Bandcamp album URL
+// Where the record can be bought. The preorder control lives at the foot of
+// the player panel. While BANDCAMP_URL is empty it renders dimmed rather than
+// offering a dead link.
+const SHOW_BUY = true;
+const BANDCAMP_URL = '';           // <-- Bandcamp preorder URL
 const SITE_STORE_URL = '';         // <-- gileslamb.com store URL
+const PREORDER_DATE = 'from 9 October';
+
+// Which face carries the title. 'serif' = high-contrast display serif at heavy
+// weight. 'grotesk-scan' = the page grotesk at tight tracking with the
+// scanline pattern masked through the letterforms. System faces only.
+const TITLE_FACE = 'serif';        // 'serif' | 'grotesk-scan'
 
 // The three chapters as a playlist. Empty leaves the control dimmed rather
 // than offering a dead link.
@@ -1978,12 +2145,24 @@ const CHAPTER_FILMS = {
   'DS-03': '',   // <-- YouTube video id
 };
 
-// Act One, in order. Swap `src` when masters are replaced.
-const ACT_ONE = [
-  { no: '01', id: 'DS-01', title: 'Signal Dreams',   src: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Signal%20Dreams.mp3' },
-  { no: '02', id: 'DS-02', title: 'Feedback Memory', src: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Feedback%20Memory.(Minus%20197).mp3' },
-  { no: '03', id: 'DS-03', title: 'Brainwaves',      src: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Brainwaves%20(grain%20Pysche).mp3' },
+// The album, all ten. Rows 01 to 03 carry a `src` and are live; the rest are
+// listed and locked. Durations for 01 to 03 are measured off the masters.
+const TRACKLIST = [
+  { no: '01', id: 'DS-01', title: 'Signal Dreams',   dur: '7:20', src: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Signal%20Dreams.mp3' },
+  { no: '02', id: 'DS-02', title: 'Feedback Memory', dur: '2:17', src: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Feedback%20Memory.(Minus%20197).mp3' },
+  { no: '03', id: 'DS-03', title: 'Brainwaves',      dur: '4:23', src: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Brainwaves%20(grain%20Pysche).mp3' },
+  // FILL IN — titles and durations for 04 to 10.
+  { no: '04', id: 'DS-04', title: 'Track four',      dur: '0:00' },   // <-- FILL IN
+  { no: '05', id: 'DS-05', title: 'Track five',      dur: '0:00' },   // <-- FILL IN
+  { no: '06', id: 'DS-06', title: 'Track six',       dur: '0:00' },   // <-- FILL IN
+  { no: '07', id: 'DS-07', title: 'Track seven',     dur: '0:00' },   // <-- FILL IN
+  { no: '08', id: 'DS-08', title: 'Track eight',     dur: '0:00' },   // <-- FILL IN
+  { no: '09', id: 'DS-09', title: 'Track nine',      dur: '0:00' },   // <-- FILL IN
+  { no: '10', id: 'DS-10', title: 'Track ten',       dur: '0:00' },   // <-- FILL IN
 ];
+
+// Act One is whatever is playable. actOneIdx indexes into this.
+const ACT_ONE = TRACKLIST.filter(t => t.src);
 // ───────────────────────────────────────────────────────────────────────
 
 // Latched on the play gesture, released when a protocol takes the room or
@@ -4239,16 +4418,24 @@ document.getElementById('gate-pw').addEventListener('keydown', e => {
   wireKit('es-form', 'es-email', 'es-submit', 'es-msg');
   wireKit('af-form', 'af-email', 'af-submit', 'af-msg');
 
+  // Title face, per TITLE_FACE.
+  const titleEl = document.getElementById('ec-title');
+  if (titleEl) titleEl.classList.add('face-' + (TITLE_FACE === 'grotesk-scan' ? 'grotesk-scan' : 'serif'));
+
   const listen = document.getElementById('ec-listen');
   if (!listen) return;
 
-  // ── Buy: one control, hidden entirely until there is somewhere to send people.
-  if (SHOW_BUY && BANDCAMP_URL) {
-    const group = document.getElementById('ec-buy-group');
-    group.style.display = '';
-    document.getElementById('ec-buy').href = BANDCAMP_URL;
+  // ── Preorder, at the foot of the panel. Dimmed while BANDCAMP_URL is empty
+  //    so the control is visible but never a dead link.
+  if (SHOW_BUY) {
+    document.getElementById('ec-buy-group').style.display = '';
+    document.getElementById('ec-buy-when').textContent = PREORDER_DATE;
+    const buy = document.getElementById('ec-buy');
+    if (BANDCAMP_URL) buy.href = BANDCAMP_URL;
+    else { buy.classList.add('is-pending'); buy.removeAttribute('href'); buy.setAttribute('aria-disabled', 'true'); }
     const alt = document.getElementById('ec-buy-alt');
-    if (SITE_STORE_URL) alt.href = SITE_STORE_URL; else alt.style.display = 'none';
+    if (SITE_STORE_URL) alt.href = SITE_STORE_URL;
+    else { alt.classList.add('is-pending'); alt.removeAttribute('href'); alt.setAttribute('aria-disabled', 'true'); }
   }
 
   // ── Watch: dimmed rather than dead while the playlist is unlisted.
@@ -4279,21 +4466,33 @@ document.getElementById('gate-pw').addEventListener('keydown', e => {
     return m + ':' + (x < 10 ? '0' : '') + x;
   };
 
-  ACT_ONE.forEach((t, i) => {
+  document.getElementById('ec-count').textContent =
+    ACT_ONE.length + ' of ' + TRACKLIST.length + ' available';
+
+  // One row per track. Only the three with a source are playable; the rest are
+  // listed and locked, so the shape of the record is visible from the start.
+  const rows = [];
+  TRACKLIST.forEach(t => {
+    const live = !!t.src;
     const row = document.createElement('div');
-    row.className = 'ec-track';
-    row.innerHTML = '<span class="ect-no"></span><span class="ect-title"></span>';
+    row.className = 'ec-track ' + (live ? 'is-live' : 'is-locked');
+    row.innerHTML = '<span class="ect-no"></span><span class="ect-title"></span><span class="ect-dur"></span>'
+                  + (live ? '' : '<span class="ect-status">locked until release</span>');
     row.querySelector('.ect-no').textContent = t.no;
     row.querySelector('.ect-title').textContent = t.title;
-    row.addEventListener('click', () => { actOneEngaged = true; load(i, true); });
+    row.querySelector('.ect-dur').textContent = t.dur;
+    if (live) {
+      const i = ACT_ONE.indexOf(t);
+      rows[i] = row;
+      row.addEventListener('click', () => { actOneEngaged = true; load(i, true); });
+    }
     listEl.appendChild(row);
   });
-  const rows = Array.from(listEl.children);
 
   function paint() {
     const t = ACT_ONE[actOneIdx];
     nowEl.textContent = 'Act One · ' + t.no + ' · ' + t.title;
-    rows.forEach((r, i) => r.classList.toggle('is-current', i === actOneIdx));
+    rows.forEach((r, i) => { if (r) r.classList.toggle('is-current', i === actOneIdx); });
     label.textContent = audio.paused ? 'Listen to Act One' : 'Pause Act One';
     listen.classList.toggle('is-playing', !audio.paused);
   }
@@ -4323,6 +4522,9 @@ document.getElementById('gate-pw').addEventListener('keydown', e => {
     if (!panel.classList.contains('open')) {
       panel.classList.add('open');
       listen.setAttribute('aria-expanded', 'true');
+      // The manifest is taller than the fold on a laptop — bring it into view
+      // rather than leaving it half off screen.
+      setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 620);
     }
     if (audio.paused) {
       actOneEngaged = true;              // latch before anything else hears the click
