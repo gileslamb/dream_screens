@@ -2481,6 +2481,37 @@ let glArchiveMode = 0.0, glArchiveModeTarget = 0.0;
 let glOrgSettle = 1.0, glOrgSettleTarget = 1.0;
 let manualOrgFade = false;
 
+// ── Shader easing ───────────────────────────────────────────────────────
+// These used to be a fixed fraction per frame, which made them both
+// frame-rate dependent and, at 0.002, an 8s time constant: about 40s to
+// complete one stage step. That was invisible while a montage section ran
+// 84s, but once sections auto-advance in roughly 40s the visuals fall a
+// whole stage behind. The shader only samples video at u_stage >= 2, so the
+// montage played with no film and the film was still up over the end card.
+//
+// Now a real time constant in seconds, integrated against elapsed time, so
+// the pace is the same on a 60Hz and a 120Hz display.
+// u_stage is only ever compared against thresholds in the shader: < 0.5, >= 1
+// and < 2, >= 2, >= 3 and < 4, >= 4, > 4.5. Nothing reads it as a fraction, so
+// easing it does not blend anything, it only delays a hard switch. Worse,
+// exponential easing approaches a target without arriving, so u_stage >= 2.0
+// was never true while stage 2 was the target: the film look only appeared
+// once the target moved on to 3. Hence a montage with no film, and the film
+// still up over the end card. It now steps briskly and snaps home.
+const EASE_TC = {
+  stage:       0.25,  // a hard switch anyway; land it just after the static burst
+  blend:       2.5,   // the A/B video mix, genuinely gradual
+  orgOpacity:  1.5,
+  archiveMode: 3.0,
+  orgSettle:   2.1,   // unchanged in feel from the old 0.008 per frame
+};
+const EASE_SNAP = 0.004;   // close enough is arrived; nothing hovers short of a threshold
+let glLastFrameMs = 0;
+function ease(cur, target, tc, dt) {
+  const v = cur + (target - cur) * (1 - Math.exp(-dt / tc));
+  return Math.abs(target - v) < EASE_SNAP ? target : v;
+}
+
 function renderGL() {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   const t = (Date.now() - startTime) / 1000;
@@ -2489,11 +2520,16 @@ function renderGL() {
     console.log('stage:', glStage.toFixed(2), 'blend:', glBlend.toFixed(2), 'orgOpacity:', glOrgOpacity.toFixed(2), 't:', t.toFixed(1));
     lastLog = ti;
   }
-  glStage += (glStageTarget - glStage) * 0.002;
-  glBlend += (glBlendTarget - glBlend) * 0.003;
-  if (!manualOrgFade) glOrgOpacity += (glOrgOpacityTarget - glOrgOpacity) * 0.002;
-  glArchiveMode += (glArchiveModeTarget - glArchiveMode) * 0.002;
-  glOrgSettle += (glOrgSettleTarget - glOrgSettle) * 0.008;
+  const nowMs = Date.now();
+  // Clamped, so a backgrounded tab does not jump every value to target at once.
+  const dt = glLastFrameMs ? Math.min(0.1, (nowMs - glLastFrameMs) / 1000) : 0.016;
+  glLastFrameMs = nowMs;
+
+  glStage       = ease(glStage,       glStageTarget,       EASE_TC.stage,       dt);
+  glBlend       = ease(glBlend,       glBlendTarget,       EASE_TC.blend,       dt);
+  if (!manualOrgFade) glOrgOpacity = ease(glOrgOpacity, glOrgOpacityTarget, EASE_TC.orgOpacity, dt);
+  glArchiveMode = ease(glArchiveMode, glArchiveModeTarget, EASE_TC.archiveMode, dt);
+  glOrgSettle   = ease(glOrgSettle,   glOrgSettleTarget,   EASE_TC.orgSettle,   dt);
 
   gl.uniform1f(uT, t);
   gl.uniform2f(uRes, glCanvas.width, glCanvas.height);
