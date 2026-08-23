@@ -1916,6 +1916,14 @@ const CONFIG = {
     'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/aedc5ba75b991b5b687f45f8db3b1da9/manifest/video.m3u8',
   ],
   videoSeek: 30,
+  // Restored: removing the fixed score in 08bb330 took these with it, which
+  // left the log crawl typing instantly and threw at the stage 3 handover.
+  // Only the two values still referenced are kept.
+  timing: {
+    transitionMs: 2500,
+  },
+  logLinePause: 550,
+
   bed: {
     urls: BED_EXTRA_LAYERS
       ? [
@@ -2906,11 +2914,13 @@ const SESSION_ARCHIVE = [
 ];
 const SESSION_CLOSER = R2_BASE + 'Virta.mp3';
 
-const SNIPPET_MIN_S        = 45;
-const SNIPPET_MAX_S        = 75;
-const SNIPPET_XFADE_MIN_S  = 4;
-const SNIPPET_XFADE_MAX_S  = 6;
-const SNIPPET_TAIL_GUARD_S = 20;   // no in-point inside the last 20s of a piece
+const SNIPPET_MIN_S        = 90;
+const SNIPPET_MAX_S        = 120;
+const SNIPPET_XFADE_MIN_S  = 20;
+const SNIPPET_XFADE_MAX_S  = 30;   // long enough that no piece ever arrives at full
+const SNIPPET_TAIL_GUARD_S = 30;   // no in-point inside the last 30s, so the fade-out has room
+const FIRST_FADE_MIN_S     = 15;   // the first piece of a session has no partner to
+const FIRST_FADE_MAX_S     = 20;   // cross from, so it rises alone, slower still
 const CHAIN_VOLUME         = 0.75; // the level the single holding track ran at
 
 let chainQueue   = [];
@@ -2949,6 +2959,18 @@ function chainCurves(n) {
   return { up, down };
 }
 
+// The opening piece has nothing to cross from. Squared so it leaves silence
+// slowly and only reaches level at the very end: nothing enters at full,
+// however hard the piece starts.
+function chainOpenCurve(n) {
+  const c = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1);
+    c[i] = t * t;
+  }
+  return c;
+}
+
 function chainStartSnippet(buf, url) {
   const ctx = getCtx();
   const isCloser = (url === SESSION_CLOSER);
@@ -2969,19 +2991,20 @@ function chainStartSnippet(buf, url) {
   src.connect(gain);
 
   const now = ctx.currentTime;
-  const { up, down } = chainCurves(64);
   if (chainCurrent) {
+    // The join is the fade-in: 20 to 30s of equal-power rise from silence.
+    const { up, down } = chainCurves(128);
     gain.gain.setValueAtTime(0, now);
     gain.gain.setValueCurveAtTime(up, now, xfade);
     const old = chainCurrent;
     old.gain.gain.cancelScheduledValues(now);
     old.gain.gain.setValueAtTime(old.gain.gain.value, now);
     old.gain.gain.setValueCurveAtTime(down, now, xfade);
-    setTimeout(() => { try { old.src.stop(); } catch (e) {} }, (xfade + 0.5) * 1000);
+    setTimeout(() => { try { old.src.stop(); } catch (e) {} }, (xfade + 1) * 1000);
   } else {
-    // First snippet of the session: nothing to cross from, so ease it up.
+    const openFade = FIRST_FADE_MIN_S + Math.random() * (FIRST_FADE_MAX_S - FIRST_FADE_MIN_S);
     gain.gain.setValueAtTime(0, now);
-    gain.gain.setTargetAtTime(1, now, 1.2);
+    gain.gain.setValueCurveAtTime(chainOpenCurve(128), now, openFade);
   }
   src.start(now, offset);
   chainCurrent = { src, gain };
@@ -3253,120 +3276,64 @@ function showFrag(stageNum, idx) {
   }
 }
 
-// The intro text sections are read at the visitor's pace, not on a clock.
-// Each stage walks its own run of FRAGS on click/tap (or space/enter/arrow);
-// when the run is exhausted the same gesture moves to the next stage.
-// The only timer left is the one that fades in the "· next memory ·" hint.
-let videoStageFallbackTimer = null;   // holds the next-prompt fade-in timer
-let stageDwellTimer = null;           // holds the unattended auto-advance
-let videoAdvanceClickHandler = null;
-let stageAdvanceKeyHandler = null;
+// Onboarding runs itself end to end. The clearance gate is the only gesture in
+// the whole flow; past it every section hands on to the next on a timer.
+let videoStageFallbackTimer = null;   // holds the section timer
 
-const FRAG_FADE_MS   = 2800;   // showFrag's crossfade — swallow clicks inside it
-const FRAG_PROMPT_MS = 6000;   // how long a fragment sits before the hint appears
-const FRAG_DWELL_MS  = 15000;  // and how long before it carries itself, untouched
-                               // 6 fragments of it = 90s of Module n5 v2 in stage 2
-const STAGE5_HOLD_MS = 66000;  // how long stage 5 holds before the archive
+const S0_HOLD_MS     = 6500;   // the home screen, before onboarding starts itself
+const STAGE5_HOLD_MS = 12000;  // the end card, in line with the other sections
+const CRAWL_HOLD_MS  = 7000;   // the log crawl, after the last line lands
 
 function clearStageAdvance() {
   if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
   videoStageFallbackTimer = null;
-  if (stageDwellTimer) clearTimeout(stageDwellTimer);
-  stageDwellTimer = null;
-  if (videoAdvanceClickHandler) {
-    document.removeEventListener('click', videoAdvanceClickHandler);
-    videoAdvanceClickHandler = null;
-  }
-  if (stageAdvanceKeyHandler) {
-    document.removeEventListener('keydown', stageAdvanceKeyHandler);
-    stageAdvanceKeyHandler = null;
-  }
 }
 
-// Hold until the visitor asks for the next section. Same gestures and the same
-// chrome exclusions as the fragment walk.
-function awaitAdvance(onAdvance) {
-  clearStageAdvance();
-  const nextPrompt = document.getElementById('next-prompt');
-  const armedAt = Date.now();
-  videoStageFallbackTimer = setTimeout(() => nextPrompt.classList.add('visible'), FRAG_PROMPT_MS);
-  const go = () => {
-    if (Date.now() - armedAt < 1200) return;
-    clearStageAdvance();
-    nextPrompt.classList.remove('visible');
-    onAdvance();
-  };
-  videoAdvanceClickHandler = e => {
-    if (e.target && e.target.closest && e.target.closest('#home-nav, a, button')) return;
-    go();
-  };
-  stageAdvanceKeyHandler = e => {
-    if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-      e.preventDefault(); go();
-    }
-  };
-  document.addEventListener('click', videoAdvanceClickHandler);
-  document.addEventListener('keydown', stageAdvanceKeyHandler);
+// How long a section holds. Roughly five seconds, and longer the more there is
+// to read, so a single word does not sit as long as four lines.
+const SECTION_BASE_MS     = 5000;
+const SECTION_PER_CHAR_MS = 55;
+const SECTION_MAX_MS      = 12000;
+const SECTION_FREE_CHARS  = 24;   // the first two dozen characters are free
+
+function sectionDwell(text) {
+  const chars = (text || '').replace(/\s+/g, ' ').trim().length;
+  return Math.min(SECTION_MAX_MS,
+                  SECTION_BASE_MS + Math.max(0, chars - SECTION_FREE_CHARS) * SECTION_PER_CHAR_MS);
 }
 
+function fragDwell(idx) {
+  const f = FRAGS[idx];
+  if (!f) return SECTION_BASE_MS;
+  return sectionDwell(f.text + ' ' + (f.attr || ''));
+}
+
+// Each stage walks its own run of FRAGS on a timer and hands on when the run
+// is out. No gesture is needed anywhere past the gate.
 function enterVideoStage(stageNum, fragIdxs, onAdvance) {
   const ctx = getCtx();
   if (ctx.state === 'suspended') ctx.resume();
   [vid1, vid2, vid3].forEach(v => { if (v.readyState >= 2) v.play().catch(()=>{}); });
   clearStageAdvance();
-
-  const nextPrompt = document.getElementById('next-prompt');
-  nextPrompt.classList.remove('visible');
+  document.getElementById('next-prompt').classList.remove('visible');
 
   let i = 0;
-  let shownAt = 0;
-
-  const armPrompt = () => {
-    shownAt = Date.now();
-    if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
-    videoStageFallbackTimer = setTimeout(() => nextPrompt.classList.add('visible'), FRAG_PROMPT_MS);
-    // Read it at your own pace, but never stall: if nobody touches it the
-    // montage carries itself at the same dwell the timed version used.
-    if (stageDwellTimer) clearTimeout(stageDwellTimer);
-    stageDwellTimer = setTimeout(() => step(true), FRAG_DWELL_MS);
-  };
-
-  const step = (auto) => {
-    if (!auto && Date.now() - shownAt < FRAG_FADE_MS) return;   // mid-crossfade, ignore
-    if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
-    videoStageFallbackTimer = null;
-    if (stageDwellTimer) clearTimeout(stageDwellTimer);
-    stageDwellTimer = null;
-    nextPrompt.classList.remove('visible');
+  const step = () => {
+    if (i >= fragIdxs.length) { clearStageAdvance(); onAdvance(); return; }
+    const idx = fragIdxs[i];
+    showFrag(stageNum, idx);
     i++;
-    if (i < fragIdxs.length) {
-      showFrag(stageNum, fragIdxs[i]);
-      armPrompt();
-    } else {
-      clearStageAdvance();
-      onAdvance();
-    }
+    // videoStageFallbackTimer is what clearStageAdvance() tears down, so the
+    // skip button and a reset still stop the montage cleanly.
+    videoStageFallbackTimer = setTimeout(step, fragDwell(idx));
   };
-
-  videoAdvanceClickHandler = e => {
-    // Site chrome keeps its own clicks (skip button, nav links).
-    if (e.target && e.target.closest && e.target.closest('#home-nav, a, button')) return;
-    step(false);
-  };
-  stageAdvanceKeyHandler = e => {
-    if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      step(false);
-    }
-  };
-  document.addEventListener('click', videoAdvanceClickHandler);
-  document.addEventListener('keydown', stageAdvanceKeyHandler);
-
-  showFrag(stageNum, fragIdxs[0]);
-  armPrompt();
+  step();
 }
 
+let onEnterStarted = false;
 async function onEnter() {
+  if (onEnterStarted) return;   // the timer and the button both land here
+  onEnterStarted = true;
   const ctx = getCtx();
   if (ctx.state === 'suspended') await ctx.resume();
   // The record has carried the cover and the gate. From here the programme
@@ -3406,8 +3373,8 @@ async function onEnter() {
     fadeOrganism();
     stageTimer = setTimeout(() => {
       runLogLines(() => {
-        // Click to continue, like every other section, rather than a timed hold.
-        awaitAdvance(() => {
+        // Dense screen, so it sits a little longer than a single fragment.
+        stageTimer = setTimeout(() => {
         staticBurst(200);
         glStageTarget = 2.0;
         glBlend = 0.0;
@@ -3449,13 +3416,14 @@ async function onEnter() {
             });
           }, CONFIG.timing.transitionMs);
         });
-      });
+      }, CRAWL_HOLD_MS);
     });
   }, 4000);
   }); // end runNeuralLoader callback
 }
 
 function resetExperience() {
+  onEnterStarted = false;
   clearTimeout(stageTimer);
   clearStageAdvance();
   document.getElementById('next-prompt').classList.remove('visible');
@@ -3652,6 +3620,9 @@ async function doEnterTransition() {
     glStage = 0.0; glStageTarget = 0.0;
     document.getElementById('s0').classList.add('active');
     setTimeout(() => document.getElementById('stage0Links').classList.add('visible'), 3000);
+    // s0 hands on by itself, like every section past the gate. The button
+    // still works for anyone who does not want to wait.
+    setTimeout(() => void onEnter(), S0_HOLD_MS);
   },
   document.getElementById('entry-pct'),
   document.getElementById('entry-msg'),
