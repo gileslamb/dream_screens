@@ -2965,7 +2965,16 @@ let chainMaster  = null;
 let chainCurrent = null;   // { src, gain }
 let chainTimer   = null;
 let chainStarted = false;
+let chainAdvancing = false;   // chainAdvance is async; it must not run twice at once
 const chainCache = new Map();
+const chainLive  = new Set(); // every source still running, so none is ever orphaned
+
+function chainStop(entry) {
+  if (!entry) return;
+  try { entry.src.stop(); } catch (e) {}
+  try { entry.gain.disconnect(); } catch (e) {}
+  chainLive.delete(entry);
+}
 
 function chainShuffle(arr) {
   const a = arr.slice();
@@ -3036,7 +3045,10 @@ function chainStartSnippet(buf, url) {
     old.gain.gain.cancelScheduledValues(now);
     old.gain.gain.setValueAtTime(old.gain.gain.value, now);
     old.gain.gain.setValueCurveAtTime(down, now, xfade);
-    setTimeout(() => { try { old.src.stop(); } catch (e) {} }, (xfade + 1) * 1000);
+    setTimeout(() => chainStop(old), (xfade + 1) * 1000);
+    // Anything still live besides the outgoing piece and the one coming in is
+    // a stray from an interrupted handover. Take it out now, not silently.
+    chainLive.forEach(e => { if (e !== old) chainStop(e); });
   } else {
     const openFade = FIRST_FADE_MIN_S + Math.random() * (FIRST_FADE_MAX_S - FIRST_FADE_MIN_S);
     gain.gain.setValueAtTime(0, now);
@@ -3044,6 +3056,7 @@ function chainStartSnippet(buf, url) {
   }
   src.start(now, offset);
   chainCurrent = { src, gain };
+  chainLive.add(chainCurrent);
 
   if (chainTimer) clearTimeout(chainTimer);
   chainTimer = null;
@@ -3058,7 +3071,10 @@ function chainStartSnippet(buf, url) {
 // Walk forward until something loads. A piece that will not fetch is skipped
 // without a gap, because the one before it is still playing.
 async function chainAdvance() {
+  if (chainAdvancing) return;
   if (chainIdx >= chainQueue.length - 1) return;   // the closer holds
+  chainAdvancing = true;
+  try {
   for (let tries = 0; tries < chainQueue.length; tries++) {
     chainIdx += 1;
     const url = chainQueue[chainIdx];
@@ -3071,6 +3087,7 @@ async function chainAdvance() {
       if (chainIdx >= chainQueue.length - 1) return;
     }
   }
+  } finally { chainAdvancing = false; }
 }
 
 function startSessionChain() {
