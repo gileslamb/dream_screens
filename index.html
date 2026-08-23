@@ -440,6 +440,20 @@
     transform: scale(1.4);
   }
 
+  /* One line the machine does not mean you to catch. */
+  .log-line .flicker {
+    color: rgba(255,255,255,0.16);
+    animation: substrateFlicker 2.6s ease-in-out 1 forwards;
+  }
+  @keyframes substrateFlicker {
+    0%   { opacity: 0; }
+    8%   { opacity: 1; }
+    14%  { opacity: 0.05; }
+    22%  { opacity: 0.7; }
+    30%  { opacity: 0; }
+    100% { opacity: 0; }
+  }
+
   #next-prompt {
     position: fixed;
     bottom: 3vh;
@@ -1587,7 +1601,7 @@
       By proceeding you agree to hold its contents in confidence — not to record,
       screenshot, reproduce, or share any part of it.
     </div>
-    <div id="gate-conf-cond">Access is granted on this condition.</div>
+    <div id="gate-conf-cond">By continuing, you agree to participate generatively.</div>
   </div>
 
   <div class="gate-block">
@@ -1896,38 +1910,12 @@ const CONFIG = {
   mediaBaseUrl: '',
   media(path) { return this.mediaBaseUrl + path; },
   videos: [
-    'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/549eac904e2844e21538beff41f2d1b7/manifest/video.m3u8',
+    // White Matter 2 edit, replacing White Matter 2 (549eac90...)
+    'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/5fb52d0e99a433717aeb3301ae576d9d/manifest/video.m3u8',
     'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/57a1a6e1249258c1b2a9f0e64111333d/manifest/video.m3u8',
     'https://customer-3aa0vwfgpylhsylu.cloudflarestream.com/aedc5ba75b991b5b687f45f8db3b1da9/manifest/video.m3u8',
   ],
   videoSeek: 30,
-  // Onboarding score. Deliberately holds no Act One track, so the walkthrough
-  // never pre-plays the record.
-  music: {
-    intro:  'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Virta.mp3',
-    stage1: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Nature%20module%201.mp3',
-    stage2: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Module%20n5%20v2.mp3',
-    stage3: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/module%203.mp3',
-    // No stage4 entry: stage 3's track runs on through stage 4 rather than
-    // handing over, so it gets the whole of both.
-    // Virta returns to close the onboarding, the same file as intro.
-    stage5: 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/Virta.mp3',
-  },
-  timing: {
-    // Nature module 1 is cut to fit the visual sequence rather than the other
-    // way round. At 90s the completed log screen sat unchanged for 82s. This
-    // is the pre-extension value, so the hold is the original one it was
-    // designed around and the track runs about 25s.
-    stage1Duration: 18000,
-    stage2Duration: 25000,
-    stage3Duration: 25000,
-    stage4Duration: 25000,
-    stage5OrgDuration: 8000,
-    transitionMs: 2500,
-    crossfadeMs: 30000
-  },
-  logLinePause: 550,
-  // Ambient bed — continuous substrate running under Virta from menu load
   bed: {
     urls: BED_EXTRA_LAYERS
       ? [
@@ -1955,9 +1943,8 @@ const CONFIG = {
       introLines: [
         { text: 'DREAMSCREEN SESSION DS-01', isTitle: false },
         { text: 'Signal Dreams',                isTitle: true  },
-        { text: 'SUBJECT: CORTICAL SIGNAL', isTitle: false },
-        { text: 'INITIATING READING PASS 01...', isTitle: false },
-        { text: 'SESSION ACTIVE — STAND BY',    isTitle: false },
+        { text: 'a room. familiar without being specific. and music. the sense of being welcomed somewhere.', isTitle: false },
+        { text: 'elevated limbic response. unresolved grief architecture. primary candidate confirmed.', isTitle: false },
       ],
       completionLines: ['DS-01 COMPLETE', 'MEMORY FRAGMENT ARCHIVED', 'PROTOCOL CLOSED'],
       overlays: [
@@ -2005,9 +1992,8 @@ const CONFIG = {
       introLines: [
         { text: 'DREAMSCREEN SESSION DS-02',     isTitle: false },
         { text: 'Feedback Memory',                  isTitle: true  },
-        { text: 'SUBJECT: RECOVERED SUBSTRATES', isTitle: false },
-        { text: 'READING PASS 02 IN PROGRESS...', isTitle: false },
-        { text: 'SESSION ACTIVE — STAND BY',       isTitle: false },
+        { text: 'voices almost recognised. the certainty that something is about to be said.', isTitle: false },
+        { text: 'demonstration accepted. echo duration: ~30 years. proceeding.', isTitle: false },
       ],
       completionLines: ['DS-02 PROCEEDING', 'FEEDBACK LOOP — OPEN', 'PROTOCOL CONTINUES'],
       overlays: null,
@@ -2053,9 +2039,8 @@ const CONFIG = {
       introLines: [
         { text: 'DREAMSCREEN SESSION 03 · BRAINWAVES', isTitle: false },
         { text: 'Brainwaves',                          isTitle: true  },
-        { text: 'We’ve read what you remember. Now we read how.', isTitle: false },
-        { text: 'This part is gentle. Most clients find it restful.',  isTitle: false },
-        { text: 'READING ACTIVE — BE STILL',           isTitle: false },
+        { text: 'something like being soothed. the feeling of being very precisely known. then it stops.', isTitle: false },
+        { text: 'avoidance pattern identified. the gap named. read complete.', isTitle: false },
       ],
       completionLines: ['CAPTURE COMPLETE', 'Read complete. Thank you.'],
       overlays: null,
@@ -2884,13 +2869,177 @@ function beep(freq, dur) {
 }
 
 // Virta belongs to the programme, not to the front door. It waits for onEnter.
-let virtaStarted = false;
-function startVirta() {
-  if (virtaStarted) return;
-  virtaStarted = true;
-  const c = getCtx();
-  if (c.state === 'suspended') void c.resume();
-  playTrack(CONFIG.media(CONFIG.music.intro));
+// ════════════════════════════════════════════════════════════════════════
+// SESSION CHAIN
+// The engine assembles a different session from the archive on every visit.
+// The archive is shuffled per session and Virta is appended as the fixed
+// closer; when the queue reaches Virta it holds there, looping, as the
+// resting state.
+//
+// Menu and onboarding tier only. Protocol films keep their baked
+// soundtracks, and the chain ducks and resumes for them exactly as the
+// single holding track did: it routes through currentGain, so every
+// existing fade in playVideoProtocol, stopAudio and the protocol return
+// path acts on it unchanged.
+//
+// Snippets, not full plays: a random in-point that never falls inside the
+// final SNIPPET_TAIL_GUARD_S, SNIPPET_MIN_S to SNIPPET_MAX_S of play, then
+// an equal-power crossfade into the next. The next buffer is fetched while
+// the current one plays. Sources loop, so a piece shorter than its snippet
+// window wraps rather than falling silent. Nothing here can produce silence.
+// ════════════════════════════════════════════════════════════════════════
+const R2_BASE = 'https://pub-62666eef125a449aa31ba8192339a17e.r2.dev/';
+
+// Verified present in the bucket. Act One pieces are deliberately absent:
+// Signal Dreams, Feedback Memory, Brainwaves and the rest stay fresh for
+// their own chapters.
+const SESSION_ARCHIVE = [
+  R2_BASE + 'Co%20Dreaming%20(Limbic%20Nectar).mp3',
+  R2_BASE + 'Free%20Will.mp3',
+  R2_BASE + 'Glitches%20are%20Portals.mp3',
+  R2_BASE + 'Module%20n5%20v2.mp3',
+  R2_BASE + 'Nature%20module%201.mp3',
+  R2_BASE + 'Silo.mp3',
+  R2_BASE + 'The%20Dream%20Architect.mp3',
+  R2_BASE + 'module%203.mp3',
+  R2_BASE + 'wind%20and%20water%20v1.mp3',
+];
+const SESSION_CLOSER = R2_BASE + 'Virta.mp3';
+
+const SNIPPET_MIN_S        = 45;
+const SNIPPET_MAX_S        = 75;
+const SNIPPET_XFADE_MIN_S  = 4;
+const SNIPPET_XFADE_MAX_S  = 6;
+const SNIPPET_TAIL_GUARD_S = 20;   // no in-point inside the last 20s of a piece
+const CHAIN_VOLUME         = 0.75; // the level the single holding track ran at
+
+let chainQueue   = [];
+let chainIdx     = -1;
+let chainMaster  = null;
+let chainCurrent = null;   // { src, gain }
+let chainTimer   = null;
+let chainStarted = false;
+const chainCache = new Map();
+
+function chainShuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+async function chainLoad(url) {
+  if (chainCache.has(url)) return chainCache.get(url);
+  const res = await fetch(mediaFetchUrl(url));
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const buf = await getCtx().decodeAudioData(await res.arrayBuffer());
+  chainCache.set(url, buf);
+  return buf;
+}
+
+// sin/cos pair: constant power through the overlap, so the join does not dip.
+function chainCurves(n) {
+  const up = new Float32Array(n), down = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const t = (i / (n - 1)) * Math.PI / 2;
+    up[i] = Math.sin(t); down[i] = Math.cos(t);
+  }
+  return { up, down };
+}
+
+function chainStartSnippet(buf, url) {
+  const ctx = getCtx();
+  const isCloser = (url === SESSION_CLOSER);
+  const xfade = SNIPPET_XFADE_MIN_S + Math.random() * (SNIPPET_XFADE_MAX_S - SNIPPET_XFADE_MIN_S);
+  const len   = SNIPPET_MIN_S + Math.random() * (SNIPPET_MAX_S - SNIPPET_MIN_S);
+
+  // Latest in-point that still leaves the guard at the tail, and where the
+  // piece is long enough, one that leaves the whole snippet in the clear.
+  const latest      = Math.max(0, buf.duration - SNIPPET_TAIL_GUARD_S);
+  const latestClear = Math.max(0, buf.duration - SNIPPET_TAIL_GUARD_S - len);
+  const offset = isCloser ? 0 : Math.random() * (latestClear > 0 ? latestClear : latest);
+
+  const gain = ctx.createGain();
+  gain.connect(chainMaster);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;              // a short piece wraps rather than running out
+  src.connect(gain);
+
+  const now = ctx.currentTime;
+  const { up, down } = chainCurves(64);
+  if (chainCurrent) {
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.setValueCurveAtTime(up, now, xfade);
+    const old = chainCurrent;
+    old.gain.gain.cancelScheduledValues(now);
+    old.gain.gain.setValueAtTime(old.gain.gain.value, now);
+    old.gain.gain.setValueCurveAtTime(down, now, xfade);
+    setTimeout(() => { try { old.src.stop(); } catch (e) {} }, (xfade + 0.5) * 1000);
+  } else {
+    // First snippet of the session: nothing to cross from, so ease it up.
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.setTargetAtTime(1, now, 1.2);
+  }
+  src.start(now, offset);
+  chainCurrent = { src, gain };
+
+  if (chainTimer) clearTimeout(chainTimer);
+  chainTimer = null;
+  if (!isCloser) {
+    // Fetch the next piece while this one plays, then cross into it.
+    const nextUrl = chainQueue[Math.min(chainIdx + 1, chainQueue.length - 1)];
+    chainLoad(nextUrl).catch(() => {});
+    chainTimer = setTimeout(() => void chainAdvance(), Math.max(1000, (len - xfade) * 1000));
+  }
+}
+
+// Walk forward until something loads. A piece that will not fetch is skipped
+// without a gap, because the one before it is still playing.
+async function chainAdvance() {
+  if (chainIdx >= chainQueue.length - 1) return;   // the closer holds
+  for (let tries = 0; tries < chainQueue.length; tries++) {
+    chainIdx += 1;
+    const url = chainQueue[chainIdx];
+    try {
+      const buf = await chainLoad(url);
+      chainStartSnippet(buf, url);
+      return;
+    } catch (e) {
+      console.warn('Session chain: skipping', url, e);
+      if (chainIdx >= chainQueue.length - 1) return;
+    }
+  }
+}
+
+function startSessionChain() {
+  if (chainStarted) return;
+  chainStarted = true;
+  const ctx = getCtx();
+  if (ctx.state === 'suspended') void ctx.resume();
+  chainMaster = ctx.createGain();
+  chainMaster.gain.setValueAtTime(CHAIN_VOLUME, ctx.currentTime);
+  chainMaster.connect(ctx.destination);
+  // Everything that used to fade the holding track now fades the chain.
+  currentGain = chainMaster;
+  currentBuffer = { stop() { if (chainCurrent) { try { chainCurrent.src.stop(); } catch (e) {} } } };
+  chainQueue = chainShuffle(SESSION_ARCHIVE).concat([SESSION_CLOSER]);
+  chainIdx = -1;
+  void chainAdvance();
+}
+
+// Coming back from a protocol: bring the chain up and move to the next piece
+// in the queue, so the session never repeats where it left off.
+function resumeSessionChain() {
+  if (!chainStarted) { startSessionChain(); return; }
+  const ctx = getCtx();
+  if (ctx.state === 'suspended') void ctx.resume();
+  chainMaster.gain.cancelScheduledValues(ctx.currentTime);
+  chainMaster.gain.setTargetAtTime(CHAIN_VOLUME, ctx.currentTime, 3.0);
+  currentGain = chainMaster;
+  void chainAdvance();
 }
 
 // The first real gesture on the entry screen brings up the bed alone. It runs
@@ -2967,15 +3116,12 @@ function showStage(n) {
 }
 
 const LOG_LINES = [
-  { ts:'00:00:01', cls:'', text:'WELCOME TO DREAMSCREENS.' },
-  { ts:'00:00:02', cls:'', text:'WELCOME TO THE FUTURE OF MEMORY.' },
-  { ts:'00:00:04', cls:'', text:'Using differential retina scanning and remote EEG signal analysis —' },
-  { ts:'00:00:06', cls:'', text:'we isolate your neuro-cortical brain patterns in real time.' },
-  { ts:'00:00:08', cls:'', text:'We read what grief has left behind.' },
-  { ts:'00:00:11', cls:'', text:'Our Resonance technology resolves it within your own experience.' },
-  { ts:'00:00:13', cls:'', text:'Return to a moment you thought was lost.' },
-  { ts:'00:00:16', cls:'', text:'Meet someone you\'ve been missing.' },
-  ...(isIOS ? [{ ts:'00:00:18', cls:'', text:'Become the person you always believed you could be.' }] : []),
+  { ts:'00:00:01', cls:'', text:'SUBJECT: WARD, E.' },
+  { ts:'00:00:04', cls:'', text:'SIGNAL: FRACTURED. UNDECAYED. ANOMALOUS.' },
+  { ts:'00:00:07', cls:'', text:'ORIGIN EVENT: MATERNAL VOCAL LOSS. SUBJECT AGE 19.' },
+  { ts:'00:00:11', cls:'', text:'echo duration: ~30 years' },
+  // Blink and miss it.
+  { ts:'00:00:14', cls:'flicker', text:'all substrates retained' },
 ];
 
 function runLogLines(callback) {
@@ -3009,7 +3155,7 @@ const ARCHIVE_TRACKS = [
 ];
 
 function showArchiveOverlay() {
-  fadeAudioOver60s();
+  // The chain runs on through the archive; nothing fades it out here.
   document.getElementById('progress').classList.remove('visible');
   currentStage = 6;
   document.getElementById('s6').classList.add('active');
@@ -3120,9 +3266,7 @@ const FRAG_FADE_MS   = 2800;   // showFrag's crossfade — swallow clicks inside
 const FRAG_PROMPT_MS = 6000;   // how long a fragment sits before the hint appears
 const FRAG_DWELL_MS  = 15000;  // and how long before it carries itself, untouched
                                // 6 fragments of it = 90s of Module n5 v2 in stage 2
-const STAGE5_HOLD_MS = 66000;  // how long wind and water holds before the archive
-const WIND_CROSSFADE_TC = 14.0; // seconds: wind and water takes about 40s to
-                                // take over from The Dream Architect
+const STAGE5_HOLD_MS = 66000;  // how long stage 5 holds before the archive
 
 function clearStageAdvance() {
   if (videoStageFallbackTimer) clearTimeout(videoStageFallbackTimer);
@@ -3137,6 +3281,32 @@ function clearStageAdvance() {
     document.removeEventListener('keydown', stageAdvanceKeyHandler);
     stageAdvanceKeyHandler = null;
   }
+}
+
+// Hold until the visitor asks for the next section. Same gestures and the same
+// chrome exclusions as the fragment walk.
+function awaitAdvance(onAdvance) {
+  clearStageAdvance();
+  const nextPrompt = document.getElementById('next-prompt');
+  const armedAt = Date.now();
+  videoStageFallbackTimer = setTimeout(() => nextPrompt.classList.add('visible'), FRAG_PROMPT_MS);
+  const go = () => {
+    if (Date.now() - armedAt < 1200) return;
+    clearStageAdvance();
+    nextPrompt.classList.remove('visible');
+    onAdvance();
+  };
+  videoAdvanceClickHandler = e => {
+    if (e.target && e.target.closest && e.target.closest('#home-nav, a, button')) return;
+    go();
+  };
+  stageAdvanceKeyHandler = e => {
+    if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault(); go();
+    }
+  };
+  document.addEventListener('click', videoAdvanceClickHandler);
+  document.addEventListener('keydown', stageAdvanceKeyHandler);
 }
 
 function enterVideoStage(stageNum, fragIdxs, onAdvance) {
@@ -3202,20 +3372,17 @@ async function onEnter() {
   // The record has carried the cover and the gate. From here the programme
   // has its own score, so Act One stands down and the stage tracks take over.
   stopActOne();
-  if (!virtaStarted) startVirta();   // if the record was holding the room, Virta starts here
+  startSessionChain();               // if the record was holding the room, the chain starts here
   bedFadeOut(BED_ONBOARD_FADE_TC);   // the birds belong to the front door, not the programme
   document.getElementById('stage0Links').classList.remove('visible');
   document.getElementById('home-nav').classList.remove('vis');
 
-  runNeuralLoader(document.getElementById('nl-ring-canvas'), 4500, [
-    { pct: 0,  msg: 'WELCOME TO DREAMSCREENS.' },
-    { pct: 18, msg: 'WELCOME TO THE FUTURE OF MEMORY.' },
-    { pct: 35, msg: 'Using differential retina scanning and remote EEG signal analysis —' },
-    { pct: 52, msg: 'we isolate your neuro-cortical brain patterns in real time.' },
-    { pct: 68, msg: 'We read what grief has left behind.' },
-    { pct: 82, msg: 'Our Resonance technology resolves it within your own experience.' },
-    { pct: 95, msg: 'Return to a moment you thought was lost.' },
-    { pct: 100, msg: 'Meet someone you\'ve been missing.' },
+  // Corporation voice, warm register. Slowed from 4500ms so three lines get
+  // the room eight used to share.
+  runNeuralLoader(document.getElementById('nl-ring-canvas'), 13500, [
+    { pct: 0,   msg: 'Grief is not a mystery. It is a signal. We have learned to read it.' },
+    { pct: 36,  msg: 'Somewhere in your archive, a voice is waiting.' },
+    { pct: 72,  msg: 'You have carried this long enough. DreamScreen completes what you could not.' },
   ], function() {
     document.getElementById('s0').classList.remove('active');
     glStageTarget = 1.0;
@@ -3224,7 +3391,6 @@ async function onEnter() {
     void (async () => {
       const c = getCtx();
       if (c.state === 'suspended') await c.resume();
-      playTrack(CONFIG.media(CONFIG.music.stage1));
     })();
     manualOrgFade = true;
     const fadeStart = Date.now();
@@ -3240,15 +3406,14 @@ async function onEnter() {
     fadeOrganism();
     stageTimer = setTimeout(() => {
       runLogLines(() => {
-        const holdAfterLogs = CONFIG.timing.stage1Duration - LOG_LINES.length * CONFIG.logLinePause - 800;
-        stageTimer = setTimeout(() => {
+        // Click to continue, like every other section, rather than a timed hold.
+        awaitAdvance(() => {
         staticBurst(200);
         glStageTarget = 2.0;
         glBlend = 0.0;
         glBlendTarget = isIOS ? 0.3 : 1.0;
         showStage(2);
-        playTrack(CONFIG.media(CONFIG.music.stage2));
-        enterVideoStage(2, [0, 1, 2, 3, 4, 5], () => {
+          enterVideoStage(2, [0, 1, 2, 3, 4, 5], () => {
           glBlendTarget = isIOS ? 0.3 : 1.0;
           stageTimer = setTimeout(() => {
             staticBurst(200);
@@ -3256,8 +3421,7 @@ async function onEnter() {
             glBlend = 0.0;
             glBlendTarget = isIOS ? 0.3 : 1.0;
             showStage(3);
-            playTrack(CONFIG.media(CONFIG.music.stage3));
-            enterVideoStage(3, [6, 7, 8, 9, 10], () => {
+                  enterVideoStage(3, [6, 7, 8, 9, 10], () => {
               glBlendTarget = isIOS ? 0.3 : 1.0;
               stageTimer = setTimeout(() => {
                 staticBurst(200);
@@ -3267,7 +3431,6 @@ async function onEnter() {
                 showStage(4);
                 // wind and water comes in here, not at stage 5, and rises very
                 // slowly so it and The Dream Architect share the whole stage.
-                playTrack(CONFIG.media(CONFIG.music.stage5), { longFade: WIND_CROSSFADE_TC });
                 enterVideoStage(4, [11, 12, 13, 14, 15], () => {
                   glBlendTarget = isIOS ? 0.3 : 1.0;
                   stageTimer = setTimeout(() => {
@@ -3286,7 +3449,7 @@ async function onEnter() {
             });
           }, CONFIG.timing.transitionMs);
         });
-      }, holdAfterLogs);
+      });
     });
   }, 4000);
   }); // end runNeuralLoader callback
@@ -3296,8 +3459,10 @@ function resetExperience() {
   clearTimeout(stageTimer);
   clearStageAdvance();
   document.getElementById('next-prompt').classList.remove('visible');
-  stopAudio();
-  virtaStarted = false;
+  // Not stopAudio(): that would fade the chain to nothing and leave silence.
+  // A reset returns to the start of the programme, so the session moves on.
+  resumeSessionChain();
+  // The chain is continuous and survives a reset; nothing to restart.
   videosReady = 0;
   activeVideos = shuffleVideos();
   if (!isIOS) {
@@ -3440,7 +3605,7 @@ function enterFromShader() {
   // Virta starts here, on the click itself, and runs until stage 1 takes over.
   // If the record is holding the room it keeps it, and Virta waits for onEnter,
   // where stopActOne hands over.
-  if (!actOneEngaged) startVirta();
+  if (!actOneEngaged) startSessionChain();
   if (sessionStorage.getItem('ds_authed') === '1') { void doEnterTransition(); return; }
   const gate = document.getElementById('access-gate');
   if (!gate) { void doEnterTransition(); return; }
@@ -4356,8 +4521,7 @@ function returnToProtocols() {
     glArchiveModeTarget = 1.0;
     showArchiveOverlay();
     // Restore Virta after any protocol — reset flag so playTrack can fade it back in
-    virtaStarted = false;
-    startVirta();
+    resumeSessionChain();
     // Commit #2 adds bed restore here
     bedRestoreAfterProtocol();
   }, 1000);
@@ -4400,7 +4564,7 @@ document.getElementById('gate-pw').addEventListener('keydown', e => {
 //
 // Deliberately a plain <audio> element rather than the WebAudio graph the
 // experience runs on, so the two never contend for a context. While Act One
-// holds the room, startVirta() and playTrack() stand down (see the guards on
+// holds the room, the session chain and playTrack() stand down (see the guards on
 // actOneEngaged) — otherwise the stage tracks, which are these same tracks,
 // would play over themselves out of phase.
 // ════════════════════════════════════════════════════════════════════════
